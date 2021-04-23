@@ -33,69 +33,80 @@ class HeadUpDisplay:
         self.theme = HeadUpDisplayTheme(self.preferences.prefs['theme_name'])
         self.show_animations = self.preferences.prefs['show_animations']
         self.widgets = [
-            HeadUpStatusBar('status_bar', self.preferences, self.theme),
-            HeadUpEventLog('event_log', self.preferences, self.theme),
+            HeadUpStatusBar('status_bar', self.preferences.prefs, self.theme),
+            HeadUpEventLog('event_log', self.preferences.prefs, self.theme),
         ]
         if (self.preferences.prefs['enabled']):
             self.enable()
             
-    def enable(self):
+    def enable(self, persisted=False):
         if not self.enabled:
             self.enabled = True
             if self.poller:
                 self.poller.enable()
                 
             for widget in self.widgets:
-                # TODO RESPECT WIDGET USER ENABLED STATE
-                if not widget.enabled:
-                    widget.enable(self.show_animations)
+                if widget.preferences.enabled and not widget.enabled:
+                    widget.enable()
             
             self.display_state.register('content_update', self.content_update)
             self.display_state.register('log_update', self.log_update)
-            self.mouse_poller = cron.interval('100ms', self.poll_mouse_pos)            
-            self.preferences.persist_preferences({'enabled': True})
+            self.mouse_poller = cron.interval('100ms', self.poll_mouse_pos)
+            if persisted:
+                self.preferences.persist_preferences({'enabled': True})
 
-    def disable(self):
+    def disable(self, persisted=False):
         if self.enabled:
             self.enabled = False
             
-            # TODO RESPECT WIDGET USER ENABLED STATE            
             for widget in self.widgets:
                 if widget.enabled:
-                    widget.disable(self.show_animations)
+                    widget.disable()
             
             if self.poller:
                 self.disable_poller_job = cron.interval('30ms', self.disable_poller_check)                
             
-            if self.mouse_poller:
-                cron.cancel(self.mouse_poller)            
-                self.mouse_poller = None
+            cron.cancel(self.mouse_poller)
+            self.mouse_poller = None
             
             self.display_state.unregister('content_update', self.content_update)
             self.display_state.unregister('log_update', self.log_update)            
             self.preferences.persist_preferences({'enabled': False})
     
+    # Persist the preferences of all the widgets
+    def persist_widgets_preferences(self):
+        dict = {}
+        for widget in self.widgets:
+            if widget.preferences.mark_changed:
+                dict = {**dict, **widget.preferences.export(widget.id)}
+                widget.preferences.mark_changed = False
+    
+        self.preferences.persist_preferences(dict)
+    
     def enable_id(self, id):
+        if not self.enabled:
+            self.enable()
+    
         for widget in self.widgets:
             if not widget.enabled and widget.id == id:
-                widget.enable(self.show_animations)
+                widget.enable(True)
 
     def disable_id(self, id):
         for widget in self.widgets:
             if widget.enabled and widget.id == id:
-                widget.disable(self.show_animations)
+                widget.disable(True)
 
     def switch_theme(self, theme_name):
         if (self.theme.name != theme_name):
-            self.theme = HeadUpDisplayTheme(theme_name)            
+            self.theme = HeadUpDisplayTheme(theme_name)
             for widget in self.widgets:
-                widget.set_theme(self.theme, self.show_animations)
+                widget.set_theme(self.theme)
             
             self.preferences.persist_preferences({'theme_name': theme_name})
         
-    def start_setup_id(self, id, setup_type):
+    def start_setup_id(self, setup_type, id = "*"):
         for widget in self.widgets:
-            if widget.enabled and widget.id == id:
+            if widget.enabled and ( id == "*" or widget.id == id ) and widget.setup_type != setup_type:
                 widget.start_setup(setup_type)
                 
     # Check if the widgets are finished unloading, then disable the poller
@@ -109,9 +120,7 @@ class HeadUpDisplay:
         
         if not enabled:
             if self.poller:
-                self.poller.disable()
-            
-            if self.disable_poller_job is not None:
+                self.poller.disable()            
                 cron.cancel(self.disable_poller_job)
                 self.disable_poller_job = None
         
@@ -123,13 +132,13 @@ class HeadUpDisplay:
                     update_dict[key] = data[key]
                     
             if len(update_dict) > 0:
-                widget.update_content(update_dict, self.show_animations)
+                widget.update_content(update_dict)
                 
     def log_update(self, logs):
         new_log = logs[-1]
         for widget in self.widgets:
             if new_log['type'] in widget.subscribed_logs or '*' in widget.subscribed_logs:
-                widget.append_log(new_log, self.show_animations)
+                widget.append_log(new_log)
                 
     # Send mouse events to enabled widgets
     def poll_mouse_pos(self):
@@ -158,12 +167,17 @@ class Actions:
     def enable_hud():
         """Enables the HUD"""
         global hud
-        hud.enable()
+        hud.enable(True)
         
     def disable_hud():
         """Disables the HUD"""
         global hud
-        hud.disable()
+        hud.disable(True)
+        
+    def persist_hud_preferences():
+        """Saves the HUDs preferences"""
+        global hud
+        hud.persist_widgets_preferences()
         
     def add_hud_log(type: str, message: str):
         """Disables the HUD"""
@@ -172,10 +186,12 @@ class Actions:
         
     def enable_hud_id(id: str):
         """Enables a specific hud element"""
+        global hud        
         hud.enable_id(id)
         
     def disable_hud_id(id: str):
         """Disables a specific hud element"""
+        global hud
         hud.disable_id(id)
         
     def switch_hud_theme(theme_name: str):
@@ -183,7 +199,7 @@ class Actions:
         global hud
         hud.switch_theme(theme_name)
         
-    def set_hud_setup_mode(setup_mode: str):
+    def set_hud_setup_mode(setup_mode: str, id: str):
         """Starts a setup mode which can change position"""
         global hud
-        hud.start_setup_id('status_bar', setup_mode)
+        hud.start_setup_id(id, setup_mode)

@@ -2,8 +2,13 @@ from user.talon_hud.base_widget import BaseWidget
 from talon import skia, ui, Module, cron, actions
 import time
 import numpy
+from user.talon_hud.widget_preferences import HeadUpDisplayUserWidgetPreferences
 
 class HeadUpStatusBar(BaseWidget):
+
+    # Defaults defined using a 1920x1080 screen
+    # Where the status bar sits just above the time in Windows
+    preferences = HeadUpDisplayUserWidgetPreferences(type="status_bar", x=1630, y=930, width=250, height=50, enabled=True, sleep_enabled=True)
 
     # Difference array for colour transitions in animations
     blink_state = 0    
@@ -15,7 +20,7 @@ class HeadUpStatusBar(BaseWidget):
     icon_positions = []
     icons = ["mode"]    
     subscribed_content = ["mode", "language"]
-    
+        
     content = {
         'mode': 'command',
         'language': {
@@ -26,7 +31,7 @@ class HeadUpStatusBar(BaseWidget):
     
     animation_max_duration = 60    
     
-    def refresh(self, new_content, show_animations=True):
+    def refresh(self, new_content):
         if ("mode" in new_content and new_content["mode"] != self.content['mode']):            
             if (new_content["mode"] == 'command'):
                 self.blink_colour = self.command_blink_colour
@@ -43,33 +48,32 @@ class HeadUpStatusBar(BaseWidget):
                 self.background_colour[2] - self.blink_colour[2]
             ]
             
-            self.blink_state = 100 if show_animations else 0
+            self.blink_state = 100 if self.show_animations else 0
         
     def mouse_move(self, pos):
         super().mouse_move(pos)
         
-        # Hit detection of buttons
-        pos = numpy.array(pos)
-        hover_index = -1
-        for index, icon in enumerate(self.icon_positions):
-            if (numpy.linalg.norm(pos - numpy.array([icon['center_x'], icon['center_y']])) < icon['radius']):
-                hover_index = index
-                break
-                    
-        # Only resume for a frame if our button state has changed
-        if (self.icon_hover_index != hover_index):
-            self.icon_hover_index = hover_index
-            if (self.dwell_job is not None):
+        if (self.setup_type == ""):
+            # Hit detection of buttons
+            pos = numpy.array(pos)
+            hover_index = -1
+            for index, icon in enumerate(self.icon_positions):
+                if (numpy.linalg.norm(pos - numpy.array([icon['center_x'], icon['center_y']])) < icon['radius']):
+                    hover_index = index
+                    break
+                        
+            # Only resume for a frame if our button state has changed
+            if (self.icon_hover_index != hover_index):
+                self.icon_hover_index = hover_index
                 cron.cancel(self.dwell_job)
-            
-            if (hover_index != -1):
-                self.dwell_job = cron.interval( str(int(self.icon_hover_activate_dwell_seconds * 1000)) + 'ms', self.activate_icon)
-            
-            self.canvas.resume()
+                
+                if (hover_index != -1):
+                    self.dwell_job = cron.interval( str(int(self.icon_hover_activate_dwell_seconds * 1000)) + 'ms', self.activate_icon)
+                
+                self.canvas.resume()
     
     def activate_icon(self):
-        if (self.dwell_job is not None):
-            cron.cancel(self.dwell_job)
+        cron.cancel(self.dwell_job)
     
         if self.icon_hover_index < len(self.icon_positions):
             if (self.icon_positions[self.icon_hover_index]['action'] == "mode"):
@@ -201,14 +205,12 @@ class HeadUpStatusBar(BaseWidget):
         circle_size = end_element_height / 2 * (circle_state / circle_animation_midway_point)
         canvas.draw_circle( self.x + (end_element_width / 2 ), self.y + end_element_height / 2, circle_size, paint)
         return True
-    
         
     def draw_background(self, canvas, origin_x, origin_y, width, height, paint):
         radius = height / 2
         rect = ui.Rect(origin_x, origin_y, width, height)
         rrect = skia.RoundRect.from_rect(rect, x=radius, y=radius)
         canvas.draw_rrect(rrect)
-
         
     def draw_icon(self, canvas, origin_x, origin_y, diameter, paint, action, image_name = None ):
         radius = diameter / 2
