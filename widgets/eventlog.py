@@ -161,7 +161,7 @@ class HeadUpEventLog(BaseWidget):
 
                 text_x = self.x + text_padding if self.alignment == "left" else self.x + self.width - text_padding - text_width
                 element_x = text_x - text_padding
-
+                
                 # Fade the opacity of the message
                 opacity = 1.0 if visual_log['animation_tick'] >= 0 else 0.0
                 if (visual_log['animation_tick'] != visual_log['animation_goal'] ):

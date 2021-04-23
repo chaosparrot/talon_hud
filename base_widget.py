@@ -91,6 +91,17 @@ class BaseWidget(metaclass=ABCMeta):
                 
             self.cleared = False
             self.start_setup("cancel")
+
+    def set_preference(self, preference, value, persisted=False):
+        dict = {}
+        dict[self.id + "_" + preference] = value
+        self.load(dict, False)
+        if self.enabled:
+            self.canvas.resume()
+        
+        if persisted:
+            self.preferences.mark_changed = True
+            actions.user.persist_hud_preferences()            
             
     # Clear up all the resources after a disabling
     def clear(self):

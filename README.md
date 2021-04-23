@@ -12,8 +12,22 @@ However, if you have a different user folder, you can look at the knausj_binding
 
 # Widgets
 
-Currently only one UI widget, the statusbar, is developed enough for use. This widget will display the current Talon mode ( Command, dictation or sleep ) and will display the detected or forced language.
+The status bar
+
+This widget will display the current Talon mode ( Command, dictation or sleep ) and will display the detected or forced language.
 The default action of dwelling on the mode icon puts Talon in sleep mode after 1.5 seconds, and the close icon closes the HUD. These actions can be overridden in .talon files.
+
+The event log
+
+This widget works like the command history from knausj, but instead every message has a timed life of about 9 seconds before it disappears, keeping your screen free of clutter.
+It isn't just limited to the command history however, you can append any message you want using the user.add_hud_log() action.
+For example, adding this to your talon files adds a log to the event log widget
+
+```
+testing event log message:
+	user.add_hud_log("event", "What I like to drink most is wine that belongs to others")
+```
+
 
 # Commands
 
@@ -22,8 +36,24 @@ All the commands of this repository can be found in commands.talon . A brief run
 `head up show` opens up the HUD as you left it
 `head up hide` hides the complete HUD
 `head up theme <themename>` switches the theme of all the widgets to the selected theme. Default themes are `light` and `dark` for light and dark mode respectively
-`head up drag` drags the statusbar ( this will change as more widgets are added )
-`head up drop` drops the statusbar where it currently is
+
+You can also target individual widgets like the status bar and event log for hiding and showing. 
+`head up show <widget name>` enables the chosen widget
+`head up hide <widget name>` hides the chosen widget
+
+On top of being able to turn widgets on and off, you can configure their attributes to your liking.
+Currently, you can change the size and position
+
+`head up drag <widget name>` starts dragging the widget
+`head up resize <widget name>` starts resizing the widget
+`head up drop` confirms and saves the changes of your changed widgets
+`head up cancel` cancels the changes. Hiding a widget also discards of the current changes
+
+Some widgets like the event log also allow you to change the text direction and alignment
+`head up align <widget name> left` aligns the text and the widget to the left side of its bounds
+`head up align <widget name> right` aligns the text and the widget to the right side of its bounds
+`head up expand <widget name> up` changes the direction in which content is placed upwards
+`head up expand <widget name> down` changes the direction in which content is placed downwards
 
 # Updating content
 
@@ -62,7 +92,6 @@ These are ideas that I want to implement in no specific order and with no specif
 - An image panel with a header and a close icon which displays image content
 - WIP - Widget resizing ( width and height rather than a fixed scale ) using the mouse movement position relative to the widgets position
 - Widget expand limiting ( relying on the widget resizing above )
-- Widget alignment and expand direction setting relying on the widget resizing logic above
 - Widget font resizing relying on mouse movement for easy finetuning
 - Adding a default setting which hides a widget when sleep mode is activated to reduce screen clutter in a single command
 - Enabling and disabling animations using a voice command

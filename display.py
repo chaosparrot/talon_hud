@@ -3,6 +3,7 @@ import os
 import time
 import numpy
 
+from typing import Any
 from user.talon_hud.preferences import HeadUpDisplayUserPreferences
 from user.talon_hud.theme import HeadUpDisplayTheme
 from user.talon_hud.state import hud_content
@@ -96,6 +97,12 @@ class HeadUpDisplay:
             if widget.enabled and widget.id == id:
                 widget.disable(True)
 
+    def set_widget_preference(self, id, property, value, persisted=False):
+        print( id, property, value )
+        for widget in self.widgets:
+            if widget.id == id:
+                widget.set_preference(property, value, persisted)
+
     def switch_theme(self, theme_name):
         if (self.theme.name != theme_name):
             self.theme = HeadUpDisplayTheme(theme_name)
@@ -188,6 +195,10 @@ class Actions:
         """Enables a specific hud element"""
         global hud        
         hud.enable_id(id)
+        
+    def set_widget_preference(id: str, property: str, value: Any):
+        """Set a specific widget preference"""
+        hud.set_widget_preference(id, property, value, True)
         
     def disable_hud_id(id: str):
         """Disables a specific hud element"""
