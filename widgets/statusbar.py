@@ -96,14 +96,13 @@ class HeadUpStatusBar(BaseWidget):
         ]        
     
     def draw(self, canvas) -> bool:
+        paint = self.draw_setup_mode(canvas)
         self.icon_positions = []
         stroke_width = 1.5
         circle_margin = 4
         element_height = self.height - ( stroke_width * 2 )
         icon_diameter = self.height - ( circle_margin * 2 )
-        element_width = self.width    
-    
-        paint = canvas.paint
+        element_width = self.width        
         
         # Draw the background with bigger stroke than 1px
         stroke_colours = (self.theme.get_colour('top_stroke_colour'), self.theme.get_colour('down_stroke_colour'))

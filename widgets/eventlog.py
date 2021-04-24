@@ -46,7 +46,7 @@ class HeadUpEventLog(BaseWidget):
             if (self.expand_direction == "up"):
                 self.visual_logs.insert(0, visual_log)
             else:
-                self.visual_logs.append(visual_log)                
+                self.visual_logs.append(visual_log)
             self.poll_ttl_visuals()
             
             # Poll for TTL expiration at half the rate of the animation duration - It's not mission critical to make the logs disappear at exactly the right time
@@ -118,12 +118,13 @@ class HeadUpEventLog(BaseWidget):
             self.ttl_poller = None
 
     def draw(self, canvas) -> bool:
+        paint = self.draw_setup_mode(canvas)
+            
         # Clear logs that are no longer visible    
         self.visual_logs = [visual_log for visual_log in self.visual_logs if not (visual_log["animation_tick"] < 0 and visual_log["animation_tick"] == visual_log["animation_goal"]) ]
         self.visual_log_length = len(self.visual_logs)
         
         if (self.visual_log_length > 0):
-            paint = canvas.paint
             paint.textsize = self.font_size
             continue_drawing = False
 

@@ -81,7 +81,6 @@ class HeadUpDisplay:
             if widget.preferences.mark_changed:
                 dict = {**dict, **widget.preferences.export(widget.id)}
                 widget.preferences.mark_changed = False
-    
         self.preferences.persist_preferences(dict)
     
     def enable_id(self, id):

@@ -40,11 +40,17 @@ You can also target individual widgets like the status bar and event log for hid
 `head up show <widget name>` enables the chosen widget
 `head up hide <widget name>` hides the chosen widget
 
+By default, the widgets except for the status bar will hide when Talon goes in sleep mode, but you can keep them around, or hide them, with the following commands
+`head up show <widget name> on sleep` keeps the chosen widget enabled during sleep mode
+`head up hide <widget name> on sleep` hides the chosen widget when sleep mode is turned on
+
 On top of being able to turn widgets on and off, you can configure their attributes to your liking.
 Currently, you can change the size, position and font size
 
 `head up drag <widget name>` starts dragging the widget
-`head up resize <widget name>` starts resizing the widget
+`head up resize <widget name>` starts resizing the widgets width and height
+`head up expand <widget name>` changes the maximum size of the widget in case the content does not fit the regular width and height. 
+By default these two dimensions are the same so the widget does not grow when more content is added
 `head up text scale <widget name>` starts resizing the text in the widget
 `head up drop` confirms and saves the changes of your changed widgets
 `head up cancel` cancels the changes. Hiding a widget also discards of the current changes
@@ -52,8 +58,12 @@ Currently, you can change the size, position and font size
 Some widgets like the event log also allow you to change the text direction and alignment
 `head up align <widget name> left` aligns the text and the widget to the left side of its bounds
 `head up align <widget name> right` aligns the text and the widget to the right side of its bounds
-`head up expand <widget name> up` changes the direction in which content is placed upwards
-`head up expand <widget name> down` changes the direction in which content is placed downwards
+`head up align <widget name> top` changes the direction in which content is placed upwards
+`head up align <widget name> bottom` changes the direction in which content is placed downwards
+
+If you prefer having a more basic animation free set up, or want to switch back to an animated display, you can use the following commands 
+`head up basic <widget name>` disables animations on the chosen widget
+`head up fancy <widget name>` enables animations on the chosen widget
 
 # Updating content
 
@@ -90,12 +100,10 @@ These are ideas that I want to implement in no specific order and with no specif
 - A fallback text panel that shows every content update that isn't specifically registered by another text panel
 - An indicator widget that follows the cursor around to show a single state that is important to the current task at hand
 - An image panel with a header and a close icon which displays image content
-- WIP - Widget resizing ( width and height rather than a fixed scale ) using the mouse movement position relative to the widgets position
-- Widget expand limiting ( relying on the widget resizing above )
-- Enabling and disabling animations using a voice command
 - User driven icons and buttons on the status bar instead of hard coded ones
 - A capture that checks what themes are available on app ready by checking the directories in themes
 - Mouse drag and drop, button clicking and other things you would expect in a library like this, instead of polling every so often for changes
+- Multiscreen setups and how to best work with those, maybe with multiple preference files per monitor
 
 If any of these ideas seem cool for you to work on, give me a message on the talon slack so we can coordinate stuff.
 

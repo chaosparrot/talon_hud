@@ -13,7 +13,6 @@ class BaseWidget(metaclass=ABCMeta):
     canvas = None
     cleared = True
     enabled = False
-    setup_type = ""
     theme = None
     preferences = None
     subscribed_content = ['mode']
@@ -22,6 +21,10 @@ class BaseWidget(metaclass=ABCMeta):
         
     animation_tick = 0
     animation_max_duration = 100
+    
+    setup_type = ""
+    setup_vertical_direction = ""
+    setup_horizontal_direction = ""
     
     def __init__(self, id, preferences_dict, theme):
         self.id = id
@@ -70,7 +73,7 @@ class BaseWidget(metaclass=ABCMeta):
     def enable(self, persisted=False):
         if not self.enabled:
             self.enabled = True
-            self.canvas = canvas.Canvas(self.x, self.y, self.width, self.height)
+            self.canvas = canvas.Canvas(min(self.x, self.limit_x), min(self.y, self.limit_y), max(self.width, self.limit_width), max(self.height, self.limit_height))
             self.canvas.register('draw', self.draw_cycle)
             self.animation_tick = self.animation_max_duration if self.show_animations else 0
             self.canvas.resume()
@@ -136,10 +139,39 @@ class BaseWidget(metaclass=ABCMeta):
             if not self.enabled:
                 self.clear()
     
+    def draw_setup_mode(self, canvas) -> skia.Paint:
+        """Implements drawing the dimension lines when resizing elements"""    
+        paint = canvas.paint
+        if self.setup_type in ["dimension", "limit", "position"]:
+            # Colours blue and red chosen for contrast and decreased possibility of colour blindness making it difficult
+            # To make out the width and the limit lines
+            paint.color = '0000AA'
+            resize_margin = 2
+            leftmost = self.x + resize_margin
+            rightmost = self.x + self.width - resize_margin
+            topmost = self.y + resize_margin
+            bottommost = self.y + self.height - resize_margin
+            canvas.draw_line(leftmost, topmost, rightmost, topmost)
+            canvas.draw_line(rightmost, topmost, rightmost, bottommost)
+            canvas.draw_line(rightmost, bottommost, leftmost, bottommost)
+            canvas.draw_line(leftmost, bottommost, leftmost, topmost)
+            
+            paint.color = 'FF0000'
+            resize_margin = 0
+            leftmost = self.limit_x + resize_margin
+            rightmost = self.limit_x + self.limit_width - resize_margin
+            topmost = self.limit_y + resize_margin
+            bottommost = self.limit_y + self.limit_height - resize_margin
+            canvas.draw_line(leftmost, topmost, rightmost, topmost)
+            canvas.draw_line(rightmost, topmost, rightmost, bottommost)
+            canvas.draw_line(rightmost, bottommost, leftmost, bottommost)
+            canvas.draw_line(leftmost, bottommost, leftmost, topmost)
+        return paint    
+    
     def draw(self, canvas) -> bool:
         """Implement your canvas drawing logic here, returning False will stop the rendering, returning True will continue it"""
         return False
-        
+                
     def draw_animation(self, canvas, animation_tick) -> bool:
         """Implement your canvas animation drawing logic here, returning False will stop the rendering, returning True will continue it"""
         return False
@@ -152,42 +184,55 @@ class BaseWidget(metaclass=ABCMeta):
         """Mouse move events will be sent here whenever they change to update the UI if neccesary"""
         if (self.setup_type == "position"):
             x, y = pos
-            self.canvas.move(x, y)
+            horizontal_diff = x - self.limit_x
+            vertical_diff = y - self.limit_y
+            self.limit_x = x
+            self.limit_y = y
             
-            self.x = x
-            self.y = y
+            self.x = self.x + horizontal_diff
+            self.y = self.y + vertical_diff
+            
+            self.canvas.move(x, y)            
             self.canvas.resume()
         elif (self.setup_type in ["dimension", "limit", "font_size"] ):
             x, y = pos
-            center_x = self.x + ( self.width / 2 )
-            center_y = self.y + ( self.height / 2 )
-            
-            # Determine the direction of the mouse from the widget
-            direction = Point2d(x - center_x, y - center_y)
-            horizontal_direction = "left" if direction.x < 0 else "right"
-            vertical_direction = "up" if direction.y < 0 else "down"            
             
             # Determine the origin point of the widget which we should use for distance calculation with the current mouse position
             # Use the top right point if our mouse is to the bottom left of the widget and so on for every direction
             current_origin = Point2d(self.x, self.y)
-            if (horizontal_direction == "left"):
+            if (self.setup_horizontal_direction == "left"):
                 current_origin.x = self.x + self.width
-            if (vertical_direction == "up"):
+            if (self.setup_vertical_direction == "up"):
                 current_origin.y = self.y + self.height
                 
             total_direction = Point2d(x - current_origin.x, y - current_origin.y)
             
             # There is a slight jitter when dealing with canvas resizes, maybe we should set the canvas as big as possible and just do drawing instead
             if (self.setup_type in ["dimension", "limit"]):
-                canvas_x = x if horizontal_direction == "left" else self.x
-                canvas_y = y if vertical_direction == "up" else self.y            
                 canvas_width = abs(total_direction.x)
                 canvas_height = abs(total_direction.y)
-                self.x = canvas_x
-                self.y = canvas_y
-                self.width = canvas_width
-                self.height = canvas_height
-                rect = ui.Rect(canvas_x, canvas_y, canvas_width, canvas_height)            
+                
+                if (self.setup_type == "dimension"):
+                    canvas_x = x if self.setup_horizontal_direction == "left" else self.x
+                    canvas_y = y if self.setup_vertical_direction == "up" else self.y
+                    self.x = canvas_x
+                    self.y = canvas_y
+                    self.width = canvas_width
+                    self.height = canvas_height
+                    self.limit_x = canvas_x
+                    self.limit_y = canvas_y
+                    self.limit_width = canvas_width
+                    self.limit_height = canvas_height                    
+                    rect = ui.Rect(canvas_x, canvas_y, canvas_width, canvas_height)
+                elif (self.setup_type == "limit"):
+                    canvas_x = min(x, self.x) if self.setup_horizontal_direction == "left" else self.x
+                    canvas_y = min(y, self.y) if self.setup_vertical_direction == "up" else self.y
+                    self.limit_x = canvas_x
+                    self.limit_y = canvas_y
+                    self.limit_width = max(self.width, canvas_width)
+                    self.limit_height = max(self.height, canvas_height)
+                    
+                    rect = ui.Rect(canvas_x, canvas_y, self.limit_width, self.limit_height  )
             
                 self.canvas.set_rect(rect)
             elif (self.setup_type == "font_size"):
@@ -213,18 +258,40 @@ class BaseWidget(metaclass=ABCMeta):
         """Starts a setup mode that is used for moving, resizing and other various changes that the user might setup"""
         # Persist the user preferences when we end our setup
         if (self.setup_type != "" and not setup_type):
-            self.setup_type = setup_type
             rect = self.canvas.get_rect()
             
-            self.preferences.x = int(rect.x)
-            self.preferences.y = int(rect.y)
-            self.preferences.width = int(rect.width)
-            self.preferences.height = int(rect.height)
-            self.preferences.font_size = self.font_size
+            if (self.setup_type == "position"):
+                self.preferences.x = int(rect.x) if self.limit_x == self.x else int(rect.x - ( self.limit_x - self.x ))
+                self.preferences.y = int(rect.y) if self.limit_y == self.y else int(rect.y - ( self.limit_y - self.y ))
+                self.preferences.limit_x = int(rect.x)
+                self.preferences.limit_y = int(rect.y)
+            elif (self.setup_type == "dimension"):
+                self.preferences.x = int(rect.x)
+                self.preferences.y = int(rect.y)
+                self.preferences.width = int(rect.width)
+                self.preferences.height = int(rect.height)
+                self.preferences.limit_x = int(rect.x)
+                self.preferences.limit_y = int(rect.y)
+                self.preferences.limit_width = int(rect.width)
+                self.preferences.limit_height = int(rect.height)
+            elif (self.setup_type == "limit" ):
+                self.preferences.x = self.x
+                self.preferences.y = self.y
+                self.preferences.width = self.width
+                self.preferences.height = self.height
+                self.preferences.limit_x = int(rect.x)
+                self.preferences.limit_y = int(rect.y)
+                self.preferences.limit_width = int(rect.width)
+                self.preferences.limit_height = int(rect.height)
+            elif (self.setup_type == "font_size" ):
+                self.preferences.font_size = self.font_size
+            
+            self.setup_type = setup_type
             
             self.preferences.mark_changed = True
-            
+            self.canvas.resume()
             actions.user.persist_hud_preferences()
+        # Cancel every change
         elif setup_type == "cancel":
             if (self.setup_type != ""):
                 self.load({}, False)
@@ -237,6 +304,15 @@ class BaseWidget(metaclass=ABCMeta):
         # Start the setup state
         elif self.setup_type != setup_type:
             self.setup_type = setup_type
-            x, y = ctrl.mouse_pos()            
+            x, y = ctrl.mouse_pos()
+            
+            center_x = self.x + ( self.width / 2 )
+            center_y = self.y + ( self.height / 2 )
+            
+            # Determine the direction of the mouse from the widget
+            direction = Point2d(x - center_x, y - center_y)
+            self.setup_horizontal_direction = "left" if direction.x < 0 else "right"
+            self.setup_vertical_direction = "up" if direction.y < 0 else "down"            
+
             if (self.setup_type != ""):
                 self.mouse_move(ctrl.mouse_pos())
