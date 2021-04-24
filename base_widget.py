@@ -57,6 +57,9 @@ class BaseWidget(metaclass=ABCMeta):
             self.animation_tick = self.animation_max_duration if self.show_animations else 0
     
     def update_content(self, content):
+        if not self.sleep_enabled and "mode" in content and content["mode"] == "sleep":
+            self.disable()
+    
         self.refresh(content)
         for key in content:
             self.content[key] = content[key]
@@ -154,7 +157,7 @@ class BaseWidget(metaclass=ABCMeta):
             self.x = x
             self.y = y
             self.canvas.resume()
-        elif (self.setup_type == "dimension"):
+        elif (self.setup_type in ["dimension", "limit", "font_size"] ):
             x, y = pos
             center_x = self.x + ( self.width / 2 )
             center_y = self.y + ( self.height / 2 )
@@ -162,10 +165,7 @@ class BaseWidget(metaclass=ABCMeta):
             # Determine the direction of the mouse from the widget
             direction = Point2d(x - center_x, y - center_y)
             horizontal_direction = "left" if direction.x < 0 else "right"
-            vertical_direction = "up" if direction.y < 0 else "down"
-            
-            canvas_x = x if horizontal_direction == "left" else self.x
-            canvas_y = y if vertical_direction == "up" else self.y
+            vertical_direction = "up" if direction.y < 0 else "down"            
             
             # Determine the origin point of the widget which we should use for distance calculation with the current mouse position
             # Use the top right point if our mouse is to the bottom left of the widget and so on for every direction
@@ -176,16 +176,27 @@ class BaseWidget(metaclass=ABCMeta):
                 current_origin.y = self.y + self.height
                 
             total_direction = Point2d(x - current_origin.x, y - current_origin.y)
-            canvas_width = abs(total_direction.x)
-            canvas_height = abs(total_direction.y)
-            self.x = canvas_x
-            self.y = canvas_y
-            self.width = canvas_width
-            self.height = canvas_height
-            rect = ui.Rect(canvas_x, canvas_y, canvas_width, canvas_height)
             
             # There is a slight jitter when dealing with canvas resizes, maybe we should set the canvas as big as possible and just do drawing instead
-            self.canvas.set_rect(rect)
+            if (self.setup_type in ["dimension", "limit"]):
+                canvas_x = x if horizontal_direction == "left" else self.x
+                canvas_y = y if vertical_direction == "up" else self.y            
+                canvas_width = abs(total_direction.x)
+                canvas_height = abs(total_direction.y)
+                self.x = canvas_x
+                self.y = canvas_y
+                self.width = canvas_width
+                self.height = canvas_height
+                rect = ui.Rect(canvas_x, canvas_y, canvas_width, canvas_height)            
+            
+                self.canvas.set_rect(rect)
+            elif (self.setup_type == "font_size"):
+                total_distance = numpy.linalg.norm(numpy.array(total_direction))
+                
+                # This number is tested using the distance from the corner of the screen to the opposite corner, which is slightly more than 2000 pixels on a 1920*1080 screen
+                # Aiming for a rough max font size of about 72
+                scale_multiplier = 0.033
+                self.font_size = max(8, int(total_distance * scale_multiplier ))
             self.canvas.resume()
         
     def click(self, pos):
@@ -209,6 +220,8 @@ class BaseWidget(metaclass=ABCMeta):
             self.preferences.y = int(rect.y)
             self.preferences.width = int(rect.width)
             self.preferences.height = int(rect.height)
+            self.preferences.font_size = self.font_size
+            
             self.preferences.mark_changed = True
             
             actions.user.persist_hud_preferences()

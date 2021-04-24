@@ -89,7 +89,7 @@ class HeadUpEventLog(BaseWidget):
         # Dictation mode already shows the output directly as dictation
         # And we want to reduce screen clutter during sleep mode
         if ("mode" in new_content and new_content["mode"] != self.content['mode']):
-            if (new_content["mode"] != "command"):                
+            if (new_content["mode"] != "command"):
                 self.soft_disable()
             else:
                 self.soft_enabled = True

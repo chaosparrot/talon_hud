@@ -28,7 +28,6 @@ testing event log message:
 	user.add_hud_log("event", "What I like to drink most is wine that belongs to others")
 ```
 
-
 # Commands
 
 All the commands of this repository can be found in commands.talon . A brief rundown of the commands is listed here:
@@ -42,10 +41,11 @@ You can also target individual widgets like the status bar and event log for hid
 `head up hide <widget name>` hides the chosen widget
 
 On top of being able to turn widgets on and off, you can configure their attributes to your liking.
-Currently, you can change the size and position
+Currently, you can change the size, position and font size
 
 `head up drag <widget name>` starts dragging the widget
 `head up resize <widget name>` starts resizing the widget
+`head up text scale <widget name>` starts resizing the text in the widget
 `head up drop` confirms and saves the changes of your changed widgets
 `head up cancel` cancels the changes. Hiding a widget also discards of the current changes
 
@@ -92,8 +92,6 @@ These are ideas that I want to implement in no specific order and with no specif
 - An image panel with a header and a close icon which displays image content
 - WIP - Widget resizing ( width and height rather than a fixed scale ) using the mouse movement position relative to the widgets position
 - Widget expand limiting ( relying on the widget resizing above )
-- Widget font resizing relying on mouse movement for easy finetuning
-- Adding a default setting which hides a widget when sleep mode is activated to reduce screen clutter in a single command
 - Enabling and disabling animations using a voice command
 - User driven icons and buttons on the status bar instead of hard coded ones
 - A capture that checks what themes are available on app ready by checking the directories in themes

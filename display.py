@@ -98,7 +98,6 @@ class HeadUpDisplay:
                 widget.disable(True)
 
     def set_widget_preference(self, id, property, value, persisted=False):
-        print( id, property, value )
         for widget in self.widgets:
             if widget.id == id:
                 widget.set_preference(property, value, persisted)

@@ -9,6 +9,7 @@
 ^head up (hide|close) status bar$: user.disable_hud_id("status_bar")
 ^head up resize status bar$: user.set_hud_setup_mode("status_bar", "dimension")
 ^head up drag status bar$: user.set_hud_setup_mode("status_bar", "position")
+^head up text scale status bar$: user.set_hud_setup_mode("status_bar", "font_size")
 
 # Changable statusbar icon actions
 action(user.activate_statusbar_icon_mode): speech.disable()
@@ -18,6 +19,7 @@ action(user.activate_statusbar_icon_close): user.disable_hud()
 ^head up (hide|close) event log$: user.disable_hud_id("event_log")
 ^head up resize event log$: user.set_hud_setup_mode("event_log", "dimension")
 ^head up drag event log$: user.set_hud_setup_mode("event_log", "position")
+^head up text scale event log$: user.set_hud_setup_mode("event_log", "font_size")
 ^head up align event log right$: user.set_widget_preference("event_log", "alignment", "right")
 ^head up align event log left$: user.set_widget_preference("event_log", "alignment", "left")
 ^head up expand event log up$: user.set_widget_preference("event_log", "expand_direction", "up")

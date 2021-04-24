@@ -152,7 +152,7 @@ class HeadUpStatusBar(BaseWidget):
             text_colour =  self.theme.get_colour('text_forced_colour') if self.content["language"]["forced"] else self.theme.get_colour('text_colour')
             paint.shader = skia.Shader.linear_gradient(self.x, self.y, self.x, self.y + element_height, (text_colour, text_colour), None)
             paint.style = paint.Style.STROKE
-            paint.textsize = 24
+            paint.textsize = self.font_size
             text_x = self.x + circle_margin * 2 + ( len(self.icons) * ( icon_diameter + circle_margin ) )
             canvas.draw_text(self.content["language"]["ext"] if self.content["mode"] == "command" else "Dictate", text_x , height_center - circle_margin + paint.textsize / 2)
             paint.style = paint.Style.FILL
