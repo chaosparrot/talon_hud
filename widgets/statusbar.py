@@ -6,6 +6,9 @@ from user.talon_hud.widget_preferences import HeadUpDisplayUserWidgetPreferences
 
 class HeadUpStatusBar(BaseWidget):
 
+    allowed_setup_options = ["position", "dimension", "font_size"]
+    mouse_enabled = True
+
     # Defaults defined using a 1920x1080 screen
     # Where the status bar sits just above the time in Windows
     preferences = HeadUpDisplayUserWidgetPreferences(type="status_bar", x=1630, y=930, width=250, height=50, enabled=True, sleep_enabled=True)
@@ -18,9 +21,9 @@ class HeadUpStatusBar(BaseWidget):
     dwell_job = None
     icon_hover_activate_dwell_seconds = 1.5
     icon_positions = []
-    icons = ["mode"]    
+    icons = ["mode"]
     subscribed_content = ["mode", "language"]
-        
+
     content = {
         'mode': 'command',
         'language': {
@@ -32,13 +35,13 @@ class HeadUpStatusBar(BaseWidget):
     animation_max_duration = 60    
     
     def refresh(self, new_content):
-        if ("mode" in new_content and new_content["mode"] != self.content['mode']):            
+        if (self.animation_tick == 0 and "mode" in new_content and new_content["mode"] != self.content['mode']):            
             if (new_content["mode"] == 'command'):
                 self.blink_colour = self.command_blink_colour
             elif (new_content["mode"] == 'dictation'):
                 self.blink_colour = self.dictation_blink_colour
             elif (new_content["mode"] == 'sleep'):
-                self.blink_colour = self.sleep_blink_colour                
+                self.blink_colour = self.sleep_blink_colour
             
             # Calculate the colour difference between the blink and the next state
             # To make it easier to calculate during draw
@@ -47,21 +50,20 @@ class HeadUpStatusBar(BaseWidget):
                 self.background_colour[1] - self.blink_colour[1],
                 self.background_colour[2] - self.blink_colour[2]
             ]
-            
+        
             self.blink_state = 100 if self.show_animations else 0
         
-    def mouse_move(self, pos):
-        super().mouse_move(pos)
+    def on_mouse(self, event):
+        pos = numpy.array(event.gpos)
         
-        if (self.setup_type == ""):
-            # Hit detection of buttons
-            pos = numpy.array(pos)
-            hover_index = -1
-            for index, icon in enumerate(self.icon_positions):
-                if (numpy.linalg.norm(pos - numpy.array([icon['center_x'], icon['center_y']])) < icon['radius']):
-                    hover_index = index
-                    break
-                        
+        # Hit detection of buttons        
+        hover_index = -1
+        for index, icon in enumerate(self.icon_positions):
+            if (numpy.linalg.norm(pos - numpy.array([icon['center_x'], icon['center_y']])) < icon['radius']):
+                hover_index = index
+                break
+        
+        if (event.event == "mousemove"):
             # Only resume for a frame if our button state has changed
             if (self.icon_hover_index != hover_index):
                 self.icon_hover_index = hover_index
@@ -71,15 +73,26 @@ class HeadUpStatusBar(BaseWidget):
                     self.dwell_job = cron.interval( str(int(self.icon_hover_activate_dwell_seconds * 1000)) + 'ms', self.activate_icon)
                 
                 self.canvas.resume()
+        # Click a button instantly
+        elif (event.event == "mouseup" and event.button == 0):
+            self.icon_hover_index = hover_index
+            self.activate_icon()
+            
     
     def activate_icon(self):
         cron.cancel(self.dwell_job)
     
-        if self.icon_hover_index < len(self.icon_positions):
+        if self.icon_hover_index < len(self.icon_positions) and self.icon_hover_index > -1:
             if (self.icon_positions[self.icon_hover_index]['action'] == "mode"):
                 actions.user.activate_statusbar_icon_mode()
             elif (self.icon_positions[self.icon_hover_index]['action'] == "close"):
                 actions.user.activate_statusbar_icon_close()
+        self.icon_hover_index = -1
+                
+    def enable(self, persist=False):
+        if not self.enabled:
+            self.reset_blink()
+            super().enable(persist)
     
     def load_theme_values(self):
         # TODO PROPER IMAGE SCALING OF THE LOADED TEMPLATE
@@ -89,11 +102,7 @@ class HeadUpStatusBar(BaseWidget):
         self.background_colour = self.theme.get_colour_as_ints('background_colour')
         self.intro_animation_start_colour = self.theme.get_colour_as_ints('intro_animation_start_colour')
         self.intro_animation_end_colour = self.theme.get_colour_as_ints('intro_animation_end_colour')
-        self.blink_difference = [
-            self.intro_animation_end_colour[0] - self.intro_animation_start_colour[0],
-            self.intro_animation_end_colour[1] - self.intro_animation_start_colour[1],
-            self.intro_animation_end_colour[2] - self.intro_animation_start_colour[2]
-        ]        
+        self.reset_blink()
     
     def draw(self, canvas) -> bool:
         paint = self.draw_setup_mode(canvas)
@@ -102,7 +111,7 @@ class HeadUpStatusBar(BaseWidget):
         circle_margin = 4
         element_height = self.height - ( stroke_width * 2 )
         icon_diameter = self.height - ( circle_margin * 2 )
-        element_width = self.width        
+        element_width = self.width 
         
         # Draw the background with bigger stroke than 1px
         stroke_colours = (self.theme.get_colour('top_stroke_colour'), self.theme.get_colour('down_stroke_colour'))
@@ -164,6 +173,10 @@ class HeadUpStatusBar(BaseWidget):
         close_icon_diameter = icon_diameter / 2
         self.draw_icon(canvas, self.x + element_width - close_icon_diameter - close_icon_diameter / 2 - stroke_width, height_center - close_icon_diameter / 2, close_icon_diameter, paint, 'close' )
 
+        # Reset the blink colour when the blink is finished
+        if not continue_drawing:
+            self.reset_blink()
+
         return continue_drawing
                 
     def draw_animation(self, canvas, animation_tick) -> bool:
@@ -183,7 +196,7 @@ class HeadUpStatusBar(BaseWidget):
         green_hex = '0' + format(green, 'x') if green <= 15 else format(green, 'x')
         blue_hex = '0' + format(blue, 'x') if blue <= 15 else format(blue, 'x')
         paint.color = red_hex + green_hex + blue_hex
-        
+
         # Centers of the growing bar
         width_center = self.x + (end_element_width - element_width ) / 2
         height_center = self.y + (end_element_height - element_height ) / 2
@@ -220,6 +233,14 @@ class HeadUpStatusBar(BaseWidget):
                 
         self.icon_positions.append({'image': '', 'action': action, 'center_x': origin_x + radius, 'center_y': origin_y + radius, 'radius': radius})
         
+    def reset_blink(self):
+        self.blink_state = 0
+        self.blink_colour = [0, 0, 0]
+        self.blink_difference = [
+            self.intro_animation_end_colour[0] - self.intro_animation_start_colour[0],
+            self.intro_animation_end_colour[1] - self.intro_animation_start_colour[1],
+            self.intro_animation_end_colour[2] - self.intro_animation_start_colour[2]
+        ]
         
 mod = Module()
 @mod.action_class

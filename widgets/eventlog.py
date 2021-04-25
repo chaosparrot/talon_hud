@@ -10,8 +10,9 @@ class HeadUpEventLog(BaseWidget):
     content = {
         'mode': 'command'
     }
-
     subscribed_logs = ['*']
+    allowed_setup_options = ["position", "dimension", "limit", "font_size"]    
+    
     visual_logs = []
     visual_log_length = 0
 
@@ -59,14 +60,17 @@ class HeadUpEventLog(BaseWidget):
             self.soft_disable()
             super().disable(persisted)
             
-            if self.ttl_poller:
-                cron.cancel(self.ttl_poller)
-                self.ttl_poller = None
+            cron.cancel(self.ttl_poller)
+            self.ttl_poller = None
             
     def enable(self, persisted=False):
         if not self.enabled:
             self.soft_enabled = self.content['mode'] == 'command'
             super().enable(persisted)
+
+    def clear(self):
+        super().clear()
+        self.visual_logs = []
 
     # Clean out all the logs still visible on the screen    
     def soft_disable(self):
@@ -190,13 +194,15 @@ class HeadUpEventLog(BaseWidget):
                 for index, line in enumerate(lines):
                     canvas.draw_text(line, text_x, current_y + line_height + index * vertical_text_padding + index * line_height )
                 
-            
             return continue_drawing
         else:
             return False
         
     def draw_animation(self, canvas, animation_tick):
-        return self.enabled
+        if self.enabled:
+            return True
+        else:
+            return self.draw(canvas)
 
     def draw_background(self, canvas, origin_x, origin_y, width, height, paint):
         radius = 5

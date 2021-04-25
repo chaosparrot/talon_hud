@@ -15,7 +15,9 @@ However, if you have a different user folder, you can look at the knausj_binding
 The status bar
 
 This widget will display the current Talon mode ( Command, dictation or sleep ) and will display the detected or forced language.
-The default action of dwelling on the mode icon puts Talon in sleep mode after 1.5 seconds, and the close icon closes the HUD. These actions can be overridden in .talon files.
+The default action of dwelling on the mode icon puts Talon in sleep mode after 1.5 seconds, and the close icon closes the HUD. 
+The buttons can also be clicked to activate the dwell action immediately.
+These actions can be overridden in .talon files.
 
 The event log
 
@@ -102,8 +104,11 @@ These are ideas that I want to implement in no specific order and with no specif
 - An image panel with a header and a close icon which displays image content
 - User driven icons and buttons on the status bar instead of hard coded ones
 - A capture that checks what themes are available on app ready by checking the directories in themes
-- Mouse drag and drop, button clicking and other things you would expect in a library like this, instead of polling every so often for changes
+
+- Mouse drag and drop for widgets that have mouse enabled
+
 - Multiscreen setups and how to best work with those, maybe with multiple preference files per monitor
+- Multi-drag to drag every widget simultaniously
 
 If any of these ideas seem cool for you to work on, give me a message on the talon slack so we can coordinate stuff.
 

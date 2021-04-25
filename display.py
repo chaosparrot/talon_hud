@@ -52,7 +52,7 @@ class HeadUpDisplay:
             
             self.display_state.register('content_update', self.content_update)
             self.display_state.register('log_update', self.log_update)
-            self.mouse_poller = cron.interval('100ms', self.poll_mouse_pos)
+            self.determine_active_setup_mouse()            
             if persisted:
                 self.preferences.persist_preferences({'enabled': True})
 
@@ -67,13 +67,11 @@ class HeadUpDisplay:
             if self.poller:
                 self.disable_poller_job = cron.interval('30ms', self.disable_poller_check)                
             
-            cron.cancel(self.mouse_poller)
-            self.mouse_poller = None
-            
             self.display_state.unregister('content_update', self.content_update)
-            self.display_state.unregister('log_update', self.log_update)            
+            self.display_state.unregister('log_update', self.log_update)
+            self.determine_active_setup_mouse()
             self.preferences.persist_preferences({'enabled': False})
-    
+        
     # Persist the preferences of all the widgets
     def persist_widgets_preferences(self):
         dict = {}
@@ -82,6 +80,7 @@ class HeadUpDisplay:
                 dict = {**dict, **widget.preferences.export(widget.id)}
                 widget.preferences.mark_changed = False
         self.preferences.persist_preferences(dict)
+        self.determine_active_setup_mouse()        
     
     def enable_id(self, id):
         if not self.enabled:
@@ -95,11 +94,13 @@ class HeadUpDisplay:
         for widget in self.widgets:
             if widget.enabled and widget.id == id:
                 widget.disable(True)
+        self.determine_active_setup_mouse()
 
     def set_widget_preference(self, id, property, value, persisted=False):
         for widget in self.widgets:
             if widget.id == id:
                 widget.set_preference(property, value, persisted)
+        self.determine_active_setup_mouse()
 
     def switch_theme(self, theme_name):
         if (self.theme.name != theme_name):
@@ -114,6 +115,8 @@ class HeadUpDisplay:
             if widget.enabled and ( id == "*" or widget.id == id ) and widget.setup_type != setup_type:
                 widget.start_setup(setup_type)
                 
+        self.determine_active_setup_mouse()
+                
     # Check if the widgets are finished unloading, then disable the poller
     # This should only run when we have a state poller
     def disable_poller_check(self):
@@ -125,7 +128,7 @@ class HeadUpDisplay:
         
         if not enabled:
             if self.poller:
-                self.poller.disable()            
+                self.poller.disable()
                 cron.cancel(self.disable_poller_job)
                 self.disable_poller_job = None
         
@@ -144,17 +147,31 @@ class HeadUpDisplay:
         for widget in self.widgets:
             if new_log['type'] in widget.subscribed_logs or '*' in widget.subscribed_logs:
                 widget.append_log(new_log)
-                
-    # Send mouse events to enabled widgets
-    def poll_mouse_pos(self):
+
+    # Determine whether or not we need to have a global mouse poller
+    # This poller is needed for setup modes as not all canvases block the mouse
+    def determine_active_setup_mouse(self):
+        has_setup_modes = False
+        for widget in self.widgets:
+            if (widget.setup_type not in ["", "mouse_drag"]):
+                has_setup_modes = True
+                break
+    
+        if has_setup_modes and not self.mouse_poller:
+            self.mouse_poller = cron.interval('16ms', self.poll_mouse_pos_for_setup)
+        if not has_setup_modes and self.mouse_poller:
+            cron.cancel(self.mouse_poller)
+            self.mouse_poller = None
+
+    # Send mouse events to enabled widgets that have an active setup going on
+    def poll_mouse_pos_for_setup(self):
         pos = ctrl.mouse_pos()
         
         if (self.prev_mouse_pos is None or numpy.linalg.norm(numpy.array(pos) - numpy.array(self.prev_mouse_pos)) > 1):
             self.prev_mouse_pos = pos
             for widget in self.widgets:
-                if widget.enabled:
-                    widget.mouse_move(self.prev_mouse_pos)
-
+                if widget.enabled and widget.setup_type != "":
+                    widget.setup_move(self.prev_mouse_pos)
 
 def create_hud():
     global hud

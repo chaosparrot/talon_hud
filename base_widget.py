@@ -6,15 +6,16 @@ from user.talon_hud.widget_preferences import HeadUpDisplayUserWidgetPreferences
 
 class BaseWidget(metaclass=ABCMeta):
     id = None
-    x = None
-    y = None
-    width = None
-    height = None
     canvas = None
     cleared = True
     enabled = False
     theme = None
     preferences = None
+    
+    # Enables receiving of mouse events - Note, this blocks all the mouse events on the canvas so make sure the canvas stays as small as possible to avoid 'dead areas'
+    mouse_enabled = False
+    
+    allowed_setup_options = ["position", "dimension", "limit", "font_size"]
     subscribed_content = ['mode']
     subscribed_logs = []
     content = {}
@@ -30,7 +31,6 @@ class BaseWidget(metaclass=ABCMeta):
         self.id = id
         self.theme = theme
         self.load(preferences_dict)
-        self.load_theme_values()
             
     # Load the widgets preferences
     def load(self, dict, initialize = True):
@@ -48,9 +48,10 @@ class BaseWidget(metaclass=ABCMeta):
         self.font_size = self.preferences.font_size
         self.alignment = self.preferences.alignment
         self.expand_direction = self.preferences.expand_direction
-        
+
         if (initialize and self.preferences.enabled):
-            self.enable()        
+            self.load_theme_values()        
+            self.enable()
     
     def set_theme(self, theme):
         self.theme = theme
@@ -60,8 +61,11 @@ class BaseWidget(metaclass=ABCMeta):
             self.animation_tick = self.animation_max_duration if self.show_animations else 0
     
     def update_content(self, content):
-        if not self.sleep_enabled and "mode" in content and content["mode"] == "sleep":
-            self.disable()
+        if not self.sleep_enabled and "mode" in content:
+            if (content["mode"] == "sleep"):            
+                self.disable()
+            elif self.preferences.enabled == True:
+                self.enable()
     
         self.refresh(content)
         for key in content:
@@ -78,14 +82,22 @@ class BaseWidget(metaclass=ABCMeta):
             self.animation_tick = self.animation_max_duration if self.show_animations else 0
             self.canvas.resume()
             
+            if self.mouse_enabled:
+                self.canvas.blocks_mouse = True
+                self.canvas.register('mouse', self.on_mouse)
+            
             if persisted:
                 self.preferences.enabled = True
                 self.preferences.mark_changed = True
                 actions.user.persist_hud_preferences()
             self.cleared = False
-            
+                        
     def disable(self, persisted=False):
         if self.enabled:
+            if self.mouse_enabled:
+                self.canvas.blocks_mouse = False
+                self.canvas.unregister('mouse', self.on_mouse)
+        
             self.enabled = False
             self.animation_tick = -self.animation_max_duration if self.show_animations else 0
             self.canvas.resume()
@@ -168,6 +180,10 @@ class BaseWidget(metaclass=ABCMeta):
             canvas.draw_line(leftmost, bottommost, leftmost, topmost)
         return paint    
     
+    def on_mouse(self, event):
+        """This is where the mouse events get sent if mouse_enabled is set to True"""
+        pass
+    
     def draw(self, canvas) -> bool:
         """Implement your canvas drawing logic here, returning False will stop the rendering, returning True will continue it"""
         return False
@@ -179,9 +195,80 @@ class BaseWidget(metaclass=ABCMeta):
     def refresh(self, new_content):
         """Implement your state changing logic here, for example, when a mode is changed"""
         pass
+        
+    def load_theme_values(self):
+        """Respond to theme load ins here"""    
+        pass
+        
+    def start_setup(self, setup_type):
+        """Starts a setup mode that is used for moving, resizing and other various changes that the user might setup"""    
+        if (setup_type not in self.allowed_setup_options and setup_type not in ["", "cancel"] ):
+            return
     
-    def mouse_move(self, pos):
-        """Mouse move events will be sent here whenever they change to update the UI if neccesary"""
+        # Persist the user preferences when we end our setup
+        if (self.setup_type != "" and not setup_type):
+            rect = self.canvas.get_rect()
+            
+            if (self.setup_type == "position"):
+                self.preferences.x = int(rect.x) if self.limit_x == self.x else int(rect.x - ( self.limit_x - self.x ))
+                self.preferences.y = int(rect.y) if self.limit_y == self.y else int(rect.y - ( self.limit_y - self.y ))
+                self.preferences.limit_x = int(rect.x)
+                self.preferences.limit_y = int(rect.y)
+            elif (self.setup_type == "dimension"):
+                self.preferences.x = int(rect.x)
+                self.preferences.y = int(rect.y)
+                self.preferences.width = int(rect.width)
+                self.preferences.height = int(rect.height)
+                self.preferences.limit_x = int(rect.x)
+                self.preferences.limit_y = int(rect.y)
+                self.preferences.limit_width = int(rect.width)
+                self.preferences.limit_height = int(rect.height)
+            elif (self.setup_type == "limit" ):
+                self.preferences.x = self.x
+                self.preferences.y = self.y
+                self.preferences.width = self.width
+                self.preferences.height = self.height
+                self.preferences.limit_x = int(rect.x)
+                self.preferences.limit_y = int(rect.y)
+                self.preferences.limit_width = int(rect.width)
+                self.preferences.limit_height = int(rect.height)
+            elif (self.setup_type == "font_size" ):
+                self.preferences.font_size = self.font_size
+            
+            self.setup_type = setup_type
+            
+            self.preferences.mark_changed = True
+            self.canvas.resume()
+            actions.user.persist_hud_preferences()
+        # Cancel every change
+        elif setup_type == "cancel":
+            if (self.setup_type != ""):
+                self.load({}, False)
+                
+                if self.canvas:
+                    rect = ui.Rect(self.x, self.y, self.width, self.height)                    
+                    self.canvas.set_rect(rect)
+                
+                self.setup_type = ""
+                self.canvas.resume()
+        # Start the setup state
+        elif self.setup_type != setup_type:
+            self.setup_type = setup_type
+            x, y = ctrl.mouse_pos()
+            
+            center_x = self.x + ( self.width / 2 )
+            center_y = self.y + ( self.height / 2 )
+            
+            # Determine the direction of the mouse from the widget
+            direction = Point2d(x - center_x, y - center_y)
+            self.setup_horizontal_direction = "left" if direction.x < 0 else "right"
+            self.setup_vertical_direction = "up" if direction.y < 0 else "down"            
+
+            if (self.setup_type != ""):
+                self.setup_move(ctrl.mouse_pos())
+                
+    def setup_move(self, pos):
+        """Responds to global mouse movements when a widget is in a setup mode"""
         if (self.setup_type == "position"):
             x, y = pos
             horizontal_diff = x - self.limit_x
@@ -243,76 +330,4 @@ class BaseWidget(metaclass=ABCMeta):
                 scale_multiplier = 0.033
                 self.font_size = max(8, int(total_distance * scale_multiplier ))
             self.canvas.resume()
-        
-    def click(self, pos):
-        """Responds to click or dwell actions"""
-        # Confirm the setup
-        if (self.setup_type != None):
-            self.start_setup(None)
-        
-    def load_theme_values(self):
-        """Respond to theme load ins here"""    
-        pass
-        
-    def start_setup(self, setup_type):
-        """Starts a setup mode that is used for moving, resizing and other various changes that the user might setup"""
-        # Persist the user preferences when we end our setup
-        if (self.setup_type != "" and not setup_type):
-            rect = self.canvas.get_rect()
-            
-            if (self.setup_type == "position"):
-                self.preferences.x = int(rect.x) if self.limit_x == self.x else int(rect.x - ( self.limit_x - self.x ))
-                self.preferences.y = int(rect.y) if self.limit_y == self.y else int(rect.y - ( self.limit_y - self.y ))
-                self.preferences.limit_x = int(rect.x)
-                self.preferences.limit_y = int(rect.y)
-            elif (self.setup_type == "dimension"):
-                self.preferences.x = int(rect.x)
-                self.preferences.y = int(rect.y)
-                self.preferences.width = int(rect.width)
-                self.preferences.height = int(rect.height)
-                self.preferences.limit_x = int(rect.x)
-                self.preferences.limit_y = int(rect.y)
-                self.preferences.limit_width = int(rect.width)
-                self.preferences.limit_height = int(rect.height)
-            elif (self.setup_type == "limit" ):
-                self.preferences.x = self.x
-                self.preferences.y = self.y
-                self.preferences.width = self.width
-                self.preferences.height = self.height
-                self.preferences.limit_x = int(rect.x)
-                self.preferences.limit_y = int(rect.y)
-                self.preferences.limit_width = int(rect.width)
-                self.preferences.limit_height = int(rect.height)
-            elif (self.setup_type == "font_size" ):
-                self.preferences.font_size = self.font_size
-            
-            self.setup_type = setup_type
-            
-            self.preferences.mark_changed = True
-            self.canvas.resume()
-            actions.user.persist_hud_preferences()
-        # Cancel every change
-        elif setup_type == "cancel":
-            if (self.setup_type != ""):
-                self.load({}, False)
-                
-                if self.canvas:
-                    rect = ui.Rect(self.x, self.y, self.width, self.height)                    
-                    self.canvas.set_rect(rect)
-                
-                self.setup_type = ""
-        # Start the setup state
-        elif self.setup_type != setup_type:
-            self.setup_type = setup_type
-            x, y = ctrl.mouse_pos()
-            
-            center_x = self.x + ( self.width / 2 )
-            center_y = self.y + ( self.height / 2 )
-            
-            # Determine the direction of the mouse from the widget
-            direction = Point2d(x - center_x, y - center_y)
-            self.setup_horizontal_direction = "left" if direction.x < 0 else "right"
-            self.setup_vertical_direction = "up" if direction.y < 0 else "down"            
-
-            if (self.setup_type != ""):
-                self.mouse_move(ctrl.mouse_pos())
+ 
