@@ -49,8 +49,10 @@ class BaseWidget(metaclass=ABCMeta):
         self.alignment = self.preferences.alignment
         self.expand_direction = self.preferences.expand_direction
 
-        if (initialize and self.preferences.enabled):
+        if initialize:
             self.load_theme_values()        
+
+        if (initialize and self.preferences.enabled and ('enabled' in dict and dict['enabled'])):
             self.enable()
     
     def set_theme(self, theme):

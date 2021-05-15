@@ -70,7 +70,9 @@ class HeadUpDisplay:
             self.display_state.unregister('content_update', self.content_update)
             self.display_state.unregister('log_update', self.log_update)
             self.determine_active_setup_mouse()
-            self.preferences.persist_preferences({'enabled': False})
+            
+            if persisted:
+                self.preferences.persist_preferences({'enabled': False})
         
     # Persist the preferences of all the widgets
     def persist_widgets_preferences(self):
