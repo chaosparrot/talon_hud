@@ -29,9 +29,10 @@ class KnausjStatePoller:
     def state_check(self):
         content = {
             'mode': self.determine_mode(),
-            'language': {
-                'ext': self.get_lang_extension(self.determine_language()),
-                'forced': self.current_lang_forced
+            'language': self.determine_language(),
+            'programming_language': {
+                'ext': self.get_lang_extension(self.determine_programming_language()),
+                'forced': self.current_lang_forced and self.determine_mode() != "dictation"
             }
         }
         
@@ -84,9 +85,9 @@ class KnausjStatePoller:
     }
     
     # Determine the forced or assumed language
-    def determine_language(self): 
+    def determine_programming_language(self): 
         lang = actions.code.language()
-        if (not lang):
+        if (not lang):  
             active_modes = scope.get('mode')
             if (active_modes is not None):
                 for index, active_mode in enumerate(active_modes):
@@ -97,6 +98,9 @@ class KnausjStatePoller:
         else:
             self.current_lang_forced = False
             return lang if lang else ""
+        
+    def determine_language(self):
+        return scope.get('language')
         
     def get_lang_extension(self, language):
         if (language in self.language_to_ext):

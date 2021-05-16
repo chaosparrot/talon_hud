@@ -16,10 +16,6 @@
 ^head up hide status bar on sleep$: user.set_widget_preference("status_bar", "sleep_enabled", 0)
 ^head up show status bar on sleep$: user.set_widget_preference("status_bar", "sleep_enabled", 1)
 
-# Changable statusbar icon actions
-action(user.activate_statusbar_icon_mode): speech.disable()
-action(user.activate_statusbar_icon_close): user.disable_hud()
-
 # Event log commands
 ^head up (show|open) event log$: user.enable_hud_id("event_log")
 ^head up (hide|close) event log$: user.disable_hud_id("event_log")

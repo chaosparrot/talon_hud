@@ -21,18 +21,24 @@ class HeadUpStatusBar(BaseWidget):
     dwell_job = None
     icon_hover_activate_dwell_seconds = 1.5
     icon_positions = []
-    icons = ["mode"]
-    subscribed_content = ["mode", "language"]
+    icons = []
+    subscribed_content = [
+        "mode",
+        "programming_language",
+        "status_icons"
+    ]
 
     content = {
         'mode': 'command',
-        'language': {
+        'language': 'en_US', 
+        'programming_language': {
             'ext': None,
             'forced': False
-        }
+        },
+        "status_icons": []        
     }
     
-    animation_max_duration = 60    
+    animation_max_duration = 60
     
     def refresh(self, new_content):
         if (self.animation_tick == 0 and "mode" in new_content and new_content["mode"] != self.content['mode']):            
@@ -51,7 +57,32 @@ class HeadUpStatusBar(BaseWidget):
                 self.background_colour[2] - self.blink_colour[2]
             ]
         
-            self.blink_state = 100 if self.show_animations else 0
+            self.blink_state = 100 if self.show_animations else 0        
+        self.update_icons(new_content)
+    
+    def update_icons(self, new_content):
+        mode = self.content["mode"] if "mode" not in new_content else new_content["mode"]
+    
+        self.icons = [{
+            "id": "mode",
+            "image": mode + "_icon",
+            "clickable": mode != "sleep",
+            "explanation": "" # TODO USE THIS FOR TOOLTIPS / HELP MENUS
+        }]
+                
+        if "language" in self.subscribed_content:
+            language = self.content["language"] if "language" not in new_content else new_content["language"]
+            
+            self.icons.append({
+                "id": "language",
+                "image": language,
+                "clickable": language != 'en_US',
+                "explanation": "" # TODO USE THIS FOR TOOLTIPS / HELP MENUS
+            })
+            
+        status_icons = self.content["status_icons"] if "status_icons" not in new_content else new_content['status_icons']
+        for status_icon in status_icons:
+            self.icons.append(status_icon)
         
     def on_mouse(self, event):
         pos = numpy.array(event.gpos)
@@ -78,20 +109,17 @@ class HeadUpStatusBar(BaseWidget):
             self.icon_hover_index = hover_index
             self.activate_icon()
             
-    
     def activate_icon(self):
         cron.cancel(self.dwell_job)
     
         if self.icon_hover_index < len(self.icon_positions) and self.icon_hover_index > -1:
-            if (self.icon_positions[self.icon_hover_index]['action'] == "mode"):
-                actions.user.activate_statusbar_icon_mode()
-            elif (self.icon_positions[self.icon_hover_index]['action'] == "close"):
-                actions.user.activate_statusbar_icon_close()
+            actions.user.activate_statusbar_icon(self.icon_positions[self.icon_hover_index]['icon']['id'])
         self.icon_hover_index = -1
                 
     def enable(self, persist=False):
         if not self.enabled:
             self.reset_blink()
+            self.update_icons({})
             super().enable(persist)
     
     def load_theme_values(self):
@@ -141,37 +169,36 @@ class HeadUpStatusBar(BaseWidget):
 
         # Draw icons
         for index, icon in enumerate(self.icons):
-            button_colour = self.theme.get_colour('button_hover_colour') if self.icon_hover_index == index else self.theme.get_colour('button_colour')
-            paint.shader = skia.Shader.linear_gradient(self.x, self.y, self.x, self.y + element_height, (self.theme.get_colour('button_colour'), button_colour), None)
-            if ( index == 0 and self.content["mode"] == 'sleep' ):
+            if (not icon['clickable']):
                 paint.shader = background_shader
+            else:
+                button_colour = self.theme.get_colour('button_hover_colour') if self.icon_hover_index == index else self.theme.get_colour('button_colour')
+                paint.shader = skia.Shader.linear_gradient(self.x, self.y, self.x, self.y + element_height, (self.theme.get_colour('button_colour'), button_colour), None)                
             
-            image_name = None
-            if ( index == 0 ):
-                image_name = self.content["mode"]+ '_icon'
-            
-            self.draw_icon(canvas, self.x + stroke_width + circle_margin + ( index * icon_diameter ) + ( index * circle_margin ), self.y + circle_margin, icon_diameter, paint, 'mode', image_name )
+            # Do not draw icons or buttons without a valid image
+            if icon['image'] is not None and self.theme.get_image(icon['image']) is not None:
+                self.draw_icon(canvas, self.x + stroke_width + circle_margin + ( index * icon_diameter ) + ( index * circle_margin ), self.y + circle_margin, icon_diameter, paint, icon)
 
         height_center = self.y + element_height + ( circle_margin / 2 ) - ( element_height / 2 )
 
-        # Draw selected language
+        # Draw selected programming language
         # TODO - FAKE BOLD until I find out how to properly use font style
-        if ((self.content["mode"] == "command" and self.content["language"]["ext"] is not None) or self.content["mode"] == "dictation"):
-            text_colour =  self.theme.get_colour('text_forced_colour') if self.content["language"]["forced"] else self.theme.get_colour('text_colour')
+        if ((self.content["mode"] == "command" and self.content["programming_language"]["ext"] is not None) or self.content["mode"] == "dictation"):
+            text_colour =  self.theme.get_colour('text_forced_colour') if self.content["programming_language"]["forced"] else self.theme.get_colour('text_colour')
             paint.shader = skia.Shader.linear_gradient(self.x, self.y, self.x, self.y + element_height, (text_colour, text_colour), None)
             paint.style = paint.Style.STROKE
             paint.textsize = self.font_size
             text_x = self.x + circle_margin * 2 + ( len(self.icons) * ( icon_diameter + circle_margin ) )
-            canvas.draw_text(self.content["language"]["ext"] if self.content["mode"] == "command" else "Dictate", text_x , height_center - circle_margin + paint.textsize / 2)
+            canvas.draw_text(self.content["programming_language"]["ext"] if self.content["mode"] == "command" else "Dictate", text_x , height_center - circle_margin + paint.textsize / 2)
             paint.style = paint.Style.FILL
-            canvas.draw_text(self.content["language"]["ext"] if self.content["mode"] == "command" else "Dictate", text_x, height_center - circle_margin + paint.textsize / 2)
+            canvas.draw_text(self.content["programming_language"]["ext"] if self.content["mode"] == "command" else "Dictate", text_x, height_center - circle_margin + paint.textsize / 2)
 
         # Draw closing icon
         paint.style = paint.Style.FILL
         close_colour = self.theme.get_colour('close_icon_hover_colour') if self.icon_hover_index == len(self.icons) else self.theme.get_colour('close_icon_accent_colour')
         paint.shader = skia.Shader.linear_gradient(self.x, self.y, self.x, self.y + element_height, (self.theme.get_colour('close_icon_colour'), close_colour), None)
         close_icon_diameter = icon_diameter / 2
-        self.draw_icon(canvas, self.x + element_width - close_icon_diameter - close_icon_diameter / 2 - stroke_width, height_center - close_icon_diameter / 2, close_icon_diameter, paint, 'close' )
+        self.draw_icon(canvas, self.x + element_width - close_icon_diameter - close_icon_diameter / 2 - stroke_width, height_center - close_icon_diameter / 2, close_icon_diameter, paint, {'id': 'close', 'image': None})
 
         # Reset the blink colour when the blink is finished
         if not continue_drawing:
@@ -224,14 +251,14 @@ class HeadUpStatusBar(BaseWidget):
         rrect = skia.RoundRect.from_rect(rect, x=radius, y=radius)
         canvas.draw_rrect(rrect)
         
-    def draw_icon(self, canvas, origin_x, origin_y, diameter, paint, action, image_name = None ):
+    def draw_icon(self, canvas, origin_x, origin_y, diameter, paint, icon ):
         radius = diameter / 2
         canvas.draw_circle( origin_x + radius, origin_y + radius, radius, paint)
-        if (image_name is not None):
-            image = self.theme.get_image(image_name)
+        if (icon['image'] is not None and self.theme.get_image(icon['image']) is not None ):
+            image = self.theme.get_image(icon['image'])
             canvas.draw_image(image, origin_x + radius - image.width / 2, origin_y + radius - image.height / 2 )
                 
-        self.icon_positions.append({'image': '', 'action': action, 'center_x': origin_x + radius, 'center_y': origin_y + radius, 'radius': radius})
+        self.icon_positions.append({'icon': icon, 'center_x': origin_x + radius, 'center_y': origin_y + radius, 'radius': radius})
         
     def reset_blink(self):
         self.blink_state = 0
@@ -245,11 +272,12 @@ class HeadUpStatusBar(BaseWidget):
 mod = Module()
 @mod.action_class
 class Actions:
-        
-    def activate_statusbar_icon_mode():
-        """Executes an action when the mode icon is pressed"""
-        pass
-        
-    def activate_statusbar_icon_close():
-        """Executes an action when the close icon is pressed"""
-        pass 
+    
+    def activate_statusbar_icon(id: str):
+        """Activate an icon on the status bar"""
+        if (id == "mode"):
+            actions.speech.disable()
+        elif (id == "language"):
+            actions.speech.switch_language('en_US')
+        elif (id == "close"):
+            actions.user.disable_hud()

@@ -17,7 +17,34 @@ The status bar
 This widget will display the current Talon mode ( Command, dictation or sleep ) and will display the detected or forced language.
 The default action of dwelling on the mode icon puts Talon in sleep mode after 1.5 seconds, and the close icon closes the HUD. 
 The buttons can also be clicked to activate the dwell action immediately.
-These actions can be overridden in .talon files.
+
+You can customize the status bar in multiple ways
+- You can add the current natural languge by uncommenting line 42 from the display.py file
+- You can change the functionality of the icons by changing the activate_statusbar_icon action in the widgets/statusbar.py file all the way at the bottom.
+- You can add your own non-clickable icons to the statusbar as well, like in the example .talon file below
+
+```
+^Frikandel$: 
+	user.add_status_icon("food", "nl_NL", "Dutch food")
+^English breakfast$: 
+	user.add_status_icon("food", "en_US", "English food")
+^Doner kebab$: 
+	user.add_status_icon("food", "de_DE", "German food")
+^Croque madame$: 
+	user.add_status_icon("food", "fr_FR", "French food")
+^Pizza pepperoni$: 
+	user.add_status_icon("food", "it_IT", "Italian food")
+^Cheburek$: 
+	user.add_status_icon("food", "ru_RU", "Russian food")
+^Pierogi$: 
+	user.add_status_icon("food", "pl_PL", "Polish food")
+^Souflaki$: 
+	user.add_status_icon("food", "el_GR", "Greek food")
+^Churros$: 
+	user.add_status_icon("food", "es_ES", "Spanish food")
+^I am not hungry$: 
+	user.remove_status_icon("food")
+```
 
 The event log
 
@@ -102,7 +129,6 @@ These are ideas that I want to implement in no specific order and with no specif
 - A fallback text panel that shows every content update that isn't specifically registered by another text panel
 - An indicator widget that follows the cursor around to show a single state that is important to the current task at hand
 - An image panel with a header and a close icon which displays image content
-- User driven icons and buttons on the status bar instead of hard coded ones
 - A capture that checks what themes are available on app ready by checking the directories in themes
 
 - Mouse drag and drop for widgets that have mouse enabled
@@ -115,3 +141,6 @@ If any of these ideas seem cool for you to work on, give me a message on the tal
 # Acknowledgements
 
 The icons used are taken from https://icons.getbootstrap.com/.
+
+The language icons are made by https://www.freepik.com hosted on https://www.flaticon.com/.
+If your language isn't in the themes, you can download icons for free with attribution of freepik.com and change their size to 35x35 before saving them as a .png file in your theme.

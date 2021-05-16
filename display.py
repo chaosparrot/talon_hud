@@ -37,6 +37,10 @@ class HeadUpDisplay:
             HeadUpStatusBar('status_bar', self.preferences.prefs, self.theme),
             HeadUpEventLog('event_log', self.preferences.prefs, self.theme),
         ]
+        
+        # Uncomment the line below to add language icons
+        # self.subscribe_content_id('status_bar', 'language')
+        
         if (self.preferences.prefs['enabled']):
             self.enable()
             
@@ -97,6 +101,12 @@ class HeadUpDisplay:
             if widget.enabled and widget.id == id:
                 widget.disable(True)
         self.determine_active_setup_mouse()
+        
+    def subscribe_content_id(self, id, content_key):
+        for widget in self.widgets:
+            if widget.id == id:
+                if content_key not in widget.subscribed_content:
+                    widget.subscribed_content.append(content_key)
 
     def set_widget_preference(self, id, property, value, persisted=False):
         for widget in self.widgets:
@@ -207,6 +217,23 @@ class Actions:
         """Disables the HUD"""
         global hud_content
         hud_content.append_to_log(type, message)
+        
+    def add_status_icon(id: str, image: str, explanation: str):
+        """Add an icon to the status bar"""
+        global hud_content
+        hud_content.add_to_set("status_icons", {
+            "id": id,
+            "image": image,
+            "explanation": "",
+            "clickable": False
+        })
+        
+    def remove_status_icon(id: str):
+        """Remove an icon to the status bar"""
+        global hud_content
+        hud_content.remove_from_set("status_icons", {
+            "id": id
+        })
         
     def enable_hud_id(id: str):
         """Enables a specific hud element"""
