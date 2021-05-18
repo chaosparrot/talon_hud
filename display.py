@@ -9,6 +9,7 @@ from user.talon_hud.theme import HeadUpDisplayTheme
 from user.talon_hud.state import hud_content
 from user.talon_hud.widgets.statusbar import HeadUpStatusBar
 from user.talon_hud.widgets.eventlog import HeadUpEventLog
+from user.talon_hud.widgets.abilitybar import HeadUpAbilityBar
 
 ctx = Context()
 mod = Module()
@@ -36,6 +37,7 @@ class HeadUpDisplay:
         self.widgets = [
             HeadUpStatusBar('status_bar', self.preferences.prefs, self.theme),
             HeadUpEventLog('event_log', self.preferences.prefs, self.theme),
+            HeadUpAbilityBar('ability_bar', self.preferences.prefs, self.theme),            
         ]
         
         # Uncomment the line below to add language icons
@@ -202,22 +204,22 @@ class Actions:
         """Enables the HUD"""
         global hud
         hud.enable(True)
-        
+
     def disable_hud():
         """Disables the HUD"""
         global hud
         hud.disable(True)
-        
+
     def persist_hud_preferences():
         """Saves the HUDs preferences"""
         global hud
         hud.persist_widgets_preferences()
-        
+
     def add_hud_log(type: str, message: str):
         """Disables the HUD"""
         global hud_content
         hud_content.append_to_log(type, message)
-        
+
     def add_status_icon(id: str, image: str, explanation: str):
         """Add an icon to the status bar"""
         global hud_content
@@ -227,14 +229,32 @@ class Actions:
             "explanation": "",
             "clickable": False
         })
-        
+
     def remove_status_icon(id: str):
         """Remove an icon to the status bar"""
         global hud_content
         hud_content.remove_from_set("status_icons", {
             "id": id
         })
-        
+
+    def add_hud_ability(id: str, image: str, colour: str, enabled: bool, activated: bool):
+        """Add a hud ability or update it"""
+        global hud_content
+        hud_content.add_to_set("abilities", {
+            "id": id,
+            "image": image,
+            "colour": colour,
+            "enabled": enabled,
+            "activated": 5 if activated else 0
+        })
+
+    def remove_hud_ability(id: str):
+        """Remove an ability"""
+        global hud_content
+        hud_content.remove_from_set("abilities", {
+            "id": id
+        })
+
     def enable_hud_id(id: str):
         """Enables a specific hud element"""
         global hud        

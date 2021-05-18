@@ -57,6 +57,12 @@ testing event log message:
 	user.add_hud_log("event", "What I like to drink most is wine that belongs to others")
 ```
 
+The ability bar
+
+This widget is meant as a place for commands that continually shift in availability or in a timed manner.
+It includes visualisations for 'cooldown' and 'channel' periods, much like you would see in an MMORPG. 
+It also allows for control visualisation, briefly blinking bigger upon activation.
+
 # Commands
 
 All the commands of this repository can be found in commands.talon . A brief rundown of the commands is listed here:

@@ -1,5 +1,6 @@
 from talon import skia
 import os
+from user.talon_hud.utils import hex_to_ints
 
 semantic_directory = os.path.dirname(os.path.abspath(__file__))
 
@@ -42,7 +43,7 @@ class HeadUpDisplayTheme:
             return self.values[colour]
         else:
             return default_colour
-            
+
     def get_opacity(self, opacity_name, default_opacity=1.0):
         if (opacity_name in self.values):
             return int( float(self.values[opacity_name]) * 255 )
@@ -50,7 +51,4 @@ class HeadUpDisplayTheme:
             return int(default_opacity * 255)
         
     def get_colour_as_ints(self, colour):
-        hex = self.get_colour(colour)
-        
-        # Snippet used https://stackoverflow.com/questions/41848722/how-to-convert-hex-str-into-int-array
-        return [int(hex[i:i+2],16) for i in range(0,len(hex),2)]
+        return hex_to_ints(self.get_colour(colour))
