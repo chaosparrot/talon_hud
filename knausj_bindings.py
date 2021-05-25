@@ -53,6 +53,8 @@ class KnausjStatePoller:
         if ( active_modes is not None ):
             if ('sleep' in active_modes):
                 mode = 'sleep'
+            if ('user.parrot_switch' in active_modes):
+                mode = 'parrot_switch'
             if ('dictation' in active_modes):
                 mode = 'dictation'
         

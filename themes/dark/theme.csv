@@ -1,10 +1,12 @@
 background_colour,333333
 sleep_blink_colour,AAAAAA
 command_blink_colour,DDDDDD
+parrot_blink_colour,FFE500
 dictation_blink_colour,ADADAD
 top_stroke_colour,444444
 down_stroke_colour,222222
 sleep_mode_colour,2071A3
+parrot_switch_mode_colour,FFE500
 command_mode_colour,555555
 dictation_mode_colour,bf2f77
 button_colour,777777

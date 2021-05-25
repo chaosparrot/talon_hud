@@ -33,7 +33,9 @@ class HeadUpStatusBar(BaseWidget):
             elif (new_content["mode"] == 'dictation'):
                 self.blink_colour = self.dictation_blink_colour
             elif (new_content["mode"] == 'sleep'):
-                self.blink_colour = self.sleep_blink_colour                
+                self.blink_colour = self.sleep_blink_colour
+            elif (new_content["mode"] == 'parrot_switch'):
+                self.blink_colour = self.parrot_blink_colour
             
             # Calculate the colour difference between the blink and the next state
             # To make it easier to calculate during draw
@@ -82,6 +84,7 @@ class HeadUpStatusBar(BaseWidget):
         self.command_blink_colour = self.theme.get_colour_as_ints('command_blink_colour')
         self.sleep_blink_colour = self.theme.get_colour_as_ints('sleep_blink_colour')
         self.dictation_blink_colour = self.theme.get_colour_as_ints('dictation_blink_colour')
+        self.parrot_blink_colour = self.theme.get_colour_as_ints('parrot_blink_colour')
         self.background_colour = self.theme.get_colour_as_ints('background_colour')
         self.intro_animation_start_colour = self.theme.get_colour_as_ints('intro_animation_start_colour')
         self.intro_animation_end_colour = self.theme.get_colour_as_ints('intro_animation_end_colour')
