@@ -18,7 +18,8 @@ class HeadUpDisplayContent(Dispatch):
             'forced': False
         },
         "status_icons": [],
-        "log": []
+        "log": [],
+        "abilities": []
     }
             
     # Update the content and sends an event if the state has changed

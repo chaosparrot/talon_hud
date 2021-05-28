@@ -29,3 +29,15 @@
 ^head up align event log bottom$: user.set_widget_preference("event_log", "expand_direction", "up")
 ^head up basic event log$: user.set_widget_preference("event_log", "show_animations", 0)
 ^head up fancy event log$: user.set_widget_preference("event_log", "show_animations", 1)
+
+# Ability bar commands
+^head up (show|open) abilities$: user.enable_hud_id("ability_bar")
+^head up (hide|close) abilities$: user.disable_hud_id("ability_bar")
+^head up resize abilities$: user.set_hud_setup_mode("ability_bar", "dimension")
+^head up drag abilities$: user.set_hud_setup_mode("ability_bar", "position")
+^head up basic abilities$: user.set_widget_preference("ability_bar", "show_animations", 0)
+^head up fancy abilities$: user.set_widget_preference("ability_bar", "show_animations", 1)
+^head up hide abilities on sleep$: user.set_widget_preference("ability_bar", "sleep_enabled", 0)
+^head up show abilities on sleep$: user.set_widget_preference("ability_bar", "sleep_enabled", 1)
+^head up align abilities right$: user.set_widget_preference("ability_bar", "alignment", "right")
+^head up align abilities left$: user.set_widget_preference("ability_bar", "alignment", "left")

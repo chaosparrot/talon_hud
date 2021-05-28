@@ -23,3 +23,4 @@ event_log_text_colour,DDDDDD
 event_log_opacity,0.9
 event_log_text_opacity,0.9
 event_log_focussed_opacity,1.0
+ability_activation_colour,000000AA
