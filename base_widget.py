@@ -148,7 +148,9 @@ class BaseWidget(metaclass=ABCMeta):
             continue_drawing = self.draw(canvas)
             
         if not continue_drawing:
-            self.canvas.pause()
+            if self.canvas:
+                self.canvas.pause()
+            
             self.animation_tick = 0
             if not self.enabled:
                 self.clear()
