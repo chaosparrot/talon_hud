@@ -33,7 +33,8 @@ class KnausjStatePoller:
             'programming_language': {
                 'ext': self.get_lang_extension(self.determine_programming_language()),
                 'forced': self.current_lang_forced and self.determine_mode() != "dictation"
-            }
+            },
+            "text_state": self.get_state_in_text()
         }
         
         hud_content.update(content)
@@ -60,6 +61,26 @@ class KnausjStatePoller:
                 mode = 'dictation'
         
         return mode
+        
+    def get_state_in_text(self):
+        tags = scope.get('tag')
+        
+        # Remove user. from string
+        new_tags = []
+        for tag in tags:
+            if tag.startswith("user."):
+                new_tags.append(tag[5:])
+            else:
+                new_tags.append(tag)
+                
+        modes = []
+        for mode in scope.get('mode'):
+            if mode.startswith("user."):
+                modes.append(mode[5:])
+            else:
+                modes.append(mode)
+        text = "<*App: " + scope.get('app')['name'] + "/>\n" + scope.get('win')['title'] + "/>\n<*<+Tags:/>/>\n" + "\n".join(sorted(new_tags)) + "\n<*<!Modes:/>/>  " + " - ".join(sorted(modes))
+        return text
     
     # Language map added from knausj
     language_to_ext = {

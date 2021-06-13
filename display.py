@@ -10,6 +10,7 @@ from user.talon_hud.state import hud_content
 from user.talon_hud.widgets.statusbar import HeadUpStatusBar
 from user.talon_hud.widgets.eventlog import HeadUpEventLog
 from user.talon_hud.widgets.abilitybar import HeadUpAbilityBar
+from user.talon_hud.widgets.textbox import HeadUpTextBox
 
 ctx = Context()
 mod = Module()
@@ -37,7 +38,8 @@ class HeadUpDisplay:
         self.widgets = [
             HeadUpStatusBar('status_bar', self.preferences.prefs, self.theme),
             HeadUpEventLog('event_log', self.preferences.prefs, self.theme),
-            HeadUpAbilityBar('ability_bar', self.preferences.prefs, self.theme),            
+            #HeadUpAbilityBar('ability_bar', self.preferences.prefs, self.theme),
+            HeadUpTextBox('debug_panel', self.preferences.prefs, self.theme),
         ]
         
         # Uncomment the line below to add language icons

@@ -3,6 +3,7 @@ from talon import skia, ui, Module, cron, actions
 import time
 import numpy
 from user.talon_hud.widget_preferences import HeadUpDisplayUserWidgetPreferences
+from user.talon_hud.utils import layout_rich_text
 
 class HeadUpEventLog(BaseWidget):
 
@@ -141,17 +142,19 @@ class HeadUpEventLog(BaseWidget):
             current_y = self.y if self.expand_direction == "down" else self.y + self.height
             for index, visual_log in enumerate(self.visual_logs):
             
+                
+            
                 # Split up the text into lines if there are linebreaks
                 # And calculate their dimensions
                 # TODO calculate max text width against the width and see if we need to wrap the text to the next line
                 # TODO emphasis text using **Md bold markers**
-                lines = visual_log['message'].splitlines()
+                lines = layout_rich_text(paint, visual_log['message'], self.limit_width, self.limit_height)
+                #lines = visual_log['message'].splitlines()
                 total_text_width = 0
                 total_text_height = 0
                 for line in lines:
-                    text_measurements = paint.measure_text(line)
-                    total_text_width = max( total_text_width, text_measurements[0] )
-                    total_text_height = total_text_height + text_measurements[1].height + vertical_text_padding
+                    total_text_width = max( total_text_width, line.width )
+                    total_text_height = total_text_height + line.height + vertical_text_padding
                 log_height = vertical_text_padding * (1 + len(lines)) + total_text_height
             
                 if self.expand_direction == "down":                    
@@ -192,7 +195,7 @@ class HeadUpEventLog(BaseWidget):
                 
                 line_height = total_text_height / len(lines)
                 for index, line in enumerate(lines):
-                    canvas.draw_text(line, text_x, current_y + line_height + index * vertical_text_padding + index * line_height )
+                    canvas.draw_text(line.text, text_x, current_y + line_height + index * vertical_text_padding + index * line_height )
                 
             return continue_drawing
         else:

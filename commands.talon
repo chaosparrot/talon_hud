@@ -30,6 +30,18 @@
 ^head up basic event log$: user.set_widget_preference("event_log", "show_animations", 0)
 ^head up fancy event log$: user.set_widget_preference("event_log", "show_animations", 1)
 
+# Debug panel commands
+^head up (show|open) debug panel$: 
+	user.enable_hud_id("debug_panel")
+	user.set_widget_preference("debug_panel", "sleep_enabled", 1)
+^head up (hide|close) debug panel$: 
+	user.disable_hud_id("debug_panel")
+	user.set_widget_preference("debug_panel", "sleep_enabled", 1)	
+^head up resize debug panel$: user.set_hud_setup_mode("debug_panel", "dimension")
+^head up expand debug panel$: user.set_hud_setup_mode("debug_panel", "limit")
+^head up drag debug panel$: user.set_hud_setup_mode("debug_panel", "position")
+^head up text scale debug panel$: user.set_hud_setup_mode("debug_panel", "font_size")
+
 # Ability bar commands
 ^head up (show|open) abilities$: user.enable_hud_id("ability_bar")
 ^head up (hide|close) abilities$: user.disable_hud_id("ability_bar")
