@@ -34,7 +34,6 @@ class HeadUpTextBox(BaseWidget):
     def on_mouse(self, event):
         pos = numpy.array(event.gpos)
         
-        
         if (numpy.linalg.norm(pos - numpy.array([self.close_icon_position[0], self.close_icon_position[1]])) 
             < self.close_button_radius):
             if not self.close_icon_hovered:
@@ -51,7 +50,7 @@ class HeadUpTextBox(BaseWidget):
         self.resize_canvas_stage = max(0, self.resize_canvas_stage - 1)
         
         # During any content or manual resizing, disable the mouse blocking behavior
-        if self.setup_type != "" and self.s == self.resize_stage_resize:
+        if self.setup_type != "" and self.resize_canvas_stage == self.resize_stage_resize:
             self.canvas.blocks_mouse = False
             self.canvas.unregister('mouse', self.on_mouse)
     
@@ -68,7 +67,8 @@ class HeadUpTextBox(BaseWidget):
         # will show up when clicking in or near the text panel
         if self.setup_type == "":
             if self.resize_canvas_stage == self.resize_stage_resize:
-                rect = ui.Rect(self.x, self.y, dimensions.width + self.text_padding_right, background_height)
+                x = self.x if self.alignment == "left" else self.limit_x + self.limit_width - dimensions.width - self.text_padding_right - self.text_padding
+                rect = ui.Rect(x, self.y, dimensions.width + self.text_padding_right + self.text_padding, background_height)
                 self.canvas.set_rect(rect)
             elif self.resize_canvas_stage == self.resize_stage_listener:
                 self.canvas.blocks_mouse = True
@@ -113,16 +113,20 @@ class HeadUpTextBox(BaseWidget):
         paint.font.embolden = True
         
         # TODO RICH TEXT HEADER
-        canvas.draw_text(self.content['textbox_header'], self.x + self.text_padding, self.y + self.font_size)
+        x = self.x + self.text_padding if self.alignment == "left" else self.limit_x + self.limit_width - dimensions.width - self.text_padding
+        canvas.draw_text(self.content['textbox_header'], x, self.y + self.font_size)
         
         # Small divider between the content and the header
-        canvas.draw_rect(ui.Rect(self.x, self.y + self.font_size + self.text_padding, dimensions.width + self.text_padding_right, 1))
+        canvas.draw_rect(ui.Rect(x - self.text_padding, self.y + self.font_size + self.text_padding, 
+            dimensions.width + self.text_padding_right if self.alignment == "left" 
+            else dimensions.width + self.text_padding_right - self.text_padding, 1))
         close_colour = self.theme.get_colour('close_icon_hover_colour') if self.close_icon_hovered else self.theme.get_colour('close_icon_accent_colour')
         paint.style = paint.Style.FILL
         paint.shader = skia.Shader.linear_gradient(self.x, self.y, self.x, self.y + header_height, (self.theme.get_colour('close_icon_colour'), close_colour), None)
         
         # Closing button
-        self.close_icon_position = [self.x + dimensions.width + self.text_padding_right - self.close_button_radius * 1.5,
+        x = self.x + self.text_padding if self.alignment == "left" else self.limit_x + self.limit_width - dimensions.width - self.close_button_radius * 1.5 - self.text_padding
+        self.close_icon_position = [x + dimensions.width + self.text_padding_right - self.close_button_radius * 1.5,
             self.y + self.close_button_radius + self.vertical_text_padding / 2]
         canvas.draw_circle(self.close_icon_position[0], self.close_icon_position[1], self.close_button_radius, paint)
 
@@ -145,9 +149,9 @@ class HeadUpTextBox(BaseWidget):
             current_y = current_y - offset
         
         text_width = dimensions.width
-        element_width = dimensions.width
+        element_width = dimensions.width if self.alignment == "left" else dimensions.width - self.text_padding
 
-        text_x = self.x + text_padding if self.alignment == "left" else self.x + self.width - text_padding - text_width
+        text_x = self.x + text_padding if self.alignment == "left" else self.limit_x + self.limit_width - text_padding - text_width
         element_x = text_x - text_padding
         
         self.draw_background(canvas, element_x, current_y - header_height, element_width + self.text_padding_right, log_height + header_height, paint)
