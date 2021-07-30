@@ -41,8 +41,6 @@
 ^head up expand debug panel$: user.set_hud_setup_mode("debug_panel", "limit")
 ^head up drag debug panel$: user.set_hud_setup_mode("debug_panel", "position")
 ^head up text scale debug panel$: user.set_hud_setup_mode("debug_panel", "font_size")
-^head up align debug panel right$: user.set_widget_preference("debug_panel", "alignment", "right")
-^head up align debug panel left$: user.set_widget_preference("debug_panel", "alignment", "left")
 
 # Ability bar commands
 ^head up (show|open) abilities$: user.enable_hud_id("ability_bar")

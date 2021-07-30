@@ -41,7 +41,10 @@ class HeadUpTextBox(LayoutWidget):
                 self.canvas.resume()
     
     def layout_content(self, canvas, paint):
-        paint.textsize = self.font_size    
+        paint.textsize = self.font_size
+        
+        horizontal_alignment = "right" if self.limit_x < self.x else "left"
+        vertical_alignment = "bottom" if self.limit_y < self.y else "top"
     
         """Calculates the width and the height of the content"""
         header_text = layout_rich_text(paint, self.content['textbox_header'], self.limit_width - self.close_button_radius * 1.5, self.limit_height)    
@@ -70,16 +73,18 @@ class HeadUpTextBox(LayoutWidget):
             total_text_height = total_text_height + text.height + self.line_padding if text.x == 0 else total_text_height        
         
         width = max(self.width, total_text_width + self.padding[1] + self.padding[3])
-        height = max(self.height, total_text_height + self.padding[0] + self.padding[2] + header_height)
-        x = self.x if self.alignment == "left" else self.limit_x + self.limit_width - width
-        y = self.y if self.expand_direction == "down" else self.limit_y + self.limit_height - height
-        
+        content_height = total_text_height + self.padding[0] + self.padding[2] + header_height
+        height = max(self.height, content_height )
+        x = self.x if horizontal_alignment == "left" else self.limit_x + self.limit_width - width
+        y = self.limit_y if vertical_alignment == "top" else self.limit_y + self.limit_height - height
+                
         return {
             "rect": ui.Rect(x, y, width, height), 
             "line_count": max(1, line_count),
             "header_text": header_text,
             "content_text": content_text,
-            "header_height": header_height
+            "header_height": header_height,
+            "content_height": content_height
         }
     
     def draw_content(self, canvas, paint, dimensions) -> bool:
@@ -132,13 +137,14 @@ class HeadUpTextBox(LayoutWidget):
         
         header_height = dimensions["header_height"]
         rich_text = dimensions["content_text"]
+        content_height = dimensions["content_height"]
         line_count = dimensions["line_count"]
         dimensions = dimensions["rect"]
        
         text_x = dimensions.x + self.padding[3]
         text_y = dimensions.y + header_height + self.padding[0] * 2
        
-        line_height = ( dimensions.height - header_height - self.padding[0] - self.padding[2] ) / line_count
+        line_height = ( content_height - header_height - self.padding[0] - self.padding[2] ) / line_count
         self.draw_rich_text(canvas, paint, rich_text, text_x, text_y, line_height)
 
     def draw_background(self, canvas, paint, rect):
