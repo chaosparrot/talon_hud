@@ -6,25 +6,48 @@ from user.talon_hud.base_widget import BaseWidget
 from user.talon_hud.utils import layout_rich_text, HudRichTextLine
 
 class LayoutWidget(BaseWidget):
-    """This widget has a layout pass and changes the canvas size based on the content"""
+    """This widget has a layout pass and changes the mouse capture area based on the content
+    The extra canvas is used to make sure the drawing doesn't flicker when the content changes
+    """
     
-    resize_canvas_stage = 2
-    resize_stage_resize = 1
-    resize_stage_listener = 0
+    mark_layout_invalid = True
+    mouse_capture_canvas: canvas.Canvas
+    
+    def enable(self, persisted=False):
+        if not self.enabled:
+            if self.mouse_enabled:
+                self.mouse_capture_canvas = canvas.Canvas(min(self.x, self.limit_x), min(self.y, self.limit_y), max(self.width, self.limit_width), max(self.height, self.limit_height))            
+                self.mouse_capture_canvas.blocks_mouse = True
+                self.mouse_capture_canvas.register('mouse', self.on_mouse)
+                self.mouse_capture_canvas.freeze()
+           
+            super().enable(persisted)
+            self.canvas.blocks_mouse = False
+            
+    def disable(self, persisted=False):
+        if self.enabled:
+            if self.mouse_enabled:
+                self.canvas.blocks_mouse = False
+                self.canvas.unregister('mouse', self.on_mouse)
+                self.mouse_capture_canvas.blocks_mouse = False
+                self.mouse_capture_canvas.unregister('mouse', self.on_mouse)
+                self.mouse_capture_canvas = None
+        
+            super().disable(persisted)
     
     def refresh(self, new_content):
-        self.resize_canvas_stage = 2
+        self.mark_layout_invalid = True
     
-    def start_setup(self, setup_type):
-        if setup_type in ["font_size", "position"] and self.setup_type != setup_type:
-            # First resize the canvas back to the limit to make sure the content doesn't get clipped
-            rect = ui.Rect(self.limit_x, self.limit_y, self.limit_width, self.limit_height)
-            self.canvas.set_rect(rect)
-        
-        super().start_setup(setup_type)
+    #def start_setup(self, setup_type):
+    #    if setup_type in ["font_size", "position"] and self.setup_type != setup_type:
+    #        # First resize the canvas back to the limit to make sure the content doesn't get clipped
+    #        rect = ui.Rect(self.limit_x, self.limit_y, self.limit_width, self.limit_height)
+    #        self.canvas.set_rect(rect)
+    #    
+    #    super().start_setup(setup_type)
             
     def setup_move(self, pos):
-        self.resize_canvas_stage = 2
+        self.mark_layout_invalid = True
         super().setup_move(pos)
             
     def layout_content(self, canvas, paint):
@@ -36,13 +59,6 @@ class LayoutWidget(BaseWidget):
         return False
         
     def draw(self, canvas) -> bool:
-        self.resize_canvas_stage = max(0, self.resize_canvas_stage - 1)
-        
-        # During any content or manual resizing, disable the mouse blocking behavior
-        if self.setup_type != "" and self.resize_canvas_stage == self.resize_stage_resize and self.mouse_enabled == True:
-            self.canvas.blocks_mouse = False
-            self.canvas.unregister('mouse', self.on_mouse)
-        
         paint = self.draw_setup_mode(canvas)
         
         content_dimensions = self.layout_content(canvas, paint)
@@ -57,14 +73,13 @@ class LayoutWidget(BaseWidget):
         # Automatically resize the canvas based on the content to make sure no dead zones 
         # will show up when clicking in or near the text panel
         if self.setup_type == "":
-            if self.resize_canvas_stage == self.resize_stage_resize:
+            if self.mark_layout_invalid:
                 rect = content_dimensions["rect"]
-                self.canvas.set_rect(rect)
-            elif self.mouse_enabled == True and self.resize_canvas_stage == self.resize_stage_listener:
-                self.canvas.blocks_mouse = True
-                self.canvas.register('mouse', self.on_mouse)            
+                self.mouse_capture_canvas.set_rect(rect)
+                self.mouse_capture_canvas.freeze()
+                self.mark_layout_invalid = False
 
-        return self.resize_canvas_stage > 0 or continue_drawing
+        return continue_drawing
         
     def draw_rich_text(self, canvas, paint, rich_text, x, y, line_height, single_line=False):
         # Draw text line by line

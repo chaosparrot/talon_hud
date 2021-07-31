@@ -5,7 +5,7 @@ from user.talon_hud.utils import layout_rich_text, HudRichTextLine
 import numpy
 
 class HeadUpTextBox(LayoutWidget):
-    preferences = HeadUpDisplayUserWidgetPreferences(type="text_box", x=1480, y=100, width=350, height=400, limit_x=1480, limit_y=100, limit_width=350, limit_height=400, enabled=False, alignment="left", expand_direction="down", font_size=18)
+    preferences = HeadUpDisplayUserWidgetPreferences(type="text_box", x=1630, y=100, width=200, height=200, limit_x=1530, limit_y=100, limit_width=350, limit_height=400, enabled=False, alignment="left", expand_direction="down", font_size=18)
 
     mouse_enabled = True
 
@@ -46,9 +46,12 @@ class HeadUpTextBox(LayoutWidget):
         horizontal_alignment = "right" if self.limit_x < self.x else "left"
         vertical_alignment = "bottom" if self.limit_y < self.y else "top"
     
+        layout_width = max(self.width - self.padding[1] - self.padding[3] * 2, 
+            self.limit_width - self.padding[1] * 2 - self.padding[3] * 2)
+    
         """Calculates the width and the height of the content"""
         header_text = layout_rich_text(paint, self.content['textbox_header'], self.limit_width - self.close_button_radius * 1.5, self.limit_height)    
-        content_text = layout_rich_text(paint, self.content['text_state'], self.limit_width, self.limit_height)
+        content_text = layout_rich_text(paint, self.content['text_state'], layout_width, self.limit_height)
         
         line_count = 0
         total_text_width = 0
@@ -72,12 +75,12 @@ class HeadUpTextBox(LayoutWidget):
             total_text_width = max( total_text_width, current_line_length )
             total_text_height = total_text_height + text.height + self.line_padding if text.x == 0 else total_text_height        
         
-        width = max(self.width, total_text_width + self.padding[1] + self.padding[3])
+        width = min( self.limit_width, max(self.width, total_text_width + self.padding[1] + self.padding[3]))
         content_height = total_text_height + self.padding[0] + self.padding[2] + header_height
-        height = max(self.height, content_height )
+        height = min(self.limit_height, max(self.height, content_height))
         x = self.x if horizontal_alignment == "left" else self.limit_x + self.limit_width - width
         y = self.limit_y if vertical_alignment == "top" else self.limit_y + self.limit_height - height
-                
+        
         return {
             "rect": ui.Rect(x, y, width, height), 
             "line_count": max(1, line_count),
