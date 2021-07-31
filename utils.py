@@ -15,6 +15,9 @@ rich_text_delims_dict = {
 rich_text_delims = rich_text_delims_dict.keys()
 rich_text_delims_regex = r'(/>|<\*|</|<\+|<\!\!|<\!|<@)'
 
+def remove_tokens_from_rich_text(text:str):
+    return re.sub(rich_text_delims_regex, '', text)
+
 def layout_rich_text(paint:skia.Paint, text:str, width:int = 1920, height:int = 1080) -> list[HudRichTextLine]:
     """Layout a string of text inside the given dimensions"""
     
@@ -100,3 +103,6 @@ def lighten_hex_colour(hex: str, percent: int) -> str:
             value = int(min(255, value * ( 100 + percent ) / 100))
         new_hex += '0' + format(value, 'x') if value <= 15 else format(value, 'x')
     return new_hex
+    
+    
+    

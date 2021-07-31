@@ -37,15 +37,7 @@ class LayoutWidget(BaseWidget):
     
     def refresh(self, new_content):
         self.mark_layout_invalid = True
-    
-    #def start_setup(self, setup_type):
-    #    if setup_type in ["font_size", "position"] and self.setup_type != setup_type:
-    #        # First resize the canvas back to the limit to make sure the content doesn't get clipped
-    #        rect = ui.Rect(self.limit_x, self.limit_y, self.limit_width, self.limit_height)
-    #        self.canvas.set_rect(rect)
-    #    
-    #    super().start_setup(setup_type)
-            
+                
     def setup_move(self, pos):
         self.mark_layout_invalid = True
         super().setup_move(pos)

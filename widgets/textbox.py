@@ -1,7 +1,7 @@
-from talon import skia, ui, Module, cron, actions
+from talon import skia, ui, Module, cron, actions, clip
 from user.talon_hud.layout_widget import LayoutWidget
 from user.talon_hud.widget_preferences import HeadUpDisplayUserWidgetPreferences
-from user.talon_hud.utils import layout_rich_text, HudRichTextLine
+from user.talon_hud.utils import layout_rich_text, remove_tokens_from_rich_text, HudRichTextLine
 import numpy
 
 class HeadUpTextBox(LayoutWidget):
@@ -22,6 +22,9 @@ class HeadUpTextBox(LayoutWidget):
     },{
         "type": "minimize",
         "pos": [0,0]
+    },{
+        "type": "copy",
+        "pos": [0,0]
     }]
 
     subscribed_content = ["mode", "text_state"]
@@ -31,6 +34,9 @@ class HeadUpTextBox(LayoutWidget):
         'text_state': " "
     }
     animation_max_duration = 60
+    
+    def enable(self, persisted=False):
+        super().enable(persisted)
     
     def on_mouse(self, event):
         pos = numpy.array(event.gpos)
@@ -45,12 +51,16 @@ class HeadUpTextBox(LayoutWidget):
             self.canvas.resume()
         
         if event.event == "mouseup" and event.button == 0 and icon_hovered != -1:
-            if self.icons[icon_hovered]['type'] == "close":
-                self.disable()
-            elif self.icons[icon_hovered]['type'] == "minimize":
+            clicked_icon_type = self.icons[icon_hovered]['type']
+            if clicked_icon_type == "close":
+                self.disable(True)
+            elif clicked_icon_type == "minimize":
                 self.minimized = not self.minimized
                 self.mark_layout_invalid = True
                 self.canvas.resume()
+            elif clicked_icon_type == "copy":
+                clip.set_text(remove_tokens_from_rich_text(self.content["text_state"]))
+                actions.user.add_hud_log("event", "Copied contents of panel to clipboard!")
                 
     def layout_content(self, canvas, paint):
         paint.textsize = self.font_size
@@ -150,19 +160,23 @@ class HeadUpTextBox(LayoutWidget):
                 dimensions.y + self.icon_radius + self.padding[0] / 2]
             self.icons[index]['pos'] = icon_position
             paint.style = paint.Style.FILL
-            if icon['type'] == "minimize":
-            
+            if icon['type'] in ["minimize", "help", "copy"]:
                 hover_colour = '999999' if self.icon_hovered == index else 'CCCCCC'            
                 paint.shader = skia.Shader.linear_gradient(self.x, self.y, self.x, self.y + header_height, ('AAAAAA', hover_colour), None)
                 canvas.draw_circle(icon_position[0], icon_position[1], self.icon_radius, paint)
                 paint.shader = skia.Shader.linear_gradient(self.x, self.y, self.x, self.y + header_height, ('000000', '000000'), None)
         
-                if not self.minimized:
-                    canvas.draw_rect(ui.Rect(icon_position[0] - self.icon_radius / 2, icon_position[1] - 1, self.icon_radius, 2))
+                if icon['type'] == "minimize":
+                    if not self.minimized:
+                        canvas.draw_rect(ui.Rect(icon_position[0] - self.icon_radius / 2, icon_position[1] - 1, self.icon_radius, 2))
+                    else:
+                        paint.style = paint.Style.STROKE
+                        canvas.draw_rect(ui.Rect( 1 + icon_position[0] - self.icon_radius / 2, icon_position[1] - self.icon_radius / 2, 
+                            self.icon_radius - 2, self.icon_radius - 2))
                 else:
-                    paint.style = paint.Style.STROKE
-                    canvas.draw_rect(ui.Rect( 1 + icon_position[0] - self.icon_radius / 2, icon_position[1] - self.icon_radius / 2, 
-                        self.icon_radius - 2, self.icon_radius - 2))
+                    image = self.theme.get_image(icon["type"] + "_icon")
+                    canvas.draw_image(image, icon_position[0] - image.width / 2, icon_position[1] - image.height / 2)
+                
             elif icon['type'] == "close":
                 close_colour = self.theme.get_colour('close_icon_hover_colour') if self.icon_hovered == index else self.theme.get_colour('close_icon_accent_colour')            
                 paint.shader = skia.Shader.linear_gradient(self.x, self.y, self.x, self.y + header_height, (self.theme.get_colour('close_icon_colour'), close_colour), None)
@@ -180,7 +194,7 @@ class HeadUpTextBox(LayoutWidget):
        
         text_x = dimensions.x + self.padding[3]
         text_y = dimensions.y + header_height + self.padding[0] * 2
-       
+        
         line_height = ( content_height - header_height - self.padding[0] - self.padding[2] ) / line_count
         self.draw_rich_text(canvas, paint, rich_text, text_x, text_y, line_height)
 
