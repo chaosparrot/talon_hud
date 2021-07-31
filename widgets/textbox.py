@@ -160,7 +160,7 @@ class HeadUpTextBox(LayoutWidget):
                 dimensions.y + self.icon_radius + self.padding[0] / 2]
             self.icons[index]['pos'] = icon_position
             paint.style = paint.Style.FILL
-            if icon['type'] in ["minimize", "help", "copy"]:
+            if (icon['type'] in ["minimize", "help", "copy"] and self.minimized == False ) or icon['type'] == "minimize":
                 hover_colour = '999999' if self.icon_hovered == index else 'CCCCCC'            
                 paint.shader = skia.Shader.linear_gradient(self.x, self.y, self.x, self.y + header_height, ('AAAAAA', hover_colour), None)
                 canvas.draw_circle(icon_position[0], icon_position[1], self.icon_radius, paint)
