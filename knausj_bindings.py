@@ -65,20 +65,13 @@ class KnausjStatePoller:
     def get_state_in_text(self):
         tags = scope.get('tag')
         
-        # Remove user. from string
         new_tags = []
         for tag in tags:
-            if tag.startswith("user."):
-                new_tags.append(tag[5:])
-            else:
-                new_tags.append(tag)
+            new_tags.append(tag)
                 
         modes = []
         for mode in scope.get('mode'):
-            if mode.startswith("user."):
-                modes.append(mode[5:])
-            else:
-                modes.append(mode)
+            modes.append(mode)
         text = "<*App: " + scope.get('app')['name'] + "/>\n" + scope.get('win')['title'] + "/>\n<*<+Tags:/>/>\n" + "\n".join(sorted(new_tags)) + "\n<*<!Modes:/>/>  " + " - ".join(sorted(modes))
         return text
     
