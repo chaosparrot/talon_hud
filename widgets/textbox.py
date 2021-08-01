@@ -61,7 +61,10 @@ class HeadUpTextBox(LayoutWidget):
             elif clicked_icon_type == "copy":
                 clip.set_text(remove_tokens_from_rich_text(self.content["text_state"]))
                 actions.user.add_hud_log("event", "Copied contents of panel to clipboard!")
-                
+               
+        if icon_hovered == -1:
+            super().on_mouse(event)
+        
     def layout_content(self, canvas, paint):
         paint.textsize = self.font_size
         

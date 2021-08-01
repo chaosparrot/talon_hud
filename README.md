@@ -133,11 +133,10 @@ These are ideas that I want to implement in no specific order and with no specif
 - WIP - An event log that can be filtered by the user, with a time to life setting that makes the message fade away ( much like a status message in an FPS )
 - A regular text panel with a header and a close icon with limited growth bounds.
 - A fallback text panel that shows every content update that isn't specifically registered by another text panel
+- A context menu widget that can be opened by right clicking on a widget with mouse_enabled turned on.
 - An indicator widget that follows the cursor around to show a single state that is important to the current task at hand
 - An image panel with a header and a close icon which displays image content
 - A capture that checks what themes are available on app ready by checking the directories in themes
-
-- Mouse drag and drop for widgets that have mouse enabled
 
 - Multiscreen setups and how to best work with those, maybe with multiple preference files per monitor
 - Multi-drag to drag every widget simultaniously

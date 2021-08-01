@@ -15,6 +15,9 @@ class BaseWidget(metaclass=ABCMeta):
     # Enables receiving of mouse events - Note, this blocks all the mouse events on the canvas so make sure the canvas stays as small as possible to avoid 'dead areas'
     mouse_enabled = False
     
+    # Position dragging position offset - Used in manual dragging
+    drag_position = []
+    
     allowed_setup_options = ["position", "dimension", "limit", "font_size"]
     subscribed_content = ['mode']
     subscribed_logs = []
@@ -186,7 +189,18 @@ class BaseWidget(metaclass=ABCMeta):
     
     def on_mouse(self, event):
         """This is where the mouse events get sent if mouse_enabled is set to True"""
-        pass
+        # Mouse dragging of elements that have mouse enabled
+        if event.button == 0:
+            if len(self.drag_position) == 0 and event.event == "mousedown":
+                self.drag_position = [event.gpos.x - self.limit_x, event.gpos.y - self.limit_y]
+            elif event.event == "mouseup" and len(self.drag_position) > 0:
+                self.drag_position = []
+                self.start_setup("")
+        if len(self.drag_position) > 0 and event.event == "mousemove":
+            if self.setup_type != "position":
+                self.start_setup("position")
+            else:
+                self.setup_move(event.gpos)
     
     def draw(self, canvas) -> bool:
         """Implement your canvas drawing logic here, returning False will stop the rendering, returning True will continue it"""
@@ -275,6 +289,10 @@ class BaseWidget(metaclass=ABCMeta):
         """Responds to global mouse movements when a widget is in a setup mode"""
         if (self.setup_type == "position"):
             x, y = pos
+            if len(self.drag_position) > 0:
+                x = x - self.drag_position[0]
+                y = y - self.drag_position[1]
+            
             horizontal_diff = x - self.limit_x
             vertical_diff = y - self.limit_y
             self.limit_x = x

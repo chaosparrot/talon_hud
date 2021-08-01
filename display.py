@@ -1,4 +1,4 @@
-from talon import Context, Module, actions, app, skia, cron, ctrl, scope, canvas, registry, settings, ui
+from talon import Context, Module, actions, app, skia, cron, ctrl, scope, canvas, registry, settings, ui, speech_system
 import os
 import time
 import numpy

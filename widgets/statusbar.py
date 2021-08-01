@@ -110,6 +110,10 @@ class HeadUpStatusBar(BaseWidget):
         elif (event.event == "mouseup" and event.button == 0):
             self.icon_hover_index = hover_index
             self.activate_icon()
+        
+        # Mouse dragging
+        if hover_index == -1:
+            super().on_mouse(event)
             
     def activate_icon(self):
         cron.cancel(self.dwell_job)
