@@ -133,7 +133,8 @@ class HeadUpEventLog(BaseWidget):
             paint.textsize = self.font_size
             continue_drawing = False
 
-            background_colour = self.theme.get_colour('event_log_background', 'F5F5F5')
+            default_background_colour = self.theme.get_colour('event_log_background', 'F5F5F5')
+            background_colour = default_background_colour
             log_margin = 10
             text_padding = 8
             vertical_text_padding = 4
@@ -181,13 +182,20 @@ class HeadUpEventLog(BaseWidget):
                     opacity = ( self.ttl_animation_max_duration - abs(visual_log['animation_tick']) ) / self.ttl_animation_max_duration
                 
                 max_opacity = self.theme.get_opacity('event_log_opacity')
+                text_colour = self.theme.get_colour('event_log_text_colour', self.theme.get_colour('text_colour') )                
+                if visual_log['type'] != "event":
+                    background_colour = default_background_colour
+                else:
+                    background_colour = self.theme.get_colour('info_colour', '30AD9E')
+                    max_opacity = 255
+                    text_colour = 'FFFFFF'
                 opacity_int = min(max_opacity, int(max_opacity * opacity))
                 opacity_hex = hex(opacity_int)[-2:] if opacity_int > 15 else '0' + hex(opacity_int)[-1:]
+                
                 paint.color = background_colour + opacity_hex
                 self.draw_background(canvas, element_x, current_y, element_width, log_height, paint)
                 
                 # Draw text line by line
-                text_colour = self.theme.get_colour('event_log_text_colour', self.theme.get_colour('text_colour') )
                 max_text_opacity = self.theme.get_opacity('event_log_text_opacity', 1.0)
                 opacity_int = min(max_text_opacity, int(max_text_opacity * opacity))
                 opacity_hex = hex(opacity_int)[-2:] if opacity_int > 15 else '0' + hex(opacity_int)[-1:]
