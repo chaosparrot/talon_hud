@@ -11,6 +11,7 @@ from user.talon_hud.widgets.statusbar import HeadUpStatusBar
 from user.talon_hud.widgets.eventlog import HeadUpEventLog
 from user.talon_hud.widgets.abilitybar import HeadUpAbilityBar
 from user.talon_hud.widgets.textbox import HeadUpTextBox
+from user.talon_hud.widgets.contextmenu import HeadUpContextMenu
 
 ctx = Context()
 mod = Module()
@@ -40,6 +41,9 @@ class HeadUpDisplay:
             HeadUpEventLog('event_log', self.preferences.prefs, self.theme),
             #HeadUpAbilityBar('ability_bar', self.preferences.prefs, self.theme),
             HeadUpTextBox('debug_panel', self.preferences.prefs, self.theme),
+            
+            # Special widgets that have varying positions
+            HeadUpContextMenu('context_menu', self.preferences.prefs, self.theme),            
         ]
         
         # Uncomment the line below to add language icons
@@ -189,6 +193,29 @@ class HeadUpDisplay:
                 if widget.enabled and widget.setup_type != "":
                     widget.setup_move(self.prev_mouse_pos)
 
+    # Move the context menu over to the given location fitting within the screen
+    def move_context_menu(self, widget_id: str, pos_x: int, pos_y: int, buttons: Any):
+        connected_widget = None
+        context_menu_widget = None
+        for widget in self.widgets:
+            if widget.enabled and widget.id == widget_id:
+                connected_widget = widget
+            elif widget.id == 'context_menu':      
+                context_menu_widget = widget
+        if connected_widget and context_menu_widget:
+            context_menu_widget.connect_widget(connected_widget, pos_x, pos_y, buttons)
+    
+    # Hide the context menu
+    # Generally you want to do this when you click outside of the menu itself
+    def hide_context_menu(self):
+        context_menu_widget = None    
+        for widget in self.widgets:
+            if widget.id == 'context_menu' and widget.enabled:      
+                context_menu_widget = widget
+                break
+        if context_menu_widget:
+            context_menu_widget.disconnect_widget()        
+
 def create_hud():
     global hud
     preferences = HeadUpDisplayUserPreferences()
@@ -280,3 +307,11 @@ class Actions:
         """Starts a setup mode which can change position"""
         global hud
         hud.start_setup_id(id, setup_mode)
+                
+    def show_context_menu(widget_id: str, pos_x: int, pos_y: int, buttons: Any):
+        """Show the context menu for a specific widget id"""
+        hud.move_context_menu(widget_id, pos_x, pos_y, buttons)
+        
+    def hide_context_menu():
+        """Show the context menu for a specific widget id"""
+        hud.hide_context_menu()

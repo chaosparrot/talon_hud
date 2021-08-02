@@ -79,7 +79,7 @@ class LayoutWidget(BaseWidget):
         error_colour = self.theme.get_colour('error_colour', 'AA0000')
         warning_colour = self.theme.get_colour('warning_colour', 'F75B00')
         success_colour = self.theme.get_colour('success_colour', '00CC00')
-        info_colour = self.theme.get_colour('info_colour', '30AD9E')    
+        info_colour = self.theme.get_colour('info_colour', '30AD9E')
     
         current_line = -1
         for index, text in enumerate(rich_text):

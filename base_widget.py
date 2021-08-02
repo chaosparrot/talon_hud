@@ -191,6 +191,7 @@ class BaseWidget(metaclass=ABCMeta):
         """This is where the mouse events get sent if mouse_enabled is set to True"""
         # Mouse dragging of elements that have mouse enabled
         if event.button == 0:
+            actions.user.hide_context_menu()
             if len(self.drag_position) == 0 and event.event == "mousedown":
                 self.drag_position = [event.gpos.x - self.limit_x, event.gpos.y - self.limit_y]
             elif event.event == "mouseup" and len(self.drag_position) > 0:

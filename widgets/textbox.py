@@ -35,8 +35,8 @@ class HeadUpTextBox(LayoutWidget):
     }
     animation_max_duration = 60
     
-    def enable(self, persisted=False):
-        super().enable(persisted)
+    def copy_contents(self):
+        clip.set_text(remove_tokens_from_rich_text(self.content["text_state"]))
     
     def on_mouse(self, event):
         pos = numpy.array(event.gpos)
@@ -62,6 +62,13 @@ class HeadUpTextBox(LayoutWidget):
                 clip.set_text(remove_tokens_from_rich_text(self.content["text_state"]))
                 actions.user.add_hud_log("event", "Copied contents of panel to clipboard!")
          
+
+        if event.button == 1 and event.event == "mouseup":            
+            actions.user.show_context_menu(self.id, event.gpos.x, event.gpos.y, [])
+
+        if event.button == 0 and event.event == "mouseup":
+            actions.user.hide_context_menu()
+
         # Allow dragging and dropping with the mouse
         if icon_hovered == -1:
             super().on_mouse(event)
