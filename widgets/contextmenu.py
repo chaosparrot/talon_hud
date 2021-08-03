@@ -3,11 +3,13 @@ from talon.types import Point2d as Point2d
 from user.talon_hud.base_widget import BaseWidget
 from user.talon_hud.layout_widget import LayoutWidget
 from user.talon_hud.widget_preferences import HeadUpDisplayUserWidgetPreferences
+from user.talon_hud.utils import determine_screen_for_pos
 import numpy
 
 class HeadUpContextMenu(LayoutWidget):
     preferences = HeadUpDisplayUserWidgetPreferences(type="context_menu", x=50, y=100, width=200, height=200, limit_x=50, limit_y=100, limit_width=350, limit_height=400, enabled=True, alignment="left", expand_direction="down", font_size=18)
     mouse_enabled = True
+    mark_position_invalid = False
 
     # Top, right, bottom, left, same order as CSS padding
     padding = [8, 8, 8, 8]     
@@ -71,13 +73,14 @@ class HeadUpContextMenu(LayoutWidget):
                     self.connected_widget.disable(True)
             self.disconnect_widget()
             
-    def connect_widget(self, widget: BaseWidget, pos_x: int, pos_y: int, buttons):
+    def connect_widget(self, widget: BaseWidget, pos_x: int, pos_y: int, buttons):        
         # Connect a widget up to context menu and move the context menu over
         self.limit_x = pos_x
         self.limit_y = pos_y
         self.x = pos_x
         self.y = pos_y
         self.connected_widget = widget
+    
         if self.enabled == False:
             self.mark_position_invalid = True
             self.mark_layout_invalid = True            
@@ -91,6 +94,37 @@ class HeadUpContextMenu(LayoutWidget):
     def disconnect_widget(self):
         self.connected_widget = None
         self.disable(True)
+            
+    def draw(self, canvas) -> bool:
+        if not self.mark_position_invalid:
+            return super().draw(canvas)
+        else:
+            # Reposition the canvas to fit the contents in the screen
+            screen = determine_screen_for_pos(Point2d(self.x, self.y))
+            layout = self.layout_content(canvas, canvas.paint)
+            dimensions = layout['rect']
+            
+            should_go_left = dimensions.x + dimensions.width >= screen.x + screen.width
+            should_go_up = dimensions.y + dimensions.height >= screen.y + screen.height
+            can_go_middle_hor = dimensions.x + dimensions.width / 2 < screen.x + screen.width
+            can_go_middle_ver = dimensions.y + dimensions.height / 2 < screen.y + screen.height            
+            
+            if can_go_middle_hor:
+                self.limit_x = dimensions.x - dimensions.width / 2
+            elif should_go_left:
+                self.limit_x = dimensions.x - dimensions.width            
+            self.x = self.limit_x    
+
+            if can_go_middle_ver:
+                self.limit_y = dimensions.y - dimensions.height / 2 if not can_go_middle_hor else self.limit_y
+            if should_go_up:
+                self.limit_y = dimensions.y - dimensions.height
+            self.y = self.limit_y
+            
+            if self.canvas:
+                self.canvas.move(self.x, self.y)
+            self.mark_position_invalid = False
+            return True
             
     def layout_content(self, canvas, paint):
         paint.textsize = self.font_size
@@ -114,11 +148,7 @@ class HeadUpContextMenu(LayoutWidget):
         paint.color = background_colour
         self.draw_background(canvas, paint, dimensions["rect"])
         
-        # TODO BUTTON DRAWING
         paint.color = 'FF0000'
-        #arrow_path = (float(self.x) + 50, float(self.y) + 50, float(self.x) + 100, float(self.y) + 100)
-        #canvas.draw_path(arrow_path, paint)
-        # TODO DIRECTION DRAWING
         background_height = self.draw_content_buttons(canvas, paint, dimensions)
         
         return False

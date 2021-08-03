@@ -1,4 +1,4 @@
-from talon import skia
+from talon import skia, ui
 from user.talon_hud.content_types import HudRichText, HudRichTextLine
 from textwrap import wrap
 import re
@@ -104,5 +104,11 @@ def lighten_hex_colour(hex: str, percent: int) -> str:
         new_hex += '0' + format(value, 'x') if value <= 15 else format(value, 'x')
     return new_hex
     
+def determine_screen_for_pos(pos) -> ui.Screen:
+    for index, screen in enumerate(ui.screen.screens()):
+        if screen.x <= pos.x and screen.y <= pos.y and screen.x + screen.width >= pos.x \
+            and screen.y + screen.height >= pos.y:
+            return screen
     
+    return None
     

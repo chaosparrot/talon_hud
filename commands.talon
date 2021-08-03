@@ -42,6 +42,14 @@
 ^head up drag debug panel$: user.set_hud_setup_mode("debug_panel", "position")
 ^head up text scale debug panel$: user.set_hud_setup_mode("debug_panel", "font_size")
 
+# Context menu commands
+^head up (hide|close) context menu$: 
+	user.disable_hud_id("context_menu")
+	user.set_widget_preference("context_menu", "sleep_enabled", 1)	
+^head up resize context menu$: user.set_hud_setup_mode("context_menu", "dimension")
+^head up expand context menu$: user.set_hud_setup_mode("context_menu", "limit")
+^head up text scale context menu$: user.set_hud_setup_mode("context_menu", "font_size")
+
 # Ability bar commands
 ^head up (show|open) abilities$: user.enable_hud_id("ability_bar")
 ^head up (hide|close) abilities$: user.disable_hud_id("ability_bar")
