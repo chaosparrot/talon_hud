@@ -12,6 +12,7 @@ class LayoutWidget(BaseWidget):
     
     mark_layout_invalid = True
     mouse_capture_canvas: canvas.Canvas
+    layout = {}
     
     def enable(self, persisted=False):
         if not self.enabled:
@@ -53,12 +54,14 @@ class LayoutWidget(BaseWidget):
     def draw(self, canvas) -> bool:
         paint = self.draw_setup_mode(canvas)
         
-        content_dimensions = self.layout_content(canvas, paint)
+        if self.mark_layout_invalid:
+            self.layout = self.layout_content(canvas, paint)
+        content_dimensions = self.layout
         
         # Debug layout size / position
         #paint.color = "00FF00"
         #paint.style = paint.Style.STROKE
-        #canvas.draw_rect(content_dimensions["rect"])        
+        #canvas.draw_rect(self.capture_rect)
         
         continue_drawing = self.draw_content(canvas, paint, content_dimensions)
         
@@ -67,6 +70,7 @@ class LayoutWidget(BaseWidget):
         if self.setup_type == "":
             if self.mark_layout_invalid:
                 rect = content_dimensions["rect"]
+                self.capture_rect = rect
                 self.mouse_capture_canvas.set_rect(rect)
                 self.mouse_capture_canvas.freeze()
                 self.mark_layout_invalid = False

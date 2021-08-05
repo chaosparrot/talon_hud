@@ -22,9 +22,6 @@ class HeadUpTextBox(LayoutWidget):
     },{
         "type": "minimize",
         "pos": [0,0]
-    },{
-        "type": "copy",
-        "pos": [0,0]
     }]
 
     subscribed_content = ["mode", "text_state"]
