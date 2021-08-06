@@ -94,7 +94,7 @@ class HeadUpContextMenu(LayoutWidget):
             # Reposition the canvas to fit the contents in the screen
             screen = determine_screen_for_pos(Point2d(self.x, self.y))
             layout = self.layout_content(canvas, canvas.paint)
-            dimensions = layout['rect']
+            dimensions = layout[self.page_index]['rect']
             
             should_go_left = dimensions.x + dimensions.width >= screen.x + screen.width
             should_go_up = dimensions.y + dimensions.height >= screen.y + screen.height
@@ -155,10 +155,10 @@ class HeadUpContextMenu(LayoutWidget):
         content_width = min(self.limit_width, max(self.width, total_text_width + self.padding[1] + self.padding[3]))
         content_height = min(self.limit_height, max(self.height, total_button_height + self.padding[0] * 2 + self.padding[2] * 2))
     
-        return {
+        return [{
             "rect": ui.Rect(self.x, self.y, content_width, content_height),
             "button_layouts": button_layout
-        }
+        }]
     
     def draw_content(self, canvas, paint, dimensions) -> bool:
         paint.textsize = self.font_size

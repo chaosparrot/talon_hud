@@ -84,6 +84,8 @@ class HeadUpTextBox(LayoutWidget):
         header_text = layout_rich_text(paint, self.content['textbox_header'], self.limit_width - icon_size, self.limit_height)
         content_text = [] if self.minimized else layout_rich_text(paint, self.content['text_state'], layout_width, self.limit_height)
         
+        layout_pages = []
+        
         line_count = 0
         total_text_width = 0
         total_text_height = 0
@@ -99,30 +101,63 @@ class HeadUpTextBox(LayoutWidget):
                 total_text_width = max( total_text_width, current_line_length )
         header_height = max(header_height, self.padding[0] * 2 + self.icon_radius)
         
+        page_height_limit = self.limit_height
+        
         # We do not render content if the text box is minimized
+        current_content_height = 0
+        current_page_text = []
         if not self.minimized:
-            line_count = 0        
+            line_count = 0
             for index, text in enumerate(content_text):
                 line_count = line_count + 1 if text.x == 0 else line_count
                 current_line_length = current_line_length + text.width if text.x != 0 else text.width
                 total_text_width = max( total_text_width, current_line_length )
-                total_text_height = total_text_height + text.height + self.line_padding if text.x == 0 else total_text_height        
-            
-        width = min( self.limit_width, max(self.width, total_text_width + self.padding[1] + self.padding[3]))
-        content_height = header_height if self.minimized else total_text_height + self.padding[0] + self.padding[2] + header_height
-        height = header_height + self.padding[0] * 2 if self.minimized else min(self.limit_height, max(self.height, content_height))
-        x = self.x if horizontal_alignment == "left" else self.limit_x + self.limit_width - width
-        y = self.limit_y if vertical_alignment == "top" else self.limit_y + self.limit_height - height
+                total_text_height = total_text_height + text.height + self.line_padding if text.x == 0 else total_text_height
+                
+                current_content_height = total_text_height + self.padding[0] + self.padding[2] + header_height
+                if page_height_limit > current_content_height:
+                    current_page_text.append(text)
+                    
+                # We have exceeded the page height limit, append the layout and try again
+                else:
+                    width = min( self.limit_width, max(self.width, total_text_width + self.padding[1] + self.padding[3]))
+                    content_height = total_text_height - (text.height + self.line_padding)
+                    height = min(self.limit_height, max(self.height, content_height))
+                    x = self.x if horizontal_alignment == "left" else self.limit_x + self.limit_width - width
+                    y = self.limit_y if vertical_alignment == "top" else self.limit_y + self.limit_height - height
+                    layout_pages.append({
+                        "rect": ui.Rect(x, y, width, height), 
+                        "line_count": max(1, line_count),
+                        "header_text": header_text,
+                        "icon_size": icon_size,
+                        "content_text": current_page_text,
+                        "header_height": header_height,
+                        "content_height": current_content_height - ( text.height + self.line_padding )
+                    })
+                    
+                    # Reset the variables
+                    total_text_height = text.height + self.line_padding
+                    current_page_text = [text]
+                    line_count = 1
+                    
+        if len(current_page_text) > 0:
+            width = min( self.limit_width, max(self.width, total_text_width + self.padding[1] + self.padding[3]))
+            content_height = header_height if self.minimized else total_text_height + self.padding[0] + self.padding[2] + header_height
+            height = header_height + self.padding[0] * 2 if self.minimized else min(self.limit_height, max(self.height, content_height))
+            x = self.x if horizontal_alignment == "left" else self.limit_x + self.limit_width - width
+            y = self.limit_y if vertical_alignment == "top" else self.limit_y + self.limit_height - height
         
-        return {
-            "rect": ui.Rect(x, y, width, height), 
-            "line_count": max(1, line_count),
-            "header_text": header_text,
-            "icon_size": icon_size,
-            "content_text": content_text,
-            "header_height": header_height,
-            "content_height": content_height
-        }
+            layout_pages.append({
+                "rect": ui.Rect(x, y, width, height), 
+                "line_count": max(1, line_count),
+                "header_text": header_text,
+                "icon_size": icon_size,
+                "content_text": current_page_text,
+                "header_height": header_height,
+                "content_height": content_height
+            })
+        
+        return layout_pages
     
     def draw_content(self, canvas, paint, dimensions) -> bool:
         paint.textsize = self.font_size
@@ -152,7 +187,6 @@ class HeadUpTextBox(LayoutWidget):
         paint.color = self.theme.get_colour('text_colour')
         paint.font.embolden = True
         
-        # TODO RICH TEXT HEADER?
         x = dimensions.x + self.padding[3]
         canvas.draw_text(self.content['textbox_header'], x, dimensions.y + self.font_size)
         

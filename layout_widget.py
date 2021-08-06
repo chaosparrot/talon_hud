@@ -12,7 +12,8 @@ class LayoutWidget(BaseWidget):
     
     mark_layout_invalid = True
     mouse_capture_canvas: canvas.Canvas
-    layout = {}
+    layout = []
+    page_index = 0
     
     def enable(self, persisted=False):
         if not self.enabled:
@@ -38,14 +39,20 @@ class LayoutWidget(BaseWidget):
     
     def refresh(self, new_content):
         self.mark_layout_invalid = True
-                
+        self.page_index = 0
+        
+    def set_page_index(self, page_index: int):
+        self.page_index = 0
+        if self.canvas:
+            self.canvas.resume()
+        
     def setup_move(self, pos):
         self.mark_layout_invalid = True
         super().setup_move(pos)
             
     def layout_content(self, canvas, paint):
         # Determine the dimensions and positions of the content
-        return {"rect": ui.Rect(self.limit_x, self.limit_y, self.limit_width, self.limit_height)}
+        return [{"rect": ui.Rect(self.limit_x, self.limit_y, self.limit_width, self.limit_height)}]
         
     def draw_content(self, canvas, paint, dimensions) -> bool:
         # Draw the content using the layout given dimensions
@@ -56,7 +63,7 @@ class LayoutWidget(BaseWidget):
         
         if self.mark_layout_invalid:
             self.layout = self.layout_content(canvas, paint)
-        content_dimensions = self.layout
+        content_dimensions = self.layout[self.page_index]
         
         # Debug layout size / position
         #paint.color = "00FF00"
