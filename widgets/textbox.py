@@ -23,6 +23,16 @@ class HeadUpTextBox(LayoutWidget):
         "type": "minimize",
         "pos": [0,0]
     }]
+    
+    # All the footer icons in a right to left order
+    footer_icon_hovered = -1
+    footer_icons = [{
+        "type": "next", 
+        "pos": [0,0]
+    },{
+        "type": "previous",
+        "pos": [0,0]
+    }]
 
     subscribed_content = ["mode", "text_state"]
     content = {
@@ -42,22 +52,40 @@ class HeadUpTextBox(LayoutWidget):
         for index, icon in enumerate(self.icons):
             if (numpy.linalg.norm(pos - numpy.array([icon['pos'][0], icon['pos'][1]])) < self.icon_radius):
                 icon_hovered = index
+                
+        footer_icon_hovered = -1
+        for index, icon in enumerate(self.footer_icons):
+            if (numpy.linalg.norm(pos - numpy.array([icon['pos'][0], icon['pos'][1]])) < self.icon_radius):
+                footer_icon_hovered = index
 
-        if icon_hovered != self.icon_hovered:
+        if icon_hovered != self.icon_hovered or footer_icon_hovered != self.footer_icon_hovered:
             self.icon_hovered = icon_hovered
+            self.footer_icon_hovered = footer_icon_hovered
             self.canvas.resume()
         
-        if event.event == "mouseup" and event.button == 0 and icon_hovered != -1:
-            clicked_icon_type = self.icons[icon_hovered]['type']
+        if event.event == "mouseup" and event.button == 0:
+            clicked_icon_type = None
+            if icon_hovered != -1:
+                clicked_icon_type = self.icons[icon_hovered]['type']
+            elif footer_icon_hovered != -1:
+                clicked_icon_type = self.footer_icons[footer_icon_hovered]['type']
+                
             if clicked_icon_type == "close":
                 self.disable(True)
             elif clicked_icon_type == "minimize":
                 self.minimized = not self.minimized
                 self.mark_layout_invalid = True
                 self.canvas.resume()
-            elif clicked_icon_type == "copy":
-                clip.set_text(remove_tokens_from_rich_text(self.content["text_state"]))
-                actions.user.add_hud_log("event", "Copied contents of panel to clipboard!")
+            elif clicked_icon_type == "next":
+                new_page_index = min(self.page_index + 1, len(self.layout) - 1)
+                if new_page_index != self.page_index:                
+                    self.page_index = new_page_index
+                    self.canvas.resume()
+            elif clicked_icon_type == "previous":
+                new_page_index = max(self.page_index - 1, 0)
+                if new_page_index != self.page_index:                
+                    self.page_index = new_page_index
+                    self.canvas.resume()
          
 
         if event.button == 1 and event.event == "mouseup":            
@@ -101,11 +129,12 @@ class HeadUpTextBox(LayoutWidget):
                 total_text_width = max( total_text_width, current_line_length )
         header_height = max(header_height, self.padding[0] * 2 + self.icon_radius)
         
-        page_height_limit = self.limit_height
+        page_height_limit = self.limit_height - header_height * 2
         
         # We do not render content if the text box is minimized
         current_content_height = 0
         current_page_text = []
+        current_line_height = 0
         if not self.minimized:
             line_count = 0
             for index, text in enumerate(content_text):
@@ -115,13 +144,14 @@ class HeadUpTextBox(LayoutWidget):
                 total_text_height = total_text_height + text.height + self.line_padding if text.x == 0 else total_text_height
                 
                 current_content_height = total_text_height + self.padding[0] + self.padding[2] + header_height
+                current_line_height = text.height + self.line_padding
                 if page_height_limit > current_content_height:
                     current_page_text.append(text)
                     
                 # We have exceeded the page height limit, append the layout and try again
                 else:
                     width = min( self.limit_width, max(self.width, total_text_width + self.padding[1] + self.padding[3]))
-                    content_height = total_text_height - (text.height + self.line_padding)
+                    content_height = total_text_height - current_line_height
                     height = min(self.limit_height, max(self.height, content_height))
                     x = self.x if horizontal_alignment == "left" else self.limit_x + self.limit_width - width
                     y = self.limit_y if vertical_alignment == "top" else self.limit_y + self.limit_height - height
@@ -132,30 +162,39 @@ class HeadUpTextBox(LayoutWidget):
                         "icon_size": icon_size,
                         "content_text": current_page_text,
                         "header_height": header_height,
-                        "content_height": current_content_height - ( text.height + self.line_padding )
+                        "content_height": current_content_height - current_line_height
                     })
                     
                     # Reset the variables
-                    total_text_height = text.height + self.line_padding
+                    total_text_height = current_line_height
                     current_page_text = [text]
                     line_count = 1
-                    
+                  
+        # Make sure the remainder of the content gets placed on the final page
         if len(current_page_text) > 0:
-            width = min( self.limit_width, max(self.width, total_text_width + self.padding[1] + self.padding[3]))
-            content_height = header_height if self.minimized else total_text_height + self.padding[0] + self.padding[2] + header_height
-            height = header_height + self.padding[0] * 2 if self.minimized else min(self.limit_height, max(self.height, content_height))
-            x = self.x if horizontal_alignment == "left" else self.limit_x + self.limit_width - width
-            y = self.limit_y if vertical_alignment == "top" else self.limit_y + self.limit_height - height
-        
-            layout_pages.append({
-                "rect": ui.Rect(x, y, width, height), 
-                "line_count": max(1, line_count),
-                "header_text": header_text,
-                "icon_size": icon_size,
-                "content_text": current_page_text,
-                "header_height": header_height,
-                "content_height": content_height
-            })
+            
+            # If we are dealing with a single line going over to the only other page
+            # Just remove the footer to make up for space
+            if len(layout_pages) == 1 and line_count == 1:
+                layout_pages[0]['line_count'] = layout_pages[0]['line_count'] + 1
+                layout_pages[0]['content_text'].extend(current_page_text)
+                layout_pages[0]['content_height'] += current_line_height
+            else: 
+                width = min( self.limit_width, max(self.width, total_text_width + self.padding[1] + self.padding[3]))
+                content_height = header_height if self.minimized else total_text_height + self.padding[0] + self.padding[2] + header_height
+                height = header_height + self.padding[0] * 2 if self.minimized else min(self.limit_height, max(self.height, content_height))
+                x = self.x if horizontal_alignment == "left" else self.limit_x + self.limit_width - width
+                y = self.limit_y if vertical_alignment == "top" else self.limit_y + self.limit_height - height
+                            
+                layout_pages.append({
+                    "rect": ui.Rect(x, y, width, height), 
+                    "line_count": max(1, line_count),
+                    "header_text": header_text,
+                    "icon_size": icon_size,
+                    "content_text": current_page_text,
+                    "header_height": header_height,
+                    "content_height": content_height
+                })        
         
         return layout_pages
     
@@ -171,6 +210,9 @@ class HeadUpTextBox(LayoutWidget):
         
         background_height = self.draw_content_text(canvas, paint, dimensions)
         self.draw_header(canvas, paint, dimensions)
+        
+        if not self.minimized and len(self.layout) > 1:
+            self.draw_footer(canvas, paint, dimensions)
         
         return False
 
@@ -223,6 +265,29 @@ class HeadUpTextBox(LayoutWidget):
                 close_colour = self.theme.get_colour('close_icon_hover_colour') if self.icon_hovered == index else self.theme.get_colour('close_icon_accent_colour')            
                 paint.shader = skia.Shader.linear_gradient(self.x, self.y, self.x, self.y + header_height, (self.theme.get_colour('close_icon_colour'), close_colour), None)
                 canvas.draw_circle(icon_position[0], icon_position[1], self.icon_radius, paint)
+
+    def draw_footer(self, canvas, paint, dimensions):
+        footer_height = dimensions["header_height"]
+        dimensions = dimensions["rect"]
+
+        # Small divider between the content and the header
+        x = dimensions.x + self.padding[3]
+        start_y = dimensions.y + dimensions.height - self.padding[0] - self.padding[2] / 2
+        canvas.draw_text(str(self.page_index + 1 ) + ' of ' + str(len(self.layout)), x, start_y)
+        canvas.draw_rect(ui.Rect(x - self.padding[3], start_y - footer_height, dimensions.width, 1))
+        for index, icon in enumerate(self.footer_icons):
+            icon_position = [x + dimensions.width - self.padding[3] - (self.icon_radius * 1.5 + ( index * self.icon_radius * 2.2 )),
+                start_y - self.padding[0] * 2]
+            self.footer_icons[index]['pos'] = icon_position
+            paint.style = paint.Style.FILL
+            
+            hover_colour = '999999' if self.footer_icon_hovered == index else 'CCCCCC'            
+            paint.shader = skia.Shader.linear_gradient(self.x, self.y, self.x, self.y + footer_height, ('AAAAAA', hover_colour), None)
+            canvas.draw_circle(icon_position[0], icon_position[1], self.icon_radius, paint)
+            image = self.theme.get_image(icon["type"] + "_icon")
+            canvas.draw_image(image, icon_position[0] - image.width / 2, icon_position[1] - image.height / 2)
+            
+
 
     def draw_content_text(self, canvas, paint, dimensions) -> int:
         """Draws the content and returns the height of the drawn content"""
