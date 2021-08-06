@@ -57,11 +57,20 @@ testing event log message:
 	user.add_hud_log("event", "What I like to drink most is wine that belongs to others")
 ```
 
-The ability bar
+The text box widget
 
-This widget is meant as a place for commands that continually shift in availability or in a timed manner.
-It includes visualisations for 'cooldown' and 'channel' periods, much like you would see in an MMORPG. 
-It also allows for control visualisation, briefly blinking bigger upon activation.
+A catch all-widget for rich text display. It stretches the content until the defined screen limits given by the user.
+It allows text in a variety of styles, including bold and italic, and various colours.
+The header contains the name of the panel, including a minimize and a close button.
+If the content is larger than the allotted screen space, it will create multiple pages which are navigable using a next and previous page button.
+The text box will align itself based on the given expansion limits. If more space is available to the left, it will align itself to the right, and so on.
+
+The context menu
+
+A context menu can be configured to open on any widget that has mouse clicks enabled.
+This widget contains a bunch of buttons that will interact with the widget that it has opened.
+Currently it is only supported on the text box, where it allows you to copy the contents of the text box or close the text box.
+The context menu will attempt to stay on the screen where the right-click was made, and as such will change position accordingly.
 
 # Commands
 
@@ -102,8 +111,26 @@ If you prefer having a more basic animation free set up, or want to switch back 
 
 # Updating content
 
-As there only exists a single widget right now, the updating content flow is still in its infancy and is subject to change.
-This section will be properly expanded when more widgets are added.
+It is possible to update the content of various widgets.
+For example, you can add your own status bar icons or event log messages as per the specifications of those widgets.
+
+However, for the text boxes, it isn't yet possible to dynamically set the content as the ideas surrounding content distribution for that are still being fleshed out.
+When it does arrive, you will be able to set rich text in the contents.
+
+Rich text is just like regular text, but it contains some markers to make text bold, italic, or one of the four predefined styles.
+If no rich text markers are active, the text will just be the default text style.
+For example, the following rich text: I am <*REALLY/> hungry.
+Will look like this when displayed: I am **REALLY** hungry.
+
+The following rich text markers are available:
+<* - Start bold text
+</ - Start italic text
+<+ - Start green coloured text
+<!! - Start red coloured text
+<! - Start orange coloured text
+<@ - Start blue coloured text
+
+Any marker can be negated with the /> marker, which will end the last added style.
 
 # Guidelines
 
@@ -130,10 +157,6 @@ In general, it is best to keep the images small for memory sake. But otherwise g
 
 These are ideas that I want to implement in no specific order and with no specific timeline in mind.
 
-- WIP - An event log that can be filtered by the user, with a time to life setting that makes the message fade away ( much like a status message in an FPS )
-- A regular text panel with a header and a close icon with limited growth bounds.
-- A fallback text panel that shows every content update that isn't specifically registered by another text panel
-- A context menu widget that can be opened by right clicking on a widget with mouse_enabled turned on.
 - An indicator widget that follows the cursor around to show a single state that is important to the current task at hand
 - An image panel with a header and a close icon which displays image content
 - A capture that checks what themes are available on app ready by checking the directories in themes
