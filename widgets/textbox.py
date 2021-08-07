@@ -89,7 +89,7 @@ class HeadUpTextBox(LayoutWidget):
          
 
         if event.button == 1 and event.event == "mouseup":            
-            actions.user.show_context_menu(self.id, event.gpos.x, event.gpos.y, [])
+            actions.user.show_context_menu(self.id, event.gpos.x, event.gpos.y, self.panel_content.buttons)
 
         if event.button == 0 and event.event == "mouseup":
             actions.user.hide_context_menu()

@@ -1,3 +1,4 @@
+from talon import ui
 from typing import TypedDict
 from dataclasses import dataclass
 
@@ -6,7 +7,7 @@ class HudIcon(TypedDict):
     image: str
     clickable: bool
     explanation: str
-        
+
 @dataclass
 class HudRichText:
     x: int
@@ -19,9 +20,10 @@ class HudRichTextLine: list[HudRichText]
 
 @dataclass
 class HudButton:
-    icon: HudIcon
+    icon: str
     type: str
     text: str
+    rect: ui.Rect
 
 @dataclass
 class HudPanelContent:

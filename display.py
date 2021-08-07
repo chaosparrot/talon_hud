@@ -208,7 +208,7 @@ class HeadUpDisplay:
                     widget.setup_move(self.prev_mouse_pos)
 
     # Move the context menu over to the given location fitting within the screen
-    def move_context_menu(self, widget_id: str, pos_x: int, pos_y: int, buttons: Any):
+    def move_context_menu(self, widget_id: str, pos_x: int, pos_y: int, buttons: list[HudButton]):
         connected_widget = None
         context_menu_widget = None
         for widget in self.widgets:
@@ -282,7 +282,7 @@ class Actions:
         global hud
         hud.start_setup_id(id, setup_mode)
                 
-    def show_context_menu(widget_id: str, pos_x: int, pos_y: int, buttons: Any):
+    def show_context_menu(widget_id: str, pos_x: int, pos_y: int, buttons: list[HudButton]):
         """Show the context menu for a specific widget id"""
         hud.move_context_menu(widget_id, pos_x, pos_y, buttons)
         

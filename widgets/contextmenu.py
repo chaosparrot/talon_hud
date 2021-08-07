@@ -4,6 +4,7 @@ from user.talon_hud.base_widget import BaseWidget
 from user.talon_hud.layout_widget import LayoutWidget
 from user.talon_hud.widget_preferences import HeadUpDisplayUserWidgetPreferences
 from user.talon_hud.utils import determine_screen_for_pos, layout_rich_text
+from user.talon_hud.content_types import HudButton
 import numpy
 
 class HeadUpContextMenu(LayoutWidget):
@@ -18,20 +19,18 @@ class HeadUpContextMenu(LayoutWidget):
 
     connected_widget = None
     button_hovered = -1
-    buttons = [{
-            'type': 'copy',
-            'icon': 'copy_icon',
-            'text': 'Copy contents',
-            'rect': ui.Rect(0, 0, 0, 0)
-        }, {
+    default_buttons = [{
+            'icon': None,
             'type': 'close',
             'text': 'Close panel',
             'rect': ui.Rect(0, 0, 0, 0)
         }, {
+            'icon': None,        
             'type': 'cancel',
-            'text': 'Cancel',
+            'text': 'Cancel options',
             'rect': ui.Rect(0, 0, 0, 0)
         }]
+    buttons = []
 
     subscribed_content = ["mode", "context_menu_buttons"]
     content = {
@@ -65,7 +64,7 @@ class HeadUpContextMenu(LayoutWidget):
                     self.connected_widget.disable(True)
             self.disconnect_widget()
             
-    def connect_widget(self, widget: BaseWidget, pos_x: int, pos_y: int, buttons):        
+    def connect_widget(self, widget: BaseWidget, pos_x: int, pos_y: int, buttons: list[HudButton]):        
         # Connect a widget up to context menu and move the context menu over
         self.limit_x = pos_x
         self.limit_y = pos_y
@@ -82,6 +81,10 @@ class HeadUpContextMenu(LayoutWidget):
             self.mark_layout_invalid = True
             self.canvas.move(pos_x, pos_y)
             self.canvas.resume()
+            
+        self.buttons = list(self.default_buttons)
+        if len(buttons) > 0:
+            self.buttons[:0] = buttons
             
     def disconnect_widget(self):
         self.connected_widget = None
@@ -131,7 +134,7 @@ class HeadUpContextMenu(LayoutWidget):
         total_button_height = 0
         for index, button in enumerate(self.buttons):
             icon_offset = 0
-            if 'icon' in button and button['icon'] != "":
+            if 'icon' in button and button['icon'] != None:
                 icon_offset = self.image_size + self.padding[3] * 3
             button_rich_text = layout_rich_text(paint, button['text'], \
                 self.limit_width - icon_offset - self.padding[3] * 2 - self.padding[1] * 2, self.limit_height)                
@@ -152,7 +155,7 @@ class HeadUpContextMenu(LayoutWidget):
                 'text_height': button_text_height
             })
     
-        content_width = min(self.limit_width, max(self.width, total_text_width + self.padding[1] + self.padding[3]))
+        content_width = min(self.limit_width, max(self.width, total_text_width + self.padding[1] * 2 + self.padding[3] * 2))
         content_height = min(self.limit_height, max(self.height, total_button_height + self.padding[0] * 2 + self.padding[2] * 2))
     
         return [{
@@ -190,7 +193,7 @@ class HeadUpContextMenu(LayoutWidget):
             canvas.draw_rrect( skia.RoundRect.from_rect(rect, x=10, y=10) )
             
             # Draw button icon on the left in the middle
-            button_icon = button_layout['button']['icon'] if 'icon' in button_layout['button'] else ''
+            button_icon = button_layout['button']['icon'] if 'icon' in button_layout['button'] else None
             if button_icon:
                 image = self.theme.get_image(button_icon)
                 canvas.draw_image(image, base_button_x + self.padding[3], button_y + button_height / 2 - image.height / 2)
