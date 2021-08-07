@@ -10,6 +10,8 @@ class KnausjStatePoller:
     enabled = False
     current_lang_forced = False
     
+    previous_scope_state = ''
+    
     def enable(self):
         if (self.enabled != True):
             self.enabled = True
@@ -34,10 +36,14 @@ class KnausjStatePoller:
                 'ext': self.get_lang_extension(self.determine_programming_language()),
                 'forced': self.current_lang_forced and self.determine_mode() != "dictation"
             },
-            "text_state": self.get_state_in_text()
         }
         
         hud_content.update(content)
+        
+        scope_state = self.get_state_in_text()
+        if (scope_state != self.previous_scope_state):
+            self.previous_scope_state = scope_state
+            actions.user.hud_publish_content(scope_state, 'scope', 'Debug panel', False)
             
     def on_phrase(self, j):
         try:
@@ -66,12 +72,16 @@ class KnausjStatePoller:
         tags = scope.get('tag')
         
         new_tags = []
-        for tag in tags:
-            new_tags.append(tag)
+        if tags is not None:
+            for tag in tags:
+                new_tags.append(tag)
                 
         modes = []
-        for mode in scope.get('mode'):
-            modes.append(mode)
+        scopemodes = scope.get('mode')
+        if scopemodes is not None:
+            for mode in scopemodes:
+                modes.append(mode)
+                
         text = "<*App: " + scope.get('app')['name'] + "/>\n" + scope.get('win')['title'] + "/>\n<*<+Tags:/>/>\n" + "\n".join(sorted(new_tags)) + "\n<*<!Modes:/>/>  " + " - ".join(sorted(modes))
         return text
     

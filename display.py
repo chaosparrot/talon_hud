@@ -12,6 +12,7 @@ from user.talon_hud.widgets.eventlog import HeadUpEventLog
 from user.talon_hud.widgets.abilitybar import HeadUpAbilityBar
 from user.talon_hud.widgets.textbox import HeadUpTextBox
 from user.talon_hud.widgets.contextmenu import HeadUpContextMenu
+from user.talon_hud.content_types import HudPanelContent, HudButton
 
 ctx = Context()
 mod = Module()
@@ -40,7 +41,7 @@ class HeadUpDisplay:
             HeadUpStatusBar('status_bar', self.preferences.prefs, self.theme),
             HeadUpEventLog('event_log', self.preferences.prefs, self.theme),
             #HeadUpAbilityBar('ability_bar', self.preferences.prefs, self.theme),
-            HeadUpTextBox('debug_panel', self.preferences.prefs, self.theme),
+            HeadUpTextBox('debug_panel', self.preferences.prefs, self.theme, {'topics': ['debug']}),
             
             # Special widgets that have varying positions
             HeadUpContextMenu('context_menu', self.preferences.prefs, self.theme),            
@@ -63,6 +64,7 @@ class HeadUpDisplay:
                     widget.enable()
             
             self.display_state.register('content_update', self.content_update)
+            self.display_state.register('panel_update', self.panel_update)            
             self.display_state.register('log_update', self.log_update)
             self.determine_active_setup_mouse()            
             if persisted:
@@ -80,6 +82,7 @@ class HeadUpDisplay:
                 self.disable_poller_job = cron.interval('30ms', self.disable_poller_check)                
             
             self.display_state.unregister('content_update', self.content_update)
+            self.display_state.unregister('panel_update', self.panel_update)
             self.display_state.unregister('log_update', self.log_update)
             self.determine_active_setup_mouse()
             
@@ -168,6 +171,17 @@ class HeadUpDisplay:
             if new_log['type'] in widget.subscribed_logs or '*' in widget.subscribed_logs:
                 widget.append_log(new_log)
 
+    def panel_update(self, data):
+        for widget in self.widgets:
+            panel_content = None        
+            for key in data:
+                if key in widget.subscribed_topics:
+                    if panel_content == None or data[key].published_at > panel_content.published_at:
+                        panel_content = data[key]
+            
+            if panel_content != None:
+                widget.update_panel(panel_content)
+
     # Determine whether or not we need to have a global mouse poller
     # This poller is needed for setup modes as not all canvases block the mouse
     def determine_active_setup_mouse(self):
@@ -244,6 +258,40 @@ class Actions:
         global hud
         hud.persist_widgets_preferences()
 
+    def enable_hud_id(id: str):
+        """Enables a specific hud element"""
+        global hud        
+        hud.enable_id(id)
+        
+    def set_widget_preference(id: str, property: str, value: Any):
+        """Set a specific widget preference"""
+        hud.set_widget_preference(id, property, value, True)
+        
+    def disable_hud_id(id: str):
+        """Disables a specific hud element"""
+        global hud
+        hud.disable_id(id)
+        
+    def switch_hud_theme(theme_name: str):
+        """Switches the UI theme"""
+        global hud
+        hud.switch_theme(theme_name)
+        
+    def set_hud_setup_mode(setup_mode: str, id: str):
+        """Starts a setup mode which can change position"""
+        global hud
+        hud.start_setup_id(id, setup_mode)
+                
+    def show_context_menu(widget_id: str, pos_x: int, pos_y: int, buttons: Any):
+        """Show the context menu for a specific widget id"""
+        hud.move_context_menu(widget_id, pos_x, pos_y, buttons)
+        
+    def hide_context_menu():
+        """Show the context menu for a specific widget id"""
+        hud.hide_context_menu()
+        
+    # - Content related actions
+    
     def add_hud_log(type: str, message: str):
         """Disables the HUD"""
         global hud_content
@@ -282,36 +330,14 @@ class Actions:
         global hud_content
         hud_content.remove_from_set("abilities", {
             "id": id
-        })
-
-    def enable_hud_id(id: str):
-        """Enables a specific hud element"""
-        global hud        
-        hud.enable_id(id)
+        })    
         
-    def set_widget_preference(id: str, property: str, value: Any):
-        """Set a specific widget preference"""
-        hud.set_widget_preference(id, property, value, True)
+    def hud_publish_content(content: str, widget_hint: str = '', title:str = '', show:bool = True, buttons: list[HudButton] = None):
+        """Publish a specific piece of content to a user defined widget"""            
+        if buttons == None:
+            buttons = []
+        content = HudPanelContent(widget_hint, title, [content], buttons, time.time(), show)
         
-    def disable_hud_id(id: str):
-        """Disables a specific hud element"""
-        global hud
-        hud.disable_id(id)
+        global hud_content
+        hud_content.publish(content)
         
-    def switch_hud_theme(theme_name: str):
-        """Switches the UI theme"""
-        global hud
-        hud.switch_theme(theme_name)
-        
-    def set_hud_setup_mode(setup_mode: str, id: str):
-        """Starts a setup mode which can change position"""
-        global hud
-        hud.start_setup_id(id, setup_mode)
-                
-    def show_context_menu(widget_id: str, pos_x: int, pos_y: int, buttons: Any):
-        """Show the context menu for a specific widget id"""
-        hud.move_context_menu(widget_id, pos_x, pos_y, buttons)
-        
-    def hide_context_menu():
-        """Show the context menu for a specific widget id"""
-        hud.hide_context_menu()

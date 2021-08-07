@@ -1,5 +1,6 @@
 from talon import actions, cron, scope
 from talon.scripting import Dispatch
+from user.talon_hud.content_types import HudPanelContent, HudButton
 import time
 
 max_log_length = 50
@@ -19,9 +20,24 @@ class HeadUpDisplayContent(Dispatch):
         },
         "status_icons": [],
         "log": [],
-        "abilities": []
+        "abilities": [],
+        "panel_content": {
+            'debug': HudPanelContent('debug', '', 'Debug panel', [], 0, True),
+            'history': HudPanelContent('history', '', 'History panel', [], 0, True),
+            'choice': HudPanelContent('choice', '', 'Choice panel', [], 0, True),
+            'documentation': HudPanelContent('documentation', '', 'Documentation panel', [], 0, True)
+        }
     }
-            
+    
+    # Publish content meant for text boxes and other panels
+    def publish(self, panel_content: HudPanelContent):
+        purpose = panel_content.purpose
+        if purpose not in ['debug', 'history', 'choice', 'documentation']:
+            purpose = 'debug'
+    
+        self.content['panel_content'][purpose] = panel_content
+        self.dispatch('panel_update', self.content['panel_content'])
+    
     # Update the content and sends an event if the state has changed
     def update(self, dict):
         updated = False

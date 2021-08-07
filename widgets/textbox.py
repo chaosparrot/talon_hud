@@ -2,6 +2,7 @@ from talon import skia, ui, Module, cron, actions, clip
 from user.talon_hud.layout_widget import LayoutWidget
 from user.talon_hud.widget_preferences import HeadUpDisplayUserWidgetPreferences
 from user.talon_hud.utils import layout_rich_text, remove_tokens_from_rich_text, HudRichTextLine
+from user.talon_hud.content_types import HudPanelContent
 import numpy
 
 class HeadUpTextBox(LayoutWidget):
@@ -34,16 +35,15 @@ class HeadUpTextBox(LayoutWidget):
         "pos": [0,0]
     }]
 
-    subscribed_content = ["mode", "text_state"]
+    subscribed_content = ["mode"]
     content = {
         'mode': 'command',
-        'textbox_header': 'Debug panel',
-        'text_state': " "
     }
+    panel_content = HudPanelContent('', '', [''], [], 0, False)    
     animation_max_duration = 60
-    
+        
     def copy_contents(self):
-        clip.set_text(remove_tokens_from_rich_text(self.content["text_state"]))
+        clip.set_text(remove_tokens_from_rich_text(self.panel_content.content[0]))
     
     def on_mouse(self, event):
         pos = numpy.array(event.gpos)
@@ -109,8 +109,9 @@ class HeadUpTextBox(LayoutWidget):
         icon_size = len(self.icons) * 2 * self.icon_radius
     
         """Calculates the width and the height of the content"""
-        header_text = layout_rich_text(paint, self.content['textbox_header'], self.limit_width - icon_size, self.limit_height)
-        content_text = [] if self.minimized else layout_rich_text(paint, self.content['text_state'], layout_width, self.limit_height)
+        header_title = self.panel_content.title if self.panel_content.title != "" else self.id
+        header_text = layout_rich_text(paint, header_title, self.limit_width - icon_size, self.limit_height)
+        content_text = [] if self.minimized else layout_rich_text(paint, self.panel_content.content[0], layout_width, self.limit_height)
         
         layout_pages = []
         
@@ -171,7 +172,7 @@ class HeadUpTextBox(LayoutWidget):
                     line_count = 1
                   
         # Make sure the remainder of the content gets placed on the final page
-        if len(current_page_text) > 0:
+        if len(current_page_text) > 0 or len(layout_pages) == 0:
             
             # If we are dealing with a single line going over to the only other page
             # Just remove the footer to make up for space
@@ -185,7 +186,7 @@ class HeadUpTextBox(LayoutWidget):
                 height = header_height + self.padding[0] * 2 if self.minimized else min(self.limit_height, max(self.height, content_height))
                 x = self.x if horizontal_alignment == "left" else self.limit_x + self.limit_width - width
                 y = self.limit_y if vertical_alignment == "top" else self.limit_y + self.limit_height - height
-                            
+                
                 layout_pages.append({
                     "rect": ui.Rect(x, y, width, height), 
                     "line_count": max(1, line_count),
@@ -230,7 +231,7 @@ class HeadUpTextBox(LayoutWidget):
         paint.font.embolden = True
         
         x = dimensions.x + self.padding[3]
-        canvas.draw_text(self.content['textbox_header'], x, dimensions.y + self.font_size)
+        canvas.draw_text(self.panel_content.title if self.panel_content.title else self.id, x, dimensions.y + self.font_size)
         
         # Small divider between the content and the header
         if not self.minimized:

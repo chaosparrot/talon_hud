@@ -21,6 +21,7 @@ class BaseWidget(metaclass=ABCMeta):
     allowed_setup_options = ["position", "dimension", "limit", "font_size"]
     subscribed_content = ['mode']
     subscribed_logs = []
+    subscribed_topics = []
     content = {}
         
     animation_tick = 0
@@ -30,10 +31,13 @@ class BaseWidget(metaclass=ABCMeta):
     setup_vertical_direction = ""
     setup_horizontal_direction = ""
     
-    def __init__(self, id, preferences_dict, theme):
+    def __init__(self, id, preferences_dict, theme, subscriptions = None):
         self.id = id
         self.theme = theme
         self.load(preferences_dict)
+        if subscriptions != None:
+            self.subscribed_topics = subscriptions['topics'] if 'topics' in subscriptions else self.subscribed_topics
+            self.subscribed_logs = subscriptions['logs'] if 'logs' in subscriptions else self.subscribed_topics            
             
     # Load the widgets preferences
     def load(self, dict, initialize = True):
@@ -67,7 +71,7 @@ class BaseWidget(metaclass=ABCMeta):
     
     def update_content(self, content):
         if not self.sleep_enabled and "mode" in content:
-            if (content["mode"] == "sleep"):            
+            if (content["mode"] == "sleep"):
                 self.disable()
             elif self.preferences.enabled == True:
                 self.enable()
@@ -77,6 +81,17 @@ class BaseWidget(metaclass=ABCMeta):
             self.content[key] = content[key]
         
         if self.enabled:
+            self.canvas.resume()
+            
+    def update_panel(self, panel_content):
+        if not panel_content.content[0] and self.enabled:
+            self.disable()
+    
+        if not self.enabled and panel_content.show:
+            self.enable()
+        
+        if self.enabled:
+            self.panel_content = panel_content
             self.canvas.resume()
     
     def enable(self, persisted=False):

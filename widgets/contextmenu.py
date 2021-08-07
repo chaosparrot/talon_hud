@@ -14,14 +14,14 @@ class HeadUpContextMenu(LayoutWidget):
     # Top, right, bottom, left, same order as CSS padding
     padding = [8, 8, 8, 8]
     line_padding = 8
-    image_size = 30
+    image_size = 20
 
     connected_widget = None
     button_hovered = -1
     buttons = [{
             'type': 'copy',
             'icon': 'copy_icon',
-            'text': 'Copy contents or something I dont know',
+            'text': 'Copy contents',
             'rect': ui.Rect(0, 0, 0, 0)
         }, {
             'type': 'close',

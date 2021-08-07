@@ -49,7 +49,19 @@ class LayoutWidget(BaseWidget):
     def setup_move(self, pos):
         self.mark_layout_invalid = True
         super().setup_move(pos)
-            
+
+    def update_panel(self, panel_content):
+        if not panel_content.content[0] and self.enabled:
+            self.disable()
+
+        if not self.enabled and panel_content.show:
+            self.enable()
+    
+        if self.enabled:
+            self.panel_content = panel_content
+            self.mark_layout_invalid = True
+            self.canvas.resume()
+
     def layout_content(self, canvas, paint):
         # Determine the dimensions and positions of the content
         return [{"rect": ui.Rect(self.limit_x, self.limit_y, self.limit_width, self.limit_height)}]

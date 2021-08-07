@@ -16,3 +16,18 @@ class HudRichText:
     text: str
     
 class HudRichTextLine: list[HudRichText]
+
+@dataclass
+class HudButton:
+    icon: HudIcon
+    type: str
+    text: str
+
+@dataclass
+class HudPanelContent:
+    purpose: str
+    title: str
+    content: list[str]
+    buttons: list[HudButton]
+    published_at: float
+    show: bool
