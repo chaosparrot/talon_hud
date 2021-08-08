@@ -104,6 +104,9 @@ def lighten_hex_colour(hex: str, percent: int) -> str:
         new_hex += '0' + format(value, 'x') if value <= 15 else format(value, 'x')
     return new_hex
     
+def string_to_speakable_string(str: str) -> str:
+    return re.sub(r'([!?-_\,\.])', ' ', str.lower()).strip()
+    
 def determine_screen_for_pos(pos) -> ui.Screen:
     for index, screen in enumerate(ui.screen.screens()):
         if screen.x <= pos.x and screen.y <= pos.y and screen.x + screen.width >= pos.x \

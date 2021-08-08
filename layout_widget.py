@@ -40,9 +40,9 @@ class LayoutWidget(BaseWidget):
     def refresh(self, new_content):
         self.mark_layout_invalid = True
         self.page_index = 0
-        
+
     def set_page_index(self, page_index: int):
-        self.page_index = 0
+        self.page_index = max(0, min(page_index, len(self.layout) - 1))
         if self.canvas:
             self.canvas.resume()
         
@@ -75,6 +75,9 @@ class LayoutWidget(BaseWidget):
         
         if self.mark_layout_invalid:
             self.layout = self.layout_content(canvas, paint)
+            
+        if self.page_index > len(self.layout) - 1:
+            self.page_index = len(self.layout) -1            
         content_dimensions = self.layout[self.page_index]
         
         # Debug layout size / position

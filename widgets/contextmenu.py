@@ -62,7 +62,7 @@ class HeadUpContextMenu(LayoutWidget):
             elif clicked_button_type == "close":
                 if self.connected_widget:
                     self.connected_widget.disable(True)
-            self.disconnect_widget()
+            actions.user.hide_context_menu()
             
     def connect_widget(self, widget: BaseWidget, pos_x: int, pos_y: int, buttons: list[HudButton]):        
         # Connect a widget up to context menu and move the context menu over

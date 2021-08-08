@@ -7,15 +7,25 @@ from typing import Any
 from user.talon_hud.preferences import HeadUpDisplayUserPreferences
 from user.talon_hud.theme import HeadUpDisplayTheme
 from user.talon_hud.state import hud_content
+from user.talon_hud.layout_widget import LayoutWidget
 from user.talon_hud.widgets.statusbar import HeadUpStatusBar
 from user.talon_hud.widgets.eventlog import HeadUpEventLog
 from user.talon_hud.widgets.abilitybar import HeadUpAbilityBar
 from user.talon_hud.widgets.textbox import HeadUpTextBox
 from user.talon_hud.widgets.contextmenu import HeadUpContextMenu
 from user.talon_hud.content_types import HudPanelContent, HudButton
+from user.talon_hud.utils import string_to_speakable_string
 
 ctx = Context()
 mod = Module()
+mod.list("talon_hud_widget_names", desc="List of available widgets by name linked to their identifier")
+mod.list("talon_hud_widget_options", desc="List of options available to the widgets")
+mod.list("talon_hud_choices", desc="Available choices shown on screen")
+mod.tag("talon_hud_available", desc="Tag that shows the availability of the Talon HUD repository for other scripts")
+mod.tag("talon_hud_visible", desc="Tag that shows that the Talon HUD is visible")
+mod.tag("talon_hud_choices_visible", desc="Tag that shows there are choices available on screen that can be chosen")
+
+ctx.tags = ['user.talon_hud_available']
 
 class HeadUpDisplay:
     enabled = False
@@ -26,6 +36,7 @@ class HeadUpDisplay:
     disable_poller_job = None
     show_animations = False
     widgets = []
+    choices_visible = False
     
     prev_mouse_pos = None
     mouse_poller = None
@@ -69,6 +80,7 @@ class HeadUpDisplay:
             self.determine_active_setup_mouse()            
             if persisted:
                 self.preferences.persist_preferences({'enabled': True})
+            self.update_context()
 
     def disable(self, persisted=False):
         if self.enabled:
@@ -88,7 +100,8 @@ class HeadUpDisplay:
             
             if persisted:
                 self.preferences.persist_preferences({'enabled': False})
-        
+            self.update_context()
+            
     # Persist the preferences of all the widgets
     def persist_widgets_preferences(self):
         dict = {}
@@ -172,6 +185,7 @@ class HeadUpDisplay:
                 widget.append_log(new_log)
 
     def panel_update(self, data):
+        updated = False
         for widget in self.widgets:
             panel_content = None        
             for key in data:
@@ -181,6 +195,9 @@ class HeadUpDisplay:
             
             if panel_content != None:
                 widget.update_panel(panel_content)
+                updated = True
+        if updated:
+            self.update_context()
 
     # Determine whether or not we need to have a global mouse poller
     # This poller is needed for setup modes as not all canvases block the mouse
@@ -207,6 +224,18 @@ class HeadUpDisplay:
                 if widget.enabled and widget.setup_type != "":
                     widget.setup_move(self.prev_mouse_pos)
 
+    # Increase the page number by one on the widget if it is enabled
+    def increase_widget_page(self, widget_id: str):
+        for widget in self.widgets:
+            if widget.enabled and widget.id == widget_id and isinstance(widget, LayoutWidget):
+                widget.set_page_index(widget.page_index + 1)
+
+    # Decrease the page number by one on the widget if it is enabled
+    def decrease_widget_page(self, widget_id: str):
+        for widget in self.widgets:
+            if widget.enabled and widget.id == widget_id and isinstance(widget, LayoutWidget):
+                widget.set_page_index(widget.page_index - 1)
+
     # Move the context menu over to the given location fitting within the screen
     def move_context_menu(self, widget_id: str, pos_x: int, pos_y: int, buttons: list[HudButton]):
         connected_widget = None
@@ -218,6 +247,8 @@ class HeadUpDisplay:
                 context_menu_widget = widget
         if connected_widget and context_menu_widget:
             context_menu_widget.connect_widget(connected_widget, pos_x, pos_y, buttons)
+            self.choices_visible = True
+            self.update_context()
     
     # Hide the context menu
     # Generally you want to do this when you click outside of the menu itself
@@ -228,7 +259,31 @@ class HeadUpDisplay:
                 context_menu_widget = widget
                 break
         if context_menu_widget:
-            context_menu_widget.disconnect_widget()        
+            context_menu_widget.disconnect_widget()
+            self.choices_visible = False
+            self.update_context()
+
+    # Updates the context based on the current HUD state
+    def update_context(self):
+        tags = [
+            'user.talon_hud_available'
+        ]
+        if self.enabled:
+            tags.append('user.talon_hud_visible')
+        if self.choices_visible:
+            tags.append('user.talon_hud_choices_visible')
+        ctx.tags = tags
+        
+        widget_names = {}
+        for widget in self.widgets:
+            widget_names[string_to_speakable_string(widget.id)] = widget.id
+            if isinstance(widget, HeadUpTextBox):
+                content_title = string_to_speakable_string(widget.panel_content.title)
+                if content_title:
+                    widget_names[string_to_speakable_string(widget.panel_content.title)] = widget.id
+        
+        ctx.lists['user.talon_hud_widget_names'] = widget_names
+    
 
 def create_hud():
     global hud
@@ -340,4 +395,13 @@ class Actions:
         
         global hud_content
         hud_content.publish(content)
-        
+    
+    def increase_widget_page(widget_id: str):
+        """Increase the content page of the widget if it has pages available"""
+        global hud
+        hud.increase_widget_page(widget_id)
+
+    def decrease_widget_page(widget_id: str):
+        """Decrease the content page of the widget if it has pages available"""
+        global hud
+        hud.decrease_widget_page(widget_id)        
