@@ -53,7 +53,11 @@ class HeadUpContextMenu(LayoutWidget):
             self.canvas.resume()
             
         if event.event == "mouseup" and event.button == 0 and button_hovered != -1:
-            clicked_button_type = self.buttons[button_hovered]['type']
+            self.click_button(self.button_hovered)
+    
+    def click_button(self, button_index):
+        if button_index > -1 and button_index < len(self.buttons):
+            clicked_button_type = self.buttons[button_index]['type']
             self.button_hovered = -1
             if clicked_button_type == "copy":
                 if self.connected_widget:
@@ -63,7 +67,7 @@ class HeadUpContextMenu(LayoutWidget):
                 if self.connected_widget:
                     self.connected_widget.disable(True)
             actions.user.hide_context_menu()
-            
+    
     def connect_widget(self, widget: BaseWidget, pos_x: int, pos_y: int, buttons: list[HudButton]):        
         # Connect a widget up to context menu and move the context menu over
         self.limit_x = pos_x

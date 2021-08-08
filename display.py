@@ -21,6 +21,7 @@ mod = Module()
 mod.list("talon_hud_widget_names", desc="List of available widgets by name linked to their identifier")
 mod.list("talon_hud_widget_options", desc="List of options available to the widgets")
 mod.list("talon_hud_choices", desc="Available choices shown on screen")
+mod.list("talon_hud_quick_choices", desc="List of widgets with their quick options")
 mod.tag("talon_hud_available", desc="Tag that shows the availability of the Talon HUD repository for other scripts")
 mod.tag("talon_hud_visible", desc="Tag that shows that the Talon HUD is visible")
 mod.tag("talon_hud_choices_visible", desc="Tag that shows there are choices available on screen that can be chosen")
@@ -249,6 +250,28 @@ class HeadUpDisplay:
             context_menu_widget.connect_widget(connected_widget, pos_x, pos_y, buttons)
             self.choices_visible = True
             self.update_context()
+            
+    # Connect the context menu using voice
+    def connect_context_menu(self, widget_id):
+        connected_widget = None
+        context_menu_widget = None
+        for widget in self.widgets:
+            if widget.enabled and widget.id == widget_id:
+                connected_widget = widget
+            elif widget.id == 'context_menu':      
+                context_menu_widget = widget
+        
+        buttons = []
+        if connected_widget:
+            pos_x = connected_widget.x + connected_widget.width / 2
+            pos_y = connected_widget.y + connected_widget.height
+            if isinstance(connected_widget, HeadUpTextBox):
+                buttons = connected_widget.panel_content.buttons
+        
+            if context_menu_widget:
+                context_menu_widget.connect_widget(connected_widget, pos_x, pos_y, buttons)
+                self.choices_visible = True
+                self.update_context()                
     
     # Hide the context menu
     # Generally you want to do this when you click outside of the menu itself
@@ -262,6 +285,13 @@ class HeadUpDisplay:
             context_menu_widget.disconnect_widget()
             self.choices_visible = False
             self.update_context()
+    
+    # Active a given choice for a given widget
+    def activate_choice(self, choice_string):
+        widget_id, choice_index = choice_string.split("|")
+        for widget in self.widgets:
+            if widget.id == widget_id:
+                widget.click_button(int(choice_index))
 
     # Updates the context based on the current HUD state
     def update_context(self):
@@ -275,14 +305,36 @@ class HeadUpDisplay:
         ctx.tags = tags
         
         widget_names = {}
+        choices = {}
+        quick_choices = {}        
         for widget in self.widgets:
-            widget_names[string_to_speakable_string(widget.id)] = widget.id
+            current_widget_names = [string_to_speakable_string(widget.id)]        
             if isinstance(widget, HeadUpTextBox):
                 content_title = string_to_speakable_string(widget.panel_content.title)
                 if content_title:
-                    widget_names[string_to_speakable_string(widget.panel_content.title)] = widget.id
+                    current_widget_names.append(string_to_speakable_string(widget.panel_content.title))
+                    
+            for widget_name in current_widget_names:
+                widget_names[widget_name] = widget.id
+                
+            # Add quick choices
+            if isinstance(widget, HeadUpTextBox):
+                for index, button in enumerate(widget.panel_content.buttons):
+                    choice_title = string_to_speakable_string(button['text'])                    
+                    if choice_title:
+                        for widget_name in current_widget_names:
+                            quick_choices[widget_name + " " + choice_title] = widget.id + "|" + str(index)
+                
+            # Add choices
+            if widget.enabled and isinstance(widget, HeadUpContextMenu):
+                for index, button in enumerate(widget.buttons):
+                    choice_title = string_to_speakable_string(button['text'])
+                    if choice_title:
+                        choices[choice_title] = widget.id + "|" + str(index)                        
         
         ctx.lists['user.talon_hud_widget_names'] = widget_names
+        ctx.lists['user.talon_hud_choices'] = choices
+        ctx.lists['user.talon_hud_quick_choices'] = quick_choices
     
 
 def create_hud():
@@ -404,4 +456,19 @@ class Actions:
     def decrease_widget_page(widget_id: str):
         """Decrease the content page of the widget if it has pages available"""
         global hud
-        hud.decrease_widget_page(widget_id)        
+        hud.decrease_widget_page(widget_id)
+        
+    def decrease_widget_page(widget_id: str):
+        """Decrease the content page of the widget if it has pages available"""
+        global hud
+        hud.decrease_widget_page(widget_id)
+        
+    def hud_widget_options(widget_id: str):
+        """Connect the widget to the context menu to show the options"""
+        global hud
+        hud.connect_context_menu(widget_id)
+        
+    def hud_activate_choice(choice_string: str):
+        """Activate a choice available on the screen"""    
+        global hud
+        hud.activate_choice(choice_string)
