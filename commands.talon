@@ -41,6 +41,8 @@
 ^head up expand debug panel$: user.set_hud_setup_mode("debug_panel", "limit")
 ^head up drag debug panel$: user.set_hud_setup_mode("debug_panel", "position")
 ^head up text scale debug panel$: user.set_hud_setup_mode("debug_panel", "font_size")
+^head up minimize debug panel$: user.set_widget_preference("debug_panel", "minimized", 1)
+^head up maximize debug panel$: user.set_widget_preference("debug_panel", "minimized", 0)
 
 # Context menu commands
 ^head up (hide|close) context menu$: 

@@ -55,6 +55,7 @@ class BaseWidget(metaclass=ABCMeta):
         self.font_size = self.preferences.font_size
         self.alignment = self.preferences.alignment
         self.expand_direction = self.preferences.expand_direction
+        self.minimized = self.preferences.minimized
 
         if initialize:
             self.load_theme_values()        

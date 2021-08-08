@@ -98,7 +98,7 @@ class LayoutWidget(BaseWidget):
         
     def draw_rich_text(self, canvas, paint, rich_text, x, y, line_height, single_line=False):
         # Draw text line by line
-        text_colour = self.theme.get_colour('text_box_colour')
+        text_colour = paint.color
         error_colour = self.theme.get_colour('error_colour', 'AA0000')
         warning_colour = self.theme.get_colour('warning_colour', 'F75B00')
         success_colour = self.theme.get_colour('success_colour', '00CC00')

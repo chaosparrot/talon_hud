@@ -7,12 +7,11 @@ import numpy
 
 class HeadUpTextBox(LayoutWidget):
     preferences = HeadUpDisplayUserWidgetPreferences(type="text_box", x=1630, y=100, width=200, height=200, limit_x=1530, limit_y=100, limit_width=350, limit_height=400, enabled=False, alignment="left", expand_direction="down", font_size=18)
-    minimized = False
     mouse_enabled = True
 
     # Top, right, bottom, left, same order as CSS padding
     padding = [3, 20, 10, 8]     
-    line_padding = 8
+    line_padding = 6
     
     # All the header icons in a right to left order
     icon_radius = 10
@@ -44,6 +43,10 @@ class HeadUpTextBox(LayoutWidget):
         
     def copy_contents(self):
         clip.set_text(remove_tokens_from_rich_text(self.panel_content.content[0]))
+    
+    def set_preference(self, preference, value, persisted=False):
+        self.mark_layout_invalid = True
+        super().set_preference(preference, value, persisted)
     
     def on_mouse(self, event):
         pos = numpy.array(event.gpos)
@@ -100,6 +103,7 @@ class HeadUpTextBox(LayoutWidget):
         
     def layout_content(self, canvas, paint):
         paint.textsize = self.font_size
+        self.line_padding = int(self.font_size / 2) + 1 if self.font_size <= 17 else 5
         
         horizontal_alignment = "right" if self.limit_x < self.x else "left"
         vertical_alignment = "bottom" if self.limit_y < self.y else "top"
@@ -158,12 +162,12 @@ class HeadUpTextBox(LayoutWidget):
                     y = self.limit_y if vertical_alignment == "top" else self.limit_y + self.limit_height - height
                     layout_pages.append({
                         "rect": ui.Rect(x, y, width, height), 
-                        "line_count": max(1, line_count),
+                        "line_count": max(1, line_count - 1),
                         "header_text": header_text,
                         "icon_size": icon_size,
                         "content_text": current_page_text,
                         "header_height": header_height,
-                        "content_height": current_content_height - current_line_height
+                        "content_height": current_content_height
                     })
                     
                     # Reset the variables
@@ -209,11 +213,13 @@ class HeadUpTextBox(LayoutWidget):
         paint.color = background_colour
         self.draw_background(canvas, paint, dimensions["rect"])
         
-        background_height = self.draw_content_text(canvas, paint, dimensions)
+        paint.color = self.theme.get_colour('text_colour')
+        self.draw_content_text(canvas, paint, dimensions)
         self.draw_header(canvas, paint, dimensions)
-        
         if not self.minimized and len(self.layout) > 1:
             self.draw_footer(canvas, paint, dimensions)
+            self.draw_footer_buttons(canvas, paint, dimensions)        
+        self.draw_header_buttons(canvas, paint, dimensions)
         
         return False
 
@@ -235,8 +241,12 @@ class HeadUpTextBox(LayoutWidget):
         
         # Small divider between the content and the header
         if not self.minimized:
+            paint.color = self.theme.get_colour('text_box_line', '000000')
             canvas.draw_rect(ui.Rect(x - self.padding[3], dimensions.y + header_height + self.padding[0] * 2, dimensions.width, 1))
-        
+
+    def draw_header_buttons(self, canvas, paint, dimensions):
+        header_height = dimensions["header_height"]    
+        dimensions = dimensions["rect"]    
         # Header button tray 
         x = dimensions.x
         for index, icon in enumerate(self.icons):
@@ -246,10 +256,13 @@ class HeadUpTextBox(LayoutWidget):
             self.icons[index]['pos'] = icon_position
             paint.style = paint.Style.FILL
             if (icon['type'] in ["minimize", "help", "copy"] and self.minimized == False ) or icon['type'] == "minimize":
-                hover_colour = '999999' if self.icon_hovered == index else 'CCCCCC'            
-                paint.shader = skia.Shader.linear_gradient(self.x, self.y, self.x, self.y + header_height, ('AAAAAA', hover_colour), None)
+                hover_colour = self.theme.get_colour('button_hover_background', '999999') if self.icon_hovered == index \
+                    else self.theme.get_colour('button_background', 'CCCCCC')
+                paint.shader = skia.Shader.linear_gradient(self.x, self.y, self.x, self.y + header_height, (hover_colour, hover_colour), None)
                 canvas.draw_circle(icon_position[0], icon_position[1], self.icon_radius, paint)
-                paint.shader = skia.Shader.linear_gradient(self.x, self.y, self.x, self.y + header_height, ('000000', '000000'), None)
+                
+                text_colour = self.theme.get_colour('icon_colour', '000000')
+                paint.shader = skia.Shader.linear_gradient(self.x, self.y, self.x, self.y + header_height, (text_colour, text_colour), None)
         
                 if icon['type'] == "minimize":
                     if not self.minimized:
@@ -266,6 +279,7 @@ class HeadUpTextBox(LayoutWidget):
                 close_colour = self.theme.get_colour('close_icon_hover_colour') if self.icon_hovered == index else self.theme.get_colour('close_icon_accent_colour')            
                 paint.shader = skia.Shader.linear_gradient(self.x, self.y, self.x, self.y + header_height, (self.theme.get_colour('close_icon_colour'), close_colour), None)
                 canvas.draw_circle(icon_position[0], icon_position[1], self.icon_radius, paint)
+    
 
     def draw_footer(self, canvas, paint, dimensions):
         footer_height = dimensions["header_height"]
@@ -274,20 +288,30 @@ class HeadUpTextBox(LayoutWidget):
         # Small divider between the content and the header
         x = dimensions.x + self.padding[3]
         start_y = dimensions.y + dimensions.height - self.padding[0] - self.padding[2] / 2
+        paint.color = self.theme.get_colour('text_colour')
         canvas.draw_text(str(self.page_index + 1 ) + ' of ' + str(len(self.layout)), x, start_y)
+        paint.color = self.theme.get_colour('text_box_line', '000000')        
         canvas.draw_rect(ui.Rect(x - self.padding[3], start_y - footer_height, dimensions.width, 1))
+
+    def draw_footer_buttons(self, canvas, paint, dimensions):
+        footer_height = dimensions["header_height"]
+        dimensions = dimensions["rect"]
+
+        # Small divider between the content and the header
+        x = dimensions.x + self.padding[3]
+        start_y = dimensions.y + dimensions.height - self.padding[0] - self.padding[2] / 2        
         for index, icon in enumerate(self.footer_icons):
             icon_position = [x + dimensions.width - self.padding[3] - (self.icon_radius * 1.5 + ( index * self.icon_radius * 2.2 )),
                 start_y - self.padding[0] * 2]
             self.footer_icons[index]['pos'] = icon_position
             paint.style = paint.Style.FILL
             
-            hover_colour = '999999' if self.footer_icon_hovered == index else 'CCCCCC'            
+            hover_colour = self.theme.get_colour('button_hover_background', '999999') if self.footer_icon_hovered == index \
+                else self.theme.get_colour('button_background', 'CCCCCC')
             paint.shader = skia.Shader.linear_gradient(self.x, self.y, self.x, self.y + footer_height, ('AAAAAA', hover_colour), None)
             canvas.draw_circle(icon_position[0], icon_position[1], self.icon_radius, paint)
             image = self.theme.get_image(icon["type"] + "_icon")
             canvas.draw_image(image, icon_position[0] - image.width / 2, icon_position[1] - image.height / 2)
-            
 
 
     def draw_content_text(self, canvas, paint, dimensions) -> int:

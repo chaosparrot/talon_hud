@@ -15,7 +15,7 @@ class HeadUpContextMenu(LayoutWidget):
     # Top, right, bottom, left, same order as CSS padding
     padding = [8, 8, 8, 8]
     line_padding = 8
-    image_size = 20
+    image_size = 30
 
     connected_widget = None
     button_hovered = -1
@@ -186,7 +186,8 @@ class HeadUpContextMenu(LayoutWidget):
         button_y = content_dimensions.y + self.padding[0]
 
         for index, button_layout in enumerate(dimensions['button_layouts']):
-            paint.color = 'AAAAAA' if self.button_hovered == index else 'CCCCCC'
+            paint.color = self.theme.get_colour('button_hover_background', 'AAAAAA') if self.button_hovered == index \
+                else self.theme.get_colour('button_background', 'CCCCCC')
             button_height = self.padding[0] + button_layout['text_height'] + self.padding[2]
             rect = ui.Rect(base_button_x, button_y, content_dimensions.width - self.padding[3] - self.padding[1], button_height)
             self.buttons[index]['rect'] = rect
@@ -198,10 +199,11 @@ class HeadUpContextMenu(LayoutWidget):
                 image = self.theme.get_image(button_icon)
                 canvas.draw_image(image, base_button_x + self.padding[3], button_y + button_height / 2 - image.height / 2)
             
-            paint.color = '000000'
+            paint.color = self.theme.get_colour('button_hover_text_colour', '000000') if self.button_hovered == index \
+                else self.theme.get_colour('button_text_colour', '000000')
             line_height = ( button_layout['text_height'] ) / button_layout['line_count']
             self.draw_rich_text(canvas, paint, button_layout['rich_text'], 
-                base_button_x + self.padding[3] if not button_icon else icon_button_x + self.padding[3], 
+                base_button_x + self.padding[3] if not button_icon else icon_button_x + self.padding[3] / 2, 
                 button_y + self.padding[0] / 2, line_height)
             button_y += button_height + self.padding[0]
 
@@ -210,6 +212,6 @@ class HeadUpContextMenu(LayoutWidget):
         rrect = skia.RoundRect.from_rect(rect, x=radius, y=radius)
         canvas.draw_rrect(rrect)
         paint.style = paint.Style.STROKE
-        paint.color = '000000'
+        paint.color = self.theme.get_colour('context_menu_border', '000000')
         canvas.draw_rrect(rrect)
         paint.style = paint.Style.FILL

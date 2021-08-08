@@ -40,10 +40,13 @@ class HeadUpDisplayUserWidgetPreferences:
     # Direction of initial content growth
     expand_direction: str = "down"
     
+    # Whether or not the widget is minimized to show as little content as possible
+    minimized: bool = False
+    
     # Initialize is purposefully kept completely optional to allow the widgets to taylor their defaults
     def __init__(self, type: str = "", enabled: bool = False, sleep_enabled: bool = False, show_animations: bool = True,
         x: int = 0, y: int = 0, width: int = 0, height:int = 0, limit_x: int = -1, limit_y: int = -1, limit_width: int = 0, limit_height:int = 0, 
-        font_size: int = 24, alignment: str = "left", expand_direction:str = "down"):
+        font_size: int = 24, alignment: str = "left", expand_direction:str = "down", minimized: bool = False):
         
         self.type = type
         self.enabled = enabled
@@ -62,6 +65,7 @@ class HeadUpDisplayUserWidgetPreferences:
         self.font_size = font_size
         self.alignment = alignment
         self.expand_direction = expand_direction
+        self.minimized = minimized
     
     # Exports the widgets preferences as a dict useful for persisting
     def export(self, id:str) -> Dict[str, str]:
@@ -82,6 +86,7 @@ class HeadUpDisplayUserWidgetPreferences:
         dict[id + '_font_size'] = str(self.font_size)
         dict[id + '_alignment'] = self.alignment
         dict[id + '_expand_direction'] = self.expand_direction
+        dict[id + '_minimized'] = "1" if self.minimized else "0"
         
         return dict
         
@@ -122,3 +127,5 @@ class HeadUpDisplayUserWidgetPreferences:
             self.alignment = persisted_dict[id + "_alignment"]
         if (id + "_expand_direction") in persisted_dict:
             self.expand_direction = persisted_dict[id + "_expand_direction"]
+        if (id + "_minimized") in persisted_dict:
+            self.minimized = int(persisted_dict[id + "_minimized"]) > 0

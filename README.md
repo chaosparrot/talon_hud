@@ -169,6 +169,7 @@ If any of these ideas seem cool for you to work on, give me a message on the tal
 # Acknowledgements
 
 The icons used are taken from https://icons.getbootstrap.com/.
+Some of the icons like the copy icon are taken from fontawesome.
 
 The language icons are made by https://www.freepik.com hosted on https://www.flaticon.com/.
 If your language isn't in the themes, you can download icons for free with attribution of freepik.com and change their size to 35x35 before saving them as a .png file in your theme.
