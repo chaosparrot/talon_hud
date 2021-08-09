@@ -1,7 +1,9 @@
 from talon import skia, ui
-from user.talon_hud.content_types import HudRichText, HudRichTextLine
+from talon.types.point import Point2d
+from user.talon_hud.content.typing import HudRichText, HudRichTextLine, HudButton, HudIcon
 from textwrap import wrap
 import re
+import numpy
 
 rich_text_delims_dict = {
     '/>': 'end', # GENERAL STYLE END - We only use a single token for this to not have to deal with issues where nested styles get changed out of order
@@ -114,4 +116,19 @@ def determine_screen_for_pos(pos) -> ui.Screen:
             return screen
     
     return None
-    
+
+def linear_gradient(origin_x, origin_y, dest_x, dest_y, colours):
+    try:
+        return skia.Shader.linear_gradient((origin_x, origin_y), (dest_x, dest_y), colours, None)
+    except:
+        return skia.Shader.linear_gradient(origin_x, origin_y, dest_x, dest_y, colours, None)
+
+def hit_test_button(button: HudButton, pos: Point2d):
+    br = button.rect
+    return pos.x >= br.x and pos.x <= br.x + br.width \
+        and pos.y >= br.y and pos.y <= br.y + br.height
+        
+def hit_test_icon(icon: HudIcon, pos: Point2d):
+    pos = numpy.array(pos)
+    icon_pos = numpy.array(icon.pos)
+    return numpy.linalg.norm(pos - icon_pos) < icon.radius

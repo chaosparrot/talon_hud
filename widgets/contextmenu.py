@@ -3,9 +3,15 @@ from talon.types import Point2d as Point2d
 from user.talon_hud.base_widget import BaseWidget
 from user.talon_hud.layout_widget import LayoutWidget
 from user.talon_hud.widget_preferences import HeadUpDisplayUserWidgetPreferences
-from user.talon_hud.utils import determine_screen_for_pos, layout_rich_text
-from user.talon_hud.content_types import HudButton
+from user.talon_hud.utils import determine_screen_for_pos, layout_rich_text, hit_test_button
+from user.talon_hud.content.typing import HudButton
 import numpy
+
+def close_widget(widget: BaseWidget):
+    widget.disable(True)
+    
+def noop(widget: BaseWidget):
+    pass
 
 class HeadUpContextMenu(LayoutWidget):
     preferences = HeadUpDisplayUserWidgetPreferences(type="context_menu", x=50, y=100, width=200, height=200, limit_x=50, limit_y=100, limit_width=350, limit_height=400, enabled=True, alignment="left", expand_direction="down", font_size=18)
@@ -19,17 +25,10 @@ class HeadUpContextMenu(LayoutWidget):
 
     connected_widget = None
     button_hovered = -1
-    default_buttons = [{
-            'icon': None,
-            'type': 'close',
-            'text': 'Close panel',
-            'rect': ui.Rect(0, 0, 0, 0)
-        }, {
-            'icon': None,        
-            'type': 'cancel',
-            'text': 'Cancel options',
-            'rect': ui.Rect(0, 0, 0, 0)
-        }]
+    default_buttons = [
+        HudButton(None, 'Close panel', ui.Rect(0, 0, 0, 0), close_widget),
+        HudButton(None, 'Cancel options', ui.Rect(0, 0, 0, 0), noop)
+    ]
     buttons = []
 
     subscribed_content = ["mode", "context_menu_buttons"]
@@ -43,9 +42,7 @@ class HeadUpContextMenu(LayoutWidget):
         
         button_hovered = -1
         for index, button in enumerate(self.buttons):
-            br = button['rect']
-            if pos.x >= br.x and pos.x <= br.x + br.width \
-                and pos.y >= br.y and pos.y <= br.y + br.height:
+            if hit_test_button(button, pos):
                 button_hovered = index
 
         if button_hovered != self.button_hovered:
@@ -57,15 +54,9 @@ class HeadUpContextMenu(LayoutWidget):
     
     def click_button(self, button_index):
         if button_index > -1 and button_index < len(self.buttons):
-            clicked_button_type = self.buttons[button_index]['type']
             self.button_hovered = -1
-            if clicked_button_type == "copy":
-                if self.connected_widget:
-                    self.connected_widget.copy_contents()
-                actions.user.add_hud_log("event", "Copied contents to clipboard!")
-            elif clicked_button_type == "close":
-                if self.connected_widget:
-                    self.connected_widget.disable(True)
+            if self.connected_widget:
+                self.buttons[button_index].callback(self.connected_widget)
             actions.user.hide_context_menu()
     
     def connect_widget(self, widget: BaseWidget, pos_x: int, pos_y: int, buttons: list[HudButton]):        
@@ -138,9 +129,9 @@ class HeadUpContextMenu(LayoutWidget):
         total_button_height = 0
         for index, button in enumerate(self.buttons):
             icon_offset = 0
-            if 'icon' in button and button['icon'] != None:
+            if button.image != None:
                 icon_offset = self.image_size + self.padding[3] * 3
-            button_rich_text = layout_rich_text(paint, button['text'], \
+            button_rich_text = layout_rich_text(paint, button.text, \
                 self.limit_width - icon_offset - self.padding[3] * 2 - self.padding[1] * 2, self.limit_height)                
             
             line_count = 0
@@ -194,11 +185,11 @@ class HeadUpContextMenu(LayoutWidget):
                 else self.theme.get_colour('button_background', 'CCCCCC')
             button_height = self.padding[0] + button_layout['text_height'] + self.padding[2]
             rect = ui.Rect(base_button_x, button_y, content_dimensions.width - self.padding[3] - self.padding[1], button_height)
-            self.buttons[index]['rect'] = rect
+            self.buttons[index].rect = rect
             canvas.draw_rrect( skia.RoundRect.from_rect(rect, x=10, y=10) )
             
             # Draw button icon on the left in the middle
-            button_icon = button_layout['button']['icon'] if 'icon' in button_layout['button'] else None
+            button_icon = button_layout['button'].image
             if button_icon:
                 image = self.theme.get_image(button_icon)
                 canvas.draw_image(image, base_button_x + self.padding[3], button_y + button_height / 2 - image.height / 2)

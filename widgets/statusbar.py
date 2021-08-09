@@ -2,6 +2,7 @@ from user.talon_hud.base_widget import BaseWidget
 from talon import skia, ui, Module, cron, actions
 import time
 import numpy
+from user.talon_hud.utils import linear_gradient
 from user.talon_hud.widget_preferences import HeadUpDisplayUserWidgetPreferences
 
 class HeadUpStatusBar(BaseWidget):
@@ -150,7 +151,7 @@ class HeadUpStatusBar(BaseWidget):
         
         # Draw the background with bigger stroke than 1px
         stroke_colours = (self.theme.get_colour('top_stroke_colour'), self.theme.get_colour('down_stroke_colour'))
-        paint.shader = skia.Shader.linear_gradient(self.x, self.y, self.x, self.y + element_height * 2, stroke_colours, None)
+        paint.shader = linear_gradient(self.x, self.y, self.x, self.y + element_height * 2, stroke_colours)
         self.draw_background(canvas, self.x, self.y, element_width, element_height + (stroke_width * 2), paint)
         
         # Calculate the blinking colour
@@ -170,7 +171,7 @@ class HeadUpStatusBar(BaseWidget):
         # Draw the background based on the state
         accent_colour = red_hex + green_hex + blue_hex
         mode_colour = self.theme.get_colour( self.content["mode"] + '_mode_colour')
-        background_shader = skia.Shader.linear_gradient(self.x, self.y, self.x, self.y + element_height * 2, (mode_colour, accent_colour), None)
+        background_shader = linear_gradient(self.x, self.y, self.x, self.y + element_height * 2, (mode_colour, accent_colour))
         paint.shader = background_shader
         self.draw_background(canvas, self.x + stroke_width, self.y + stroke_width, element_width - stroke_width * 2, element_height, paint)
 
@@ -180,7 +181,7 @@ class HeadUpStatusBar(BaseWidget):
                 paint.shader = background_shader
             else:
                 button_colour = self.theme.get_colour('button_hover_colour') if self.icon_hover_index == index else self.theme.get_colour('button_colour')
-                paint.shader = skia.Shader.linear_gradient(self.x, self.y, self.x, self.y + element_height, (self.theme.get_colour('button_colour'), button_colour), None)                
+                paint.shader = linear_gradient(self.x, self.y, self.x, self.y + element_height, (self.theme.get_colour('button_colour'), button_colour))
             
             # Do not draw icons or buttons without a valid image
             if icon['image'] is not None and self.theme.get_image(icon['image']) is not None:
@@ -192,7 +193,7 @@ class HeadUpStatusBar(BaseWidget):
         # TODO - FAKE BOLD until I find out how to properly use font style
         if ((self.content["mode"] == "command" and self.content["programming_language"]["ext"] is not None) or self.content["mode"] == "dictation"):
             text_colour =  self.theme.get_colour('text_forced_colour') if self.content["programming_language"]["forced"] else self.theme.get_colour('text_colour')
-            paint.shader = skia.Shader.linear_gradient(self.x, self.y, self.x, self.y + element_height, (text_colour, text_colour), None)
+            paint.shader = linear_gradient(self.x, self.y, self.x, self.y + element_height, (text_colour, text_colour))
             paint.style = paint.Style.STROKE
             paint.textsize = self.font_size
             text_x = self.x + circle_margin * 2 + ( len(self.icons) * ( icon_diameter + circle_margin ) )
@@ -203,7 +204,7 @@ class HeadUpStatusBar(BaseWidget):
         # Draw closing icon
         paint.style = paint.Style.FILL
         close_colour = self.theme.get_colour('close_icon_hover_colour') if self.icon_hover_index == len(self.icons) else self.theme.get_colour('close_icon_accent_colour')
-        paint.shader = skia.Shader.linear_gradient(self.x, self.y, self.x, self.y + element_height, (self.theme.get_colour('close_icon_colour'), close_colour), None)
+        paint.shader = linear_gradient(self.x, self.y, self.x, self.y + element_height, (self.theme.get_colour('close_icon_colour'), close_colour))
         close_icon_diameter = icon_diameter / 2
         self.draw_icon(canvas, self.x + element_width - close_icon_diameter - close_icon_diameter / 2 - stroke_width, height_center - close_icon_diameter / 2, close_icon_diameter, paint, {'id': 'close', 'image': None})
 

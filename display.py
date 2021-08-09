@@ -6,14 +6,14 @@ import numpy
 from typing import Any
 from user.talon_hud.preferences import HeadUpDisplayUserPreferences
 from user.talon_hud.theme import HeadUpDisplayTheme
-from user.talon_hud.state import hud_content
+from user.talon_hud.content.state import hud_content
 from user.talon_hud.layout_widget import LayoutWidget
 from user.talon_hud.widgets.statusbar import HeadUpStatusBar
 from user.talon_hud.widgets.eventlog import HeadUpEventLog
 from user.talon_hud.widgets.abilitybar import HeadUpAbilityBar
 from user.talon_hud.widgets.textbox import HeadUpTextBox
 from user.talon_hud.widgets.contextmenu import HeadUpContextMenu
-from user.talon_hud.content_types import HudPanelContent, HudButton
+from user.talon_hud.content.typing import HudPanelContent, HudButton
 from user.talon_hud.utils import string_to_speakable_string
 
 ctx = Context()
@@ -265,8 +265,7 @@ class HeadUpDisplay:
         if connected_widget:
             pos_x = connected_widget.x + connected_widget.width / 2
             pos_y = connected_widget.y + connected_widget.height
-            if isinstance(connected_widget, HeadUpTextBox):
-                buttons = connected_widget.panel_content.buttons
+            buttons = connected_widget.buttons
         
             if context_menu_widget:
                 context_menu_widget.connect_widget(connected_widget, pos_x, pos_y, buttons)
@@ -318,17 +317,16 @@ class HeadUpDisplay:
                 widget_names[widget_name] = widget.id
                 
             # Add quick choices
-            if isinstance(widget, HeadUpTextBox):
-                for index, button in enumerate(widget.panel_content.buttons):
-                    choice_title = string_to_speakable_string(button['text'])                    
-                    if choice_title:
-                        for widget_name in current_widget_names:
-                            quick_choices[widget_name + " " + choice_title] = widget.id + "|" + str(index)
-                
+            for index, button in enumerate(widget.buttons):
+                choice_title = string_to_speakable_string(button.text)                    
+                if choice_title:
+                    for widget_name in current_widget_names:
+                        quick_choices[widget_name + " " + choice_title] = widget.id + "|" + str(index)
+            
             # Add choices
             if widget.enabled and isinstance(widget, HeadUpContextMenu):
                 for index, button in enumerate(widget.buttons):
-                    choice_title = string_to_speakable_string(button['text'])
+                    choice_title = string_to_speakable_string(button.text)
                     if choice_title:
                         choices[choice_title] = widget.id + "|" + str(index)                        
         
@@ -341,7 +339,7 @@ def create_hud():
     global hud
     preferences = HeadUpDisplayUserPreferences()
     
-    from user.talon_hud.knausj_bindings import KnausjStatePoller    
+    from user.talon_hud.content.knausj_bindings import KnausjStatePoller    
     poller = KnausjStatePoller()
     hud = HeadUpDisplay(hud_content, preferences, poller)
 
@@ -397,57 +395,6 @@ class Actions:
         """Show the context menu for a specific widget id"""
         hud.hide_context_menu()
         
-    # - Content related actions
-    
-    def add_hud_log(type: str, message: str):
-        """Disables the HUD"""
-        global hud_content
-        hud_content.append_to_log(type, message)
-
-    def add_status_icon(id: str, image: str, explanation: str):
-        """Add an icon to the status bar"""
-        global hud_content
-        hud_content.add_to_set("status_icons", {
-            "id": id,
-            "image": image,
-            "explanation": "",
-            "clickable": False
-        })
-
-    def remove_status_icon(id: str):
-        """Remove an icon to the status bar"""
-        global hud_content
-        hud_content.remove_from_set("status_icons", {
-            "id": id
-        })
-
-    def add_hud_ability(id: str, image: str, colour: str, enabled: bool, activated: bool):
-        """Add a hud ability or update it"""
-        global hud_content
-        hud_content.add_to_set("abilities", {
-            "id": id,
-            "image": image,
-            "colour": colour,
-            "enabled": enabled,
-            "activated": 5 if activated else 0
-        })
-
-    def remove_hud_ability(id: str):
-        """Remove an ability"""
-        global hud_content
-        hud_content.remove_from_set("abilities", {
-            "id": id
-        })    
-        
-    def hud_publish_content(content: str, widget_hint: str = '', title:str = '', show:bool = True, buttons: list[HudButton] = None):
-        """Publish a specific piece of content to a user defined widget"""            
-        if buttons == None:
-            buttons = []
-        content = HudPanelContent(widget_hint, title, [content], buttons, time.time(), show)
-        
-        global hud_content
-        hud_content.publish(content)
-    
     def increase_widget_page(widget_id: str):
         """Increase the content page of the widget if it has pages available"""
         global hud

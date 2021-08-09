@@ -1,9 +1,22 @@
 from talon import skia, ui, Module, cron, actions, clip
 from user.talon_hud.layout_widget import LayoutWidget
 from user.talon_hud.widget_preferences import HeadUpDisplayUserWidgetPreferences
-from user.talon_hud.utils import layout_rich_text, remove_tokens_from_rich_text, HudRichTextLine
-from user.talon_hud.content_types import HudPanelContent
-import numpy
+from user.talon_hud.utils import layout_rich_text, remove_tokens_from_rich_text, linear_gradient, hit_test_icon
+from user.talon_hud.content.typing import HudRichTextLine, HudPanelContent, HudButton, HudIcon
+from talon.types.point import Point2d
+
+icon_radius = 10
+def close_widget(widget):
+    widget.disable(True)
+    
+def minimize_toggle_widget(widget):
+    widget.minimized = not widget.minimized
+    if widget.minimized:
+        widget.set_preference("minimized", 1)
+    else:
+        widget.set_preference("minimized", 0)        
+    widget.mark_layout_invalid = True
+    widget.canvas.resume()
 
 class HeadUpTextBox(LayoutWidget):
     preferences = HeadUpDisplayUserWidgetPreferences(type="text_box", x=1630, y=100, width=200, height=200, limit_x=1530, limit_y=100, limit_width=350, limit_height=400, enabled=False, alignment="left", expand_direction="down", font_size=18)
@@ -13,26 +26,24 @@ class HeadUpTextBox(LayoutWidget):
     padding = [3, 20, 10, 8]     
     line_padding = 6
     
+    # Options given to the context menu
+    default_buttons = [
+        HudButton("copy_icon", "Copy contents", ui.Rect(0,0,0,0), lambda widget: widget.copy_contents())
+    ]
+    buttons = []
+    
     # All the header icons in a right to left order
     icon_radius = 10
     icon_hovered = -1
-    icons = [{
-        "type": "close",
-        "pos": [0,0]        
-    },{
-        "type": "minimize",
-        "pos": [0,0]
-    }]
+    icons = [HudIcon("close", "", Point2d(0,0), icon_radius, close_widget),
+        HudIcon("minimize", "", Point2d(0,0), icon_radius, minimize_toggle_widget),
+    ]
     
     # All the footer icons in a right to left order
     footer_icon_hovered = -1
-    footer_icons = [{
-        "type": "next", 
-        "pos": [0,0]
-    },{
-        "type": "previous",
-        "pos": [0,0]
-    }]
+    footer_icons = [HudIcon("next", "next_icon", Point2d(0,0), icon_radius, lambda widget: widget.set_page_index(widget.page_index + 1)),
+        HudIcon("previous", "previous_icon", Point2d(0,0), icon_radius, lambda widget: widget.set_page_index(widget.page_index - 1))
+    ]
 
     subscribed_content = ["mode"]
     content = {
@@ -43,23 +54,29 @@ class HeadUpTextBox(LayoutWidget):
         
     def copy_contents(self):
         clip.set_text(remove_tokens_from_rich_text(self.panel_content.content[0]))
+        actions.user.add_hud_log("event", "Copied contents to clipboard!")
+    
+    def update_panel(self, panel_content):
+        # Update the content buttons
+        self.buttons = list(panel_content.buttons)
+        self.buttons.extend(self.default_buttons)
+        super().update_panel(panel_content)
     
     def set_preference(self, preference, value, persisted=False):
         self.mark_layout_invalid = True
         super().set_preference(preference, value, persisted)
     
     def on_mouse(self, event):
-        pos = numpy.array(event.gpos)
-        
         icon_hovered = -1
         for index, icon in enumerate(self.icons):
-            if (numpy.linalg.norm(pos - numpy.array([icon['pos'][0], icon['pos'][1]])) < self.icon_radius):
+            if hit_test_icon(icon, event.gpos):
                 icon_hovered = index
                 
         footer_icon_hovered = -1
-        for index, icon in enumerate(self.footer_icons):
-            if (numpy.linalg.norm(pos - numpy.array([icon['pos'][0], icon['pos'][1]])) < self.icon_radius):
-                footer_icon_hovered = index
+        if icon_hovered == -1:
+            for index, icon in enumerate(self.footer_icons):
+                if hit_test_icon(icon, event.gpos):
+                    footer_icon_hovered = index
 
         if icon_hovered != self.icon_hovered or footer_icon_hovered != self.footer_icon_hovered:
             self.icon_hovered = icon_hovered
@@ -67,32 +84,35 @@ class HeadUpTextBox(LayoutWidget):
             self.canvas.resume()
         
         if event.event == "mouseup" and event.button == 0:
-            clicked_icon_type = None
+            clicked_icon = None
             if icon_hovered != -1:
-                clicked_icon_type = self.icons[icon_hovered]['type']
+                clicked_icon = self.icons[icon_hovered]
             elif footer_icon_hovered != -1:
-                clicked_icon_type = self.footer_icons[footer_icon_hovered]['type']
+                clicked_icon = self.footer_icons[footer_icon_hovered]
                 
-            if clicked_icon_type == "close":
-                self.disable(True)
-            elif clicked_icon_type == "minimize":
-                self.minimized = not self.minimized
-                self.mark_layout_invalid = True
-                self.canvas.resume()
-            elif clicked_icon_type == "next":
-                new_page_index = min(self.page_index + 1, len(self.layout) - 1)
-                if new_page_index != self.page_index:                
-                    self.page_index = new_page_index
-                    self.canvas.resume()
-            elif clicked_icon_type == "previous":
-                new_page_index = max(self.page_index - 1, 0)
-                if new_page_index != self.page_index:                
-                    self.page_index = new_page_index
-                    self.canvas.resume()
-         
+            if clicked_icon != None:
+                self.icon_hovered = -1
+                self.footer_icon_hovered = -1
+                clicked_icon.callback(self)
+            #if clicked_icon_type == "close":
+            #    self.disable(True)
+            #elif clicked_icon_type == "minimize":
+            #    self.minimized = not self.minimized
+            #    self.mark_layout_invalid = True
+            #    self.canvas.resume()
+            #elif clicked_icon_type == "next":
+            #    new_page_index = min(self.page_index + 1, len(self.layout) - 1)
+            #    if new_page_index != self.page_index:                
+            #        self.page_index = new_page_index
+            #        self.canvas.resume()
+            #elif clicked_icon_type == "previous":
+            #    new_page_index = max(self.page_index - 1, 0)
+            #    if new_page_index != self.page_index:                
+            #        self.page_index = new_page_index
+            #        self.canvas.resume()
 
         if event.button == 1 and event.event == "mouseup":            
-            actions.user.show_context_menu(self.id, event.gpos.x, event.gpos.y, self.panel_content.buttons)
+            actions.user.show_context_menu(self.id, event.gpos.x, event.gpos.y, self.buttons)
 
         if event.button == 0 and event.event == "mouseup":
             actions.user.hide_context_menu()
@@ -251,34 +271,29 @@ class HeadUpTextBox(LayoutWidget):
         x = dimensions.x
         for index, icon in enumerate(self.icons):
             # Minimize / maximize icon
-            icon_position = [x + dimensions.width - (self.icon_radius * 1.5 + ( index * self.icon_radius * 2.2 )),
-                dimensions.y + self.icon_radius + self.padding[0] / 2]
-            self.icons[index]['pos'] = icon_position
+            icon_position = Point2d(x + dimensions.width - (self.icon_radius * 1.5 + ( index * self.icon_radius * 2.2 )),
+                dimensions.y + self.icon_radius + self.padding[0] / 2)
+            self.icons[index].pos = icon_position
             paint.style = paint.Style.FILL
-            if (icon['type'] in ["minimize", "help", "copy"] and self.minimized == False ) or icon['type'] == "minimize":
+            if icon.id == "minimize":
                 hover_colour = self.theme.get_colour('button_hover_background', '999999') if self.icon_hovered == index \
                     else self.theme.get_colour('button_background', 'CCCCCC')
-                paint.shader = skia.Shader.linear_gradient(self.x, self.y, self.x, self.y + header_height, (hover_colour, hover_colour), None)
-                canvas.draw_circle(icon_position[0], icon_position[1], self.icon_radius, paint)
+                paint.shader = linear_gradient(self.x, self.y, self.x, self.y + header_height, (hover_colour, hover_colour))
+                canvas.draw_circle(icon_position.x, icon_position.y, self.icon_radius, paint)
                 
                 text_colour = self.theme.get_colour('icon_colour', '000000')
-                paint.shader = skia.Shader.linear_gradient(self.x, self.y, self.x, self.y + header_height, (text_colour, text_colour), None)
+                paint.shader = linear_gradient(self.x, self.y, self.x, self.y + header_height, (text_colour, text_colour))
         
-                if icon['type'] == "minimize":
-                    if not self.minimized:
-                        canvas.draw_rect(ui.Rect(icon_position[0] - self.icon_radius / 2, icon_position[1] - 1, self.icon_radius, 2))
-                    else:
-                        paint.style = paint.Style.STROKE
-                        canvas.draw_rect(ui.Rect( 1 + icon_position[0] - self.icon_radius / 2, icon_position[1] - self.icon_radius / 2, 
-                            self.icon_radius - 2, self.icon_radius - 2))
+                if not self.minimized:
+                    canvas.draw_rect(ui.Rect(icon_position.x - self.icon_radius / 2, icon_position.y - 1, self.icon_radius, 2))
                 else:
-                    image = self.theme.get_image(icon["type"] + "_icon")
-                    canvas.draw_image(image, icon_position[0] - image.width / 2, icon_position[1] - image.height / 2)
-                
-            elif icon['type'] == "close":
+                    paint.style = paint.Style.STROKE
+                    canvas.draw_rect(ui.Rect( 1 + icon_position.x - self.icon_radius / 2, icon_position.y - self.icon_radius / 2, 
+                        self.icon_radius - 2, self.icon_radius - 2))                
+            elif icon.id == "close":
                 close_colour = self.theme.get_colour('close_icon_hover_colour') if self.icon_hovered == index else self.theme.get_colour('close_icon_accent_colour')            
-                paint.shader = skia.Shader.linear_gradient(self.x, self.y, self.x, self.y + header_height, (self.theme.get_colour('close_icon_colour'), close_colour), None)
-                canvas.draw_circle(icon_position[0], icon_position[1], self.icon_radius, paint)
+                paint.shader = linear_gradient(self.x, self.y, self.x, self.y + header_height, (self.theme.get_colour('close_icon_colour'), close_colour))
+                canvas.draw_circle(icon_position.x, icon_position.y, self.icon_radius, paint)
     
 
     def draw_footer(self, canvas, paint, dimensions):
@@ -301,17 +316,18 @@ class HeadUpTextBox(LayoutWidget):
         x = dimensions.x + self.padding[3]
         start_y = dimensions.y + dimensions.height - self.padding[0] - self.padding[2] / 2        
         for index, icon in enumerate(self.footer_icons):
-            icon_position = [x + dimensions.width - self.padding[3] - (self.icon_radius * 1.5 + ( index * self.icon_radius * 2.2 )),
-                start_y - self.padding[0] * 2]
-            self.footer_icons[index]['pos'] = icon_position
+            icon_position = Point2d(x + dimensions.width - self.padding[3] - (self.icon_radius * 1.5 + ( index * self.icon_radius * 2.2 )),
+                start_y - self.padding[0] * 2)
+            self.footer_icons[index].pos = icon_position
             paint.style = paint.Style.FILL
             
             hover_colour = self.theme.get_colour('button_hover_background', '999999') if self.footer_icon_hovered == index \
                 else self.theme.get_colour('button_background', 'CCCCCC')
-            paint.shader = skia.Shader.linear_gradient(self.x, self.y, self.x, self.y + footer_height, ('AAAAAA', hover_colour), None)
-            canvas.draw_circle(icon_position[0], icon_position[1], self.icon_radius, paint)
-            image = self.theme.get_image(icon["type"] + "_icon")
-            canvas.draw_image(image, icon_position[0] - image.width / 2, icon_position[1] - image.height / 2)
+            paint.shader = linear_gradient(self.x, self.y, self.x, self.y + footer_height, ('AAAAAA', hover_colour))
+            canvas.draw_circle(icon_position.x, icon_position.y, self.icon_radius, paint)
+            image = self.theme.get_image(icon.image)
+            if image:
+                canvas.draw_image(image, icon_position.x - image.width / 2, icon_position.y - image.height / 2)
 
 
     def draw_content_text(self, canvas, paint, dimensions) -> int:

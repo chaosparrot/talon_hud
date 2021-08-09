@@ -10,6 +10,9 @@ class LayoutWidget(BaseWidget):
     The extra canvas is used to make sure the drawing doesn't flicker when the content changes
     """
     
+    default_buttons = []
+    buttons = []
+    
     mark_layout_invalid = True
     mouse_capture_canvas: canvas.Canvas
     layout = []
@@ -118,7 +121,7 @@ class LayoutWidget(BaseWidget):
                 paint.color = success_colour
             elif "error" in text.styles:
                 paint.color = error_colour
-            elif "info" in text.styles:
+            elif "notice" in text.styles:
                 paint.color = info_colour
             
             current_line = current_line + 1 if text.x == 0 else current_line

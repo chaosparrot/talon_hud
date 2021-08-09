@@ -1,9 +1,10 @@
-from talon import actions, cron, scope
+from talon import actions, cron, scope, Module
 from talon.scripting import Dispatch
-from user.talon_hud.content_types import HudPanelContent, HudButton
+from user.talon_hud.content.typing import HudPanelContent, HudButton
 import time
 
 max_log_length = 50
+mod = Module()
 
 # Contains the state of the content inside of the head up display
 # Widget data like hover states are contained within the widget
@@ -93,3 +94,55 @@ class HeadUpDisplayContent(Dispatch):
         self.dispatch("log_update", self.content['log'])
         
 hud_content = HeadUpDisplayContent()
+
+@mod.action_class
+class Actions:
+
+    def add_hud_log(type: str, message: str):
+        """Adds a log to the HUD"""
+        global hud_content
+        hud_content.append_to_log(type, message)
+
+    def add_status_icon(id: str, image: str, explanation: str):
+        """Add an icon to the status bar"""
+        global hud_content
+        hud_content.add_to_set("status_icons", {
+            "id": id,
+            "image": image,
+            "explanation": "",
+            "clickable": False
+        })
+
+    def remove_status_icon(id: str):
+        """Remove an icon to the status bar"""
+        global hud_content
+        hud_content.remove_from_set("status_icons", {
+            "id": id
+        })
+
+    def add_hud_ability(id: str, image: str, colour: str, enabled: bool, activated: bool):
+        """Add a hud ability or update it"""
+        global hud_content
+        hud_content.add_to_set("abilities", {
+            "id": id,
+            "image": image,
+            "colour": colour,
+            "enabled": enabled,
+            "activated": 5 if activated else 0
+        })
+
+    def remove_hud_ability(id: str):
+        """Remove an ability"""
+        global hud_content
+        hud_content.remove_from_set("abilities", {
+            "id": id
+        })    
+        
+    def hud_publish_content(content: str, widget_hint: str = '', title:str = '', show:bool = True, buttons: list[HudButton] = None):
+        """Publish a specific piece of content to a user defined widget"""            
+        if buttons == None:
+            buttons = []
+        content = HudPanelContent(widget_hint, title, [content], buttons, time.time(), show)
+        
+        global hud_content
+        hud_content.publish(content)

@@ -3,6 +3,7 @@ from talon.types import Point2d
 from abc import ABCMeta
 import numpy
 from user.talon_hud.widget_preferences import HeadUpDisplayUserWidgetPreferences
+from user.talon_hud.content.typing import HudButton
 
 class BaseWidget(metaclass=ABCMeta):
     id = None
@@ -17,6 +18,9 @@ class BaseWidget(metaclass=ABCMeta):
     
     # Position dragging position offset - Used in manual dragging
     drag_position = []
+    
+    # Context menu buttons if applicable
+    buttons = []
     
     allowed_setup_options = ["position", "dimension", "limit", "font_size"]
     subscribed_content = ['mode']
@@ -370,3 +374,6 @@ class BaseWidget(metaclass=ABCMeta):
                 self.font_size = max(8, int(total_distance * scale_multiplier ))
             self.canvas.resume()
  
+    def click_button(self, button_index):
+        if button_index > -1 and button_index < len(self.buttons):
+            self.buttons[button_index].callback(self)

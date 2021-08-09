@@ -1,5 +1,5 @@
 from talon import actions, cron, scope, speech_system, ui
-from user.talon_hud.state import hud_content
+from user.talon_hud.content.state import hud_content
 
 # Polls the current state using knausj bindings
 # Used several bindings from the knausj repository like history
@@ -43,14 +43,7 @@ class KnausjStatePoller:
         scope_state = self.get_state_in_text()
         if (scope_state != self.previous_scope_state):
             self.previous_scope_state = scope_state
-            actions.user.hud_publish_content(scope_state, 'scope', 'Debug panel', False, [
-                    {
-                        "type": "copy", 
-                        "text": "Copy contents", 
-                        "rect": ui.Rect(0, 0, 0, 0), 
-                        "icon": "copy_icon"
-                    }
-                ])
+            actions.user.hud_publish_content(scope_state, 'scope', 'Scope panel', False, [])
             
     def on_phrase(self, j):
         try:
