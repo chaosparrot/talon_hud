@@ -90,8 +90,3 @@ class StatusBarPoller(Poller):
             return self.language_to_ext[language]
         else:
             ''
-
-def append_poller():
-    actions.user.hud_add_poller('status', StatusBarPoller(), True)
-app.register('ready', append_poller)
-

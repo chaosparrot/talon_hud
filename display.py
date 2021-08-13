@@ -7,6 +7,8 @@ from typing import Any
 from user.talon_hud.preferences import HeadUpDisplayUserPreferences
 from user.talon_hud.theme import HeadUpDisplayTheme
 from user.talon_hud.content.state import hud_content
+from user.talon_hud.content.status_bar_poller import StatusBarPoller
+from user.talon_hud.content.history_poller import HistoryPoller
 from user.talon_hud.layout_widget import LayoutWidget
 from user.talon_hud.widgets.statusbar import HeadUpStatusBar
 from user.talon_hud.widgets.eventlog import HeadUpEventLog
@@ -62,6 +64,13 @@ class HeadUpDisplay:
             # Special widgets that have varying positions
             HeadUpContextMenu('context_menu', self.preferences.prefs, self.theme),            
         ]
+        
+        # These pollers should always be active and available when reloading Talon HUD
+        self.pollers = {
+            'status': StatusBarPoller(),
+            'history': HistoryPoller()
+        }
+        self.keep_alive_pollers = ['status', 'history']
         
         # Uncomment the line below to add language icons
         # self.subscribe_content_id('status_bar', 'language')
@@ -239,7 +248,7 @@ class HeadUpDisplay:
                 # Do appropriate poller enabling / disabling
                 if widget.enabled != current_enabled_state:
                     if widget.topic in self.pollers and widget.topic not in self.keep_alive_pollers:
-                        if widget.enabled:
+                        if widget.enabled: 
                             self.pollers[widget.topic].enable()
                         else:
                             self.pollers[widget.topic].disable()

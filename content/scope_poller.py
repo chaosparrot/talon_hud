@@ -42,16 +42,12 @@ class ScopePoller(Poller):
                 
         text = "<*<@App: " + scope.get('app')['name'] + "/>/>\n" + scope.get('win')['title'] + "/>\n<*<@Tags:/>/>\n" + "\n".join(sorted(new_tags)) + "\n<*<@Modes:/>/>  " + " - ".join(sorted(modes))
         return text
-        
-        
-def append_poller():
-    actions.user.hud_add_poller('scope', ScopePoller())
-app.register('ready', append_poller)
 
 mod = Module()
 @mod.action_class
 class Actions:
 
-	def debug_scope():
-		"""Start debugging the Talon scope in the Talon HUD"""
-		actions.user.hud_activate_poller('scope')
+    def debug_scope():
+        """Start debugging the Talon scope in the Talon HUD"""
+        actions.user.hud_add_poller('scope', ScopePoller())
+        actions.user.hud_activate_poller('scope')

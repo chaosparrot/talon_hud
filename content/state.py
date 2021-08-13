@@ -1,7 +1,8 @@
-from talon import actions, cron, scope, Module
+from talon import actions, cron, scope, Module, ui
 from talon.scripting import Dispatch
 from user.talon_hud.content.typing import HudPanelContent, HudButton
 import time
+from typing import Callable
 
 max_log_length = 50
 mod = Module()
@@ -168,8 +169,12 @@ class Actions:
         global hud_content
         hud_content.publish(content)
         
+    def hud_create_button(text: str, callback: Callable[[], None], image: str = ''):
+        """Create a button used in the Talon HUD"""
+        return HudButton(image, text, ui.Rect(0,0,0,0), callback)
+        
     def hud_get_documentation():
-        """Publish a specific piece of content to a topic"""            
+        """Publish a specific piece of content to a topic"""
         content = HudPanelContent("documentation", "Head up documentation", [documentation], [], time.time(), True)
         
         global hud_content

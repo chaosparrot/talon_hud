@@ -23,7 +23,3 @@ class HistoryPoller(Poller):
             word_list = j["phrase"]
         command = " ".join(word.split("\\")[0] for word in word_list)        
         actions.user.hud_add_log("command", command)
-
-def append_poller():
-    actions.user.hud_add_poller('history', HistoryPoller(), True)
-app.register('ready', append_poller)
