@@ -66,6 +66,15 @@ class HeadUpTextBox(LayoutWidget):
         self.mark_layout_invalid = True
         super().set_preference(preference, value, persisted)
     
+    def load_theme_values(self):
+        self.intro_animation_start_colour = self.theme.get_colour_as_ints('intro_animation_start_colour')
+        self.intro_animation_end_colour = self.theme.get_colour_as_ints('intro_animation_end_colour')
+        self.blink_difference = [
+            self.intro_animation_end_colour[0] - self.intro_animation_start_colour[0],
+            self.intro_animation_end_colour[1] - self.intro_animation_start_colour[1],
+            self.intro_animation_end_colour[2] - self.intro_animation_start_colour[2]        
+        ]
+    
     def on_mouse(self, event):
         icon_hovered = -1
         for index, icon in enumerate(self.icons):
@@ -228,9 +237,38 @@ class HeadUpTextBox(LayoutWidget):
 
     def draw_animation(self, canvas, animation_tick):
         if self.enabled:
+            paint = canvas.paint
+            if self.mark_layout_invalid and animation_tick == self.animation_max_duration - 1:
+                self.layout = self.layout_content(canvas, paint)
+                if self.page_index > len(self.layout) - 1:
+                    self.page_index = len(self.layout) -1
+            
+            dimensions = self.layout[self.page_index]['rect']
+            
+            # Determine colour of the animation
+            animation_progress = ( animation_tick - self.animation_max_duration ) / self.animation_max_duration
+            red = self.intro_animation_start_colour[0] - int( self.blink_difference[0] * animation_progress )
+            green = self.intro_animation_start_colour[1] - int( self.blink_difference[1] * animation_progress )
+            blue = self.intro_animation_start_colour[2] - int( self.blink_difference[2] * animation_progress )
+            red_hex = '0' + format(red, 'x') if red <= 15 else format(red, 'x')
+            green_hex = '0' + format(green, 'x') if green <= 15 else format(green, 'x')
+            blue_hex = '0' + format(blue, 'x') if blue <= 15 else format(blue, 'x')
+            paint.color = red_hex + green_hex + blue_hex
+            
+            if self.minimized:
+                 self.draw_background(canvas, paint, dimensions)
+            else:
+                 header_height = self.layout[self.page_index]['header_height']
+                 growth = (self.animation_max_duration - animation_tick ) / self.animation_max_duration
+                 easeInOutQuint = 16 * growth ** 5 if growth < 0.5 else 1 - pow(-2 * growth + 2, 5) / 2
+                 rect = ui.Rect(dimensions.x, dimensions.y, dimensions.width, max(header_height, dimensions.height * easeInOutQuint))
+                 self.draw_background(canvas, paint, rect)
+            
+            if animation_tick == 1:
+                return self.draw(canvas)
             return True
         else:
-            return self.draw(canvas)
+            return False
     
     def draw_header(self, canvas, paint, dimensions):
         header_height = dimensions["header_height"]

@@ -30,7 +30,7 @@ tag: user.talon_hud_available
 ^{user.talon_hud_widget_names} minimize$: user.set_widget_preference(talon_hud_widget_names, "minimized", 1)
 ^{user.talon_hud_widget_names} maximize$: user.set_widget_preference(talon_hud_widget_names, "minimized", 0)
 ^{user.talon_hud_widget_names} next: user.increase_widget_page(talon_hud_widget_names)
-^{user.talon_hud_widget_names} previous: user.decrease_widget_page(talon_hud_widget_names)
+^{user.talon_hud_widget_names} (back|previous): user.decrease_widget_page(talon_hud_widget_names)
 ^{user.talon_hud_widget_names} options: user.hud_widget_options(talon_hud_widget_names)
 
 test example poller: user.example_poller()

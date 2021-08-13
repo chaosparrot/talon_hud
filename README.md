@@ -22,7 +22,7 @@ The default action of dwelling on the mode icon puts Talon in sleep mode after 1
 The buttons can also be clicked to activate the dwell action immediately.  
 
 You can customize the status bar in multiple ways
-- You can add the current natural languge by uncommenting line 42 from the display.py file
+- You can add the current natural languge by uncommenting line 67 from the display.py file
 - You can change the functionality of the icons by changing the activate_statusbar_icon action in the widgets/statusbar.py file all the way at the bottom.
 
 ### 2. Event log
@@ -66,7 +66,7 @@ Widgets can have extra options as well.
 
 Some widgets like the text box allow you to go to a next or previous page.  
 `<widget name> next` moves to the next page of the content if exists. You can use repeaters with this, so `<widget name> next twice` will go forward twice.  
-`<widget name> previous` goes to the previous page if it exists.
+`<widget name> previous` or `<widget name> back` goes to the previous page if it exists.
 
 ### Widget setup
 

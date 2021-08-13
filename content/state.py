@@ -170,7 +170,7 @@ class Actions:
         
     def hud_get_documentation():
         """Publish a specific piece of content to a topic"""            
-        content = HudPanelContent("documentation", "Head up setup", [documentation], [], time.time(), True)
+        content = HudPanelContent("documentation", "Head up documentation", [documentation], [], time.time(), True)
         
         global hud_content
         hud_content.publish(content)

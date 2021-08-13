@@ -59,7 +59,7 @@ class LayoutWidget(BaseWidget):
             self.disable()
 
         if not self.enabled and panel_content.show:
-            self.enable()
+            self.enable(True)
         
         if self.enabled:
             self.panel_content = panel_content
@@ -84,7 +84,7 @@ class LayoutWidget(BaseWidget):
             self.layout = self.layout_content(canvas, paint)
             
         if self.page_index > len(self.layout) - 1:
-            self.page_index = len(self.layout) -1            
+            self.page_index = len(self.layout) -1
         content_dimensions = self.layout[self.page_index]
         
         # Debug layout size / position
