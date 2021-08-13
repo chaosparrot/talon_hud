@@ -32,3 +32,7 @@ tag: user.talon_hud_available
 ^{user.talon_hud_widget_names} next: user.increase_widget_page(talon_hud_widget_names)
 ^{user.talon_hud_widget_names} previous: user.decrease_widget_page(talon_hud_widget_names)
 ^{user.talon_hud_widget_names} options: user.hud_widget_options(talon_hud_widget_names)
+
+test example poller: user.example_poller()
+debug scope: user.debug_scope()
+head up documentation: user.hud_get_documentation()

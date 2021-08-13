@@ -12,8 +12,10 @@ from user.talon_hud.widgets.statusbar import HeadUpStatusBar
 from user.talon_hud.widgets.eventlog import HeadUpEventLog
 from user.talon_hud.widgets.abilitybar import HeadUpAbilityBar
 from user.talon_hud.widgets.textbox import HeadUpTextBox
+from user.talon_hud.widgets.documentationpanel import HeadUpDocumentationPanel
 from user.talon_hud.widgets.contextmenu import HeadUpContextMenu
 from user.talon_hud.content.typing import HudPanelContent, HudButton
+from user.talon_hud.content.poller import Poller
 from user.talon_hud.utils import string_to_speakable_string
 
 ctx = Context()
@@ -33,7 +35,8 @@ class HeadUpDisplay:
     display_state = None
     preferences = None
     theme = None
-    poller = None
+    pollers = []
+    keep_alive_pollers = [] # These pollers will only deactivate when the hud deactivates    
     disable_poller_job = None
     show_animations = False
     widgets = []
@@ -42,19 +45,20 @@ class HeadUpDisplay:
     prev_mouse_pos = None
     mouse_poller = None
     
-    def __init__(self, display_state, preferences, poller = None):
+    def __init__(self, display_state, preferences):
         self.display_state = display_state
         self.preferences = preferences
-        self.poller = poller
+        self.pollers = {}
         self.disable_poller_job = None
         self.theme = HeadUpDisplayTheme(self.preferences.prefs['theme_name'])
         self.show_animations = self.preferences.prefs['show_animations']
         self.widgets = [
             HeadUpStatusBar('status_bar', self.preferences.prefs, self.theme),
             HeadUpEventLog('event_log', self.preferences.prefs, self.theme),
-            #HeadUpAbilityBar('ability_bar', self.preferences.prefs, self.theme),
-            HeadUpTextBox('debug_panel', self.preferences.prefs, self.theme, {'topics': ['debug']}),
-            
+            #HeadUpAbilityBar('ability_bar', self.preferences.prefs, self.theme),	
+            HeadUpTextBox('Text box', self.preferences.prefs, self.theme, {'topics': ['*']}),
+            HeadUpDocumentationPanel('Documentation', self.preferences.prefs, self.theme, {'topics': ['documentation']}),            
+            #HeadUpTextBox('Text box two', self.preferences.prefs, self.theme, {'topics': ['your_topic_here'], 'current_topic': 'scope'}),
             # Special widgets that have varying positions
             HeadUpContextMenu('context_menu', self.preferences.prefs, self.theme),            
         ]
@@ -62,18 +66,24 @@ class HeadUpDisplay:
         # Uncomment the line below to add language icons
         # self.subscribe_content_id('status_bar', 'language')
         
+    def start(self):
         if (self.preferences.prefs['enabled']):
-            self.enable()
+            self.enable()    	
             
     def enable(self, persisted=False):
         if not self.enabled:
             self.enabled = True
-            if self.poller:
-                self.poller.enable()
-                
+            
+            attached_topics = list(self.keep_alive_pollers)
             for widget in self.widgets:
                 if widget.preferences.enabled and not widget.enabled:
                     widget.enable()
+                    if widget.topic:
+                    	attached_topics.append(widget.topic)
+
+            for topic, poller in self.pollers.items():
+            	if topic in attached_topics:
+                    poller.enable()
             
             self.display_state.register('content_update', self.content_update)
             self.display_state.register('panel_update', self.panel_update)            
@@ -91,9 +101,7 @@ class HeadUpDisplay:
                 if widget.enabled:
                     widget.disable()
             
-            if self.poller:
-                self.disable_poller_job = cron.interval('30ms', self.disable_poller_check)                
-            
+            self.disable_poller_job = cron.interval('30ms', self.disable_poller_check)
             self.display_state.unregister('content_update', self.content_update)
             self.display_state.unregister('panel_update', self.panel_update)
             self.display_state.unregister('log_update', self.log_update)
@@ -120,11 +128,15 @@ class HeadUpDisplay:
         for widget in self.widgets:
             if not widget.enabled and widget.id == id:
                 widget.enable(True)
+                if widget.topic in self.pollers and not self.pollers[widget.topic].enabled:
+                	self.pollers[widget.topic].enable()                
 
     def disable_id(self, id):
         for widget in self.widgets:
             if widget.enabled and widget.id == id:
                 widget.disable(True)
+                if widget.topic in self.pollers and widget.topic not in self.keep_alive_pollers:
+                	self.pollers[widget.topic].disable()
         self.determine_active_setup_mouse()
         
     def subscribe_content_id(self, id, content_key):
@@ -153,7 +165,50 @@ class HeadUpDisplay:
                 widget.start_setup(setup_type)
                 
         self.determine_active_setup_mouse()
-                
+    
+    def register_poller(self, topic: str, poller: Poller, keep_alive: bool):
+        self.remove_poller(topic)
+        self.pollers[topic] = poller
+        
+        # Keep the poller alive even if no widgets have subscribed to its topic
+        if keep_alive and not self.pollers[topic].enabled:
+            self.keep_alive_pollers.append(topic)
+            self.pollers[topic].enable()
+        # Automatically enable the poller if it was active on restart        
+        else:
+            for widget in self.widgets:
+                if widget.topic == topic:
+                    self.pollers[topic].enable()
+                    break
+        
+    def remove_poller(self, topic: str):
+        if topic in self.pollers:
+            self.pollers[topic].disable()
+            del self.pollers[topic]
+    
+    def activate_poller(self, topic: str):
+        # Find the widget we need to claim for this topic
+        # Prioritizing specific widgets over the fallback one
+        widget_to_claim = None
+        using_fallback = True
+        if topic not in self.keep_alive_pollers:
+            for widget in self.widgets:
+                if topic in widget.subscribed_topics or ('*' in widget.subscribed_topics and using_fallback):
+                    widget_to_claim = widget
+                    if topic in widget.subscribed_topics:
+                   	    using_fallback = False
+        
+        # Deactivate the topic connected to the widget
+        if widget_to_claim:
+            if widget_to_claim.topic in self.pollers and widget_to_claim.topic not in self.keep_alive_pollers:
+                self.pollers[widget_to_claim.topic].disable()
+            widget_to_claim.set_topic(topic)
+    	
+    	# Enable the poller afterwards
+        if topic in self.pollers and not self.pollers[topic].enabled:
+            self.pollers[topic].enable()
+		
+         
     # Check if the widgets are finished unloading, then disable the poller
     # This should only run when we have a state poller
     def disable_poller_check(self):
@@ -164,10 +219,10 @@ class HeadUpDisplay:
                 break
         
         if not enabled:
-            if self.poller:
-                self.poller.disable()
-                cron.cancel(self.disable_poller_job)
-                self.disable_poller_job = None
+            for topic, poller in self.pollers.items():
+                poller.disable()
+            cron.cancel(self.disable_poller_job)
+            self.disable_poller_job = None
         
     def content_update(self, data):
         for widget in self.widgets:
@@ -177,7 +232,17 @@ class HeadUpDisplay:
                     update_dict[key] = data[key]
                     
             if len(update_dict) > 0:
+                current_enabled_state = widget.enabled
                 widget.update_content(update_dict)
+                
+                # If the enabled state has changed because of a content update like a sleep command
+                # Do appropriate poller enabling / disabling
+                if widget.enabled != current_enabled_state:
+                    if widget.topic in self.pollers and widget.topic not in self.keep_alive_pollers:
+                        if widget.enabled:
+                            self.pollers[widget.topic].enable()
+                        else:
+                            self.pollers[widget.topic].disable()
                 
     def log_update(self, logs):
         new_log = logs[-1]
@@ -185,18 +250,41 @@ class HeadUpDisplay:
             if new_log['type'] in widget.subscribed_logs or '*' in widget.subscribed_logs:
                 widget.append_log(new_log)
 
-    def panel_update(self, data):
+    def panel_update(self, panel_content: HudPanelContent):
         updated = False
-        for widget in self.widgets:
-            panel_content = None        
-            for key in data:
-                if key in widget.subscribed_topics:
-                    if panel_content == None or data[key].published_at > panel_content.published_at:
-                        panel_content = data[key]
+        widget_to_claim = None
+        using_fallback = True
+        topic = panel_content.topic
+        
+        # Do not force a reopen of Talon HUD without explicit user permission
+        if not self.enabled:
+            panel_content.show = False
+        
+        # Find the widget to use for updating
+        # Prefer the widget that is already registered 
+        # Then widgets that have a topic subscribed
+        # And lastly the fallback widget
+        if topic not in self.keep_alive_pollers:
+            for widget in self.widgets:
+                if topic in widget.subscribed_topics or ('*' in widget.subscribed_topics and using_fallback):
+                    if topic == widget.topic:
+                        widget_to_claim = widget
+                        break
+                    else:
+                        widget_to_claim = widget
+                        if topic in widget.subscribed_topics:
+                            using_fallback = False
+        
+
+        if widget_to_claim:
+			# When a new topic is published it can lay claim to a widget
+            # So old pollers need to be deregistered in that case
+            current_topic = widget_to_claim.topic                
+            updated = widget_to_claim.update_panel(panel_content)
+            if updated and current_topic != widget_to_claim.topic:
+                if current_topic in self.pollers and current_topic not in self.keep_alive_pollers:
+                    self.pollers[widget_to_claim.topic].disable()
             
-            if panel_content != None:
-                widget.update_panel(panel_content)
-                updated = True
         if updated:
             self.update_context()
 
@@ -335,15 +423,14 @@ class HeadUpDisplay:
         ctx.lists['user.talon_hud_quick_choices'] = quick_choices
     
 
-def create_hud():
-    global hud
-    preferences = HeadUpDisplayUserPreferences()
-    
-    from user.talon_hud.content.knausj_bindings import KnausjStatePoller    
-    poller = KnausjStatePoller()
-    hud = HeadUpDisplay(hud_content, preferences, poller)
+preferences = HeadUpDisplayUserPreferences()
+hud = HeadUpDisplay(hud_content, preferences)
 
-app.register('ready', create_hud)
+def hud_enable():
+    global hud
+    hud.start()
+
+app.register('ready', hud_enable)
 
 @mod.action_class
 class Actions:
@@ -419,3 +506,13 @@ class Actions:
         """Activate a choice available on the screen"""    
         global hud
         hud.activate_choice(choice_string)
+        
+    def hud_add_poller(topic: str, poller: Poller, keep_alive: bool = False):
+        """Add a content poller / listener to the HUD"""    
+        global hud
+        hud.register_poller(topic, poller, keep_alive)
+        
+    def hud_activate_poller(topic: str):
+        """Enables a poller and claims a widget"""    
+        global hud
+        hud.activate_poller(topic)

@@ -47,23 +47,27 @@ class LayoutWidget(BaseWidget):
     def set_page_index(self, page_index: int):
         self.page_index = max(0, min(page_index, len(self.layout) - 1))
         if self.canvas:
+            self.mark_layout_invalid = True        
             self.canvas.resume()
         
     def setup_move(self, pos):
         self.mark_layout_invalid = True
         super().setup_move(pos)
 
-    def update_panel(self, panel_content):
+    def update_panel(self, panel_content) -> bool:
         if not panel_content.content[0] and self.enabled:
             self.disable()
 
         if not self.enabled and panel_content.show:
             self.enable()
-    
+        
         if self.enabled:
             self.panel_content = panel_content
+            self.topic = panel_content.topic            
             self.mark_layout_invalid = True
             self.canvas.resume()
+        return self.enabled and self.topic == panel_content.topic
+        
 
     def layout_content(self, canvas, paint):
         # Determine the dimensions and positions of the content
@@ -93,7 +97,7 @@ class LayoutWidget(BaseWidget):
         # Automatically resize the canvas based on the content to make sure no dead zones 
         # will show up when clicking in or near the text panel
         if self.setup_type == "":
-            if self.mark_layout_invalid:
+            if self.mark_layout_invalid and self.mouse_capture_canvas:
                 rect = content_dimensions["rect"]
                 self.capture_rect = rect
                 self.mouse_capture_canvas.set_rect(rect)

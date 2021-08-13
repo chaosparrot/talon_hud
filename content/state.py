@@ -22,22 +22,17 @@ class HeadUpDisplayContent(Dispatch):
         "status_icons": [],
         "log": [],
         "abilities": [],
-        "panel_content": {
-            'debug': HudPanelContent('debug', '', 'Debug panel', [], 0, True),
-            'history': HudPanelContent('history', '', 'History panel', [], 0, True),
-            'choice': HudPanelContent('choice', '', 'Choice panel', [], 0, True),
-            'documentation': HudPanelContent('documentation', '', 'Documentation panel', [], 0, True)
+        "topics": {
+            'debug': HudPanelContent('debug', '', 'Debug panel', [], 0, False),
         }
     }
     
     # Publish content meant for text boxes and other panels
     def publish(self, panel_content: HudPanelContent):
-        purpose = panel_content.purpose
-        if purpose not in ['debug', 'history', 'choice', 'documentation']:
-            purpose = 'debug'
-    
-        self.content['panel_content'][purpose] = panel_content
-        self.dispatch('panel_update', self.content['panel_content'])
+        topic = panel_content.topic
+
+        self.content['topics'][topic] = panel_content
+        self.dispatch('panel_update', panel_content)
     
     # Update the content and sends an event if the state has changed
     def update(self, dict):
@@ -71,7 +66,6 @@ class HeadUpDisplayContent(Dispatch):
             if not found:
                 updated = True
                 self.content[content_key].append(dict)
-            print( dict, updated )                
         
         if updated:
             self.dispatch("content_update", self.content)
@@ -95,15 +89,42 @@ class HeadUpDisplayContent(Dispatch):
         
 hud_content = HeadUpDisplayContent()
 
+documentation = """
+By default, the widgets except for the status bar will hide when Talon goes in sleep mode, but you can keep them around, or hide them, with the following commands.  
+<*head up show <widget name> on sleep/> keeps the chosen widget enabled during sleep mode.  
+<*head up hide <widget name> on sleep/> hides the chosen widget when sleep mode is turned on.
+
+On top of being able to turn widgets on and off, you can configure their attributes to your liking.  
+Currently, you can change the size, position, alignment, animation and font size.  
+
+<*head up drag <widget name>/> starts dragging the widget.  
+<*head up resize <widget name>/> starts resizing the widgets width and height.  
+<*head up expand <widget name>/> changes the maximum size of the widget in case the content does not fit the regular width and height.  
+By default these two dimensions are the same so the widget does not grow when more content is added.  
+<*head up text scale <widget name>/> starts resizing the text in the widget.  
+<*head up drop/> confirms and saves the changes of your changed widgets.  
+<*head up cancel/> cancels the changes. Hiding a widget also discards of the current changes.
+
+Some widgets like the event log also allow you to change the text direction and alignment  
+<*head up align <widget name> left/> aligns the text and the widget to the left side of its bounds.  
+<*head up align <widget name> right/> aligns the text and the widget to the right side of its bounds.  
+<*head up align <widget name> top/> changes the direction in which content is placed upwards.  
+<*head up align <widget name> bottom/> changes the direction in which content is placed downwards.
+
+If you prefer having a more basic animation free set up, or want to switch back to an animated display, you can use the following commands  
+<*head up basic <widget name>/> disables animations on the chosen widget.  
+<*head up fancy <widget name>/> enables animations on the chosen widget.
+"""
+
 @mod.action_class
 class Actions:
 
-    def add_hud_log(type: str, message: str):
+    def hud_add_log(type: str, message: str):
         """Adds a log to the HUD"""
         global hud_content
         hud_content.append_to_log(type, message)
 
-    def add_status_icon(id: str, image: str, explanation: str):
+    def hud_add_status_icon(id: str, image: str):
         """Add an icon to the status bar"""
         global hud_content
         hud_content.add_to_set("status_icons", {
@@ -113,7 +134,7 @@ class Actions:
             "clickable": False
         })
 
-    def remove_status_icon(id: str):
+    def hud_remove_status_icon(id: str):
         """Remove an icon to the status bar"""
         global hud_content
         hud_content.remove_from_set("status_icons", {
@@ -136,13 +157,20 @@ class Actions:
         global hud_content
         hud_content.remove_from_set("abilities", {
             "id": id
-        })    
+        })
         
-    def hud_publish_content(content: str, widget_hint: str = '', title:str = '', show:bool = True, buttons: list[HudButton] = None):
-        """Publish a specific piece of content to a user defined widget"""            
+    def hud_publish_content(content: str, topic: str = '', title:str = '', show:bool = True, buttons: list[HudButton] = None):
+        """Publish a specific piece of content to a topic"""            
         if buttons == None:
             buttons = []
-        content = HudPanelContent(widget_hint, title, [content], buttons, time.time(), show)
+        content = HudPanelContent(topic, title, [content], buttons, time.time(), show)
+        
+        global hud_content
+        hud_content.publish(content)
+        
+    def hud_get_documentation():
+        """Publish a specific piece of content to a topic"""            
+        content = HudPanelContent("documentation", "Head up setup", [documentation], [], time.time(), True)
         
         global hud_content
         hud_content.publish(content)

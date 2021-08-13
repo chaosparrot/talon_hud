@@ -14,7 +14,7 @@ def noop(widget: BaseWidget):
     pass
 
 class HeadUpContextMenu(LayoutWidget):
-    preferences = HeadUpDisplayUserWidgetPreferences(type="context_menu", x=50, y=100, width=200, height=200, limit_x=50, limit_y=100, limit_width=350, limit_height=400, enabled=True, alignment="left", expand_direction="down", font_size=18)
+    preferences = HeadUpDisplayUserWidgetPreferences(type="context_menu", x=50, y=100, width=200, height=50, limit_x=50, limit_y=100, limit_width=300, limit_height=400, enabled=False, alignment="left", expand_direction="down", font_size=18)
     mouse_enabled = True
     mark_position_invalid = False
 

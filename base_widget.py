@@ -4,6 +4,7 @@ from abc import ABCMeta
 import numpy
 from user.talon_hud.widget_preferences import HeadUpDisplayUserWidgetPreferences
 from user.talon_hud.content.typing import HudButton
+import copy
 
 class BaseWidget(metaclass=ABCMeta):
     id = None
@@ -13,7 +14,6 @@ class BaseWidget(metaclass=ABCMeta):
     theme = None
     preferences = None
     
-    # Enables receiving of mouse events - Note, this blocks all the mouse events on the canvas so make sure the canvas stays as small as possible to avoid 'dead areas'
     mouse_enabled = False
     
     # Position dragging position offset - Used in manual dragging
@@ -26,6 +26,8 @@ class BaseWidget(metaclass=ABCMeta):
     subscribed_content = ['mode']
     subscribed_logs = []
     subscribed_topics = []
+    topic = ''
+    
     content = {}
         
     animation_tick = 0
@@ -38,10 +40,13 @@ class BaseWidget(metaclass=ABCMeta):
     def __init__(self, id, preferences_dict, theme, subscriptions = None):
         self.id = id
         self.theme = theme
+        self.preferences = copy.copy(self.preferences)
+        
         self.load(preferences_dict)
         if subscriptions != None:
+            self.topic = subscriptions['current_topic'] if 'current_topic' in subscriptions else ''
             self.subscribed_topics = subscriptions['topics'] if 'topics' in subscriptions else self.subscribed_topics
-            self.subscribed_logs = subscriptions['logs'] if 'logs' in subscriptions else self.subscribed_topics            
+            self.subscribed_logs = subscriptions['logs'] if 'logs' in subscriptions else self.subscribed_logs
             
     # Load the widgets preferences
     def load(self, dict, initialize = True):
@@ -54,7 +59,7 @@ class BaseWidget(metaclass=ABCMeta):
         self.height = self.preferences.height
         self.limit_x = self.preferences.limit_x
         self.limit_y = self.preferences.limit_y
-        self.limit_width = self.preferences.limit_width
+        self.limit_width = self.preferences.limit_width	
         self.limit_height = self.preferences.limit_height        
         self.font_size = self.preferences.font_size
         self.alignment = self.preferences.alignment
@@ -66,6 +71,11 @@ class BaseWidget(metaclass=ABCMeta):
 
         if (initialize and self.preferences.enabled and ('enabled' in dict and dict['enabled'])):
             self.enable()
+    
+    # Set the topic that has claimed this widget
+    def set_topic(self, topic:str):
+
+    	self.topic = topic
     
     def set_theme(self, theme):
         self.theme = theme
@@ -88,16 +98,18 @@ class BaseWidget(metaclass=ABCMeta):
         if self.enabled:
             self.canvas.resume()
             
-    def update_panel(self, panel_content):
+    def update_panel(self, panel_content) -> bool:
         if not panel_content.content[0] and self.enabled:
             self.disable()
-    
+        
         if not self.enabled and panel_content.show:
             self.enable()
         
         if self.enabled:
             self.panel_content = panel_content
+            self.topic = panel_content.topic
             self.canvas.resume()
+        return self.enabled and panel_content.topic
     
     def enable(self, persisted=False):
         if not self.enabled:
@@ -243,7 +255,6 @@ class BaseWidget(metaclass=ABCMeta):
         """Starts a setup mode that is used for moving, resizing and other various changes that the user might setup"""    
         if (setup_type not in self.allowed_setup_options and setup_type not in ["", "cancel"] ):
             return
-    
         # Persist the user preferences when we end our setup
         if (self.setup_type != "" and not setup_type):
             rect = self.canvas.get_rect()

@@ -43,7 +43,7 @@ class HudButton:
 
 @dataclass
 class HudPanelContent:
-    purpose: str
+    topic: str
     title: str
     content: list[str]
     buttons: list[HudButton]

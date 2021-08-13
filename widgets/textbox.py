@@ -14,16 +14,16 @@ def minimize_toggle_widget(widget):
     if widget.minimized:
         widget.set_preference("minimized", 1)
     else:
-        widget.set_preference("minimized", 0)        
+        widget.set_preference("minimized", 0)
     widget.mark_layout_invalid = True
     widget.canvas.resume()
 
 class HeadUpTextBox(LayoutWidget):
-    preferences = HeadUpDisplayUserWidgetPreferences(type="text_box", x=1630, y=100, width=200, height=200, limit_x=1530, limit_y=100, limit_width=350, limit_height=400, enabled=False, alignment="left", expand_direction="down", font_size=18)
+    preferences = HeadUpDisplayUserWidgetPreferences(type="text_box", x=1630, y=100, width=200, height=200, limit_x=1530, limit_y=100, limit_width=300, limit_height=400, enabled=False, alignment="left", expand_direction="down", font_size=18)
     mouse_enabled = True
 
     # Top, right, bottom, left, same order as CSS padding
-    padding = [3, 20, 10, 8]     
+    padding = [3, 20, 10, 8]
     line_padding = 6
     
     # Options given to the context menu
@@ -54,13 +54,13 @@ class HeadUpTextBox(LayoutWidget):
         
     def copy_contents(self):
         clip.set_text(remove_tokens_from_rich_text(self.panel_content.content[0]))
-        actions.user.add_hud_log("event", "Copied contents to clipboard!")
+        actions.user.hud_add_log("event", "Copied contents to clipboard!")
     
-    def update_panel(self, panel_content):
+    def update_panel(self, panel_content) -> bool:
         # Update the content buttons
         self.buttons = list(panel_content.buttons)
         self.buttons.extend(self.default_buttons)
-        super().update_panel(panel_content)
+        return super().update_panel(panel_content)
     
     def set_preference(self, preference, value, persisted=False):
         self.mark_layout_invalid = True
@@ -94,22 +94,6 @@ class HeadUpTextBox(LayoutWidget):
                 self.icon_hovered = -1
                 self.footer_icon_hovered = -1
                 clicked_icon.callback(self)
-            #if clicked_icon_type == "close":
-            #    self.disable(True)
-            #elif clicked_icon_type == "minimize":
-            #    self.minimized = not self.minimized
-            #    self.mark_layout_invalid = True
-            #    self.canvas.resume()
-            #elif clicked_icon_type == "next":
-            #    new_page_index = min(self.page_index + 1, len(self.layout) - 1)
-            #    if new_page_index != self.page_index:                
-            #        self.page_index = new_page_index
-            #        self.canvas.resume()
-            #elif clicked_icon_type == "previous":
-            #    new_page_index = max(self.page_index - 1, 0)
-            #    if new_page_index != self.page_index:                
-            #        self.page_index = new_page_index
-            #        self.canvas.resume()
 
         if event.button == 1 and event.event == "mouseup":            
             actions.user.show_context_menu(self.id, event.gpos.x, event.gpos.y, self.buttons)
@@ -176,8 +160,7 @@ class HeadUpTextBox(LayoutWidget):
                 # We have exceeded the page height limit, append the layout and try again
                 else:
                     width = min( self.limit_width, max(self.width, total_text_width + self.padding[1] + self.padding[3]))
-                    content_height = total_text_height - current_line_height
-                    height = min(self.limit_height, max(self.height, content_height))
+                    height = self.limit_height
                     x = self.x if horizontal_alignment == "left" else self.limit_x + self.limit_width - width
                     y = self.limit_y if vertical_alignment == "top" else self.limit_y + self.limit_height - height
                     layout_pages.append({
@@ -219,7 +202,7 @@ class HeadUpTextBox(LayoutWidget):
                     "content_text": current_page_text,
                     "header_height": header_height,
                     "content_height": content_height
-                })        
+                })
         
         return layout_pages
     
