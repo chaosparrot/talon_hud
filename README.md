@@ -1,4 +1,4 @@
- Unofficial Talon Head Up Display
+Unofficial Talon Head Up Display
 =====
 
 ![Overview image](/docs/intro.png)
@@ -17,8 +17,7 @@ Widgets
 
 ### 1. Status bar
 
-This widget will display the current Talon mode ( Command, dictation or sleep ) and will display the detected or forced language.  
-The default action of dwelling on the mode icon puts Talon in sleep mode after 1.5 seconds, and the close icon closes the HUD.  
+This widget will display the current Talon mode ( Command, dictation or sleep ) and will display the detected or forced language. The default action of dwelling on the mode icon puts Talon in sleep mode after 1.5 seconds, and the close icon closes the HUD.  
 The buttons can also be clicked to activate the dwell action immediately.  
 
 You can customize the status bar in multiple ways
@@ -31,10 +30,9 @@ This widget works like the command history from knausj, but instead every messag
 
 ### 3. Text box
 
-A catch all-widget for rich text display. It stretches the content until the defined screen limits given by the user.  
-It allows text in a variety of styles, including bold and italic, and various colours.  
-The header contains the name of the panel, including a minimize and a close button.  
-If the content is larger than the allotted screen space, it will create multiple pages which are navigable using a next and previous page button.  
+A catch all-widget for rich text display. It stretches the content until the defined screen limits given by the user. It allows text in a variety of styles, including bold and italic, and various colours.  
+The header contains the name of the panel, including a minimize and a close button. If the content is larger than the allotted screen space, it will create multiple pages which are navigable using a next and previous page button.  
+
 The text box will align itself based on the given expansion limits. If more space is available to the left, it will align itself to the right, and so on.
 
 ### 4. Context menu

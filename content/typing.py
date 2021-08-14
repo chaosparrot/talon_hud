@@ -18,7 +18,7 @@ class HudChoice:
     image: str
     text: str
     data: Any
-    spoken_alias: str
+    selected: bool
     rect: ui.Rect
     
 @dataclass
@@ -49,3 +49,4 @@ class HudPanelContent:
     buttons: list[HudButton]
     published_at: float
     show: bool
+    choices: HudChoices = None

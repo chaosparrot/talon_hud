@@ -14,6 +14,7 @@ from user.talon_hud.widgets.statusbar import HeadUpStatusBar
 from user.talon_hud.widgets.eventlog import HeadUpEventLog
 from user.talon_hud.widgets.abilitybar import HeadUpAbilityBar
 from user.talon_hud.widgets.textbox import HeadUpTextBox
+from user.talon_hud.widgets.choicepanel import HeadUpChoicePanel
 from user.talon_hud.widgets.documentationpanel import HeadUpDocumentationPanel
 from user.talon_hud.widgets.contextmenu import HeadUpContextMenu
 from user.talon_hud.content.typing import HudPanelContent, HudButton
@@ -57,12 +58,14 @@ class HeadUpDisplay:
         self.widgets = [
             HeadUpStatusBar('status_bar', self.preferences.prefs, self.theme),
             HeadUpEventLog('event_log', self.preferences.prefs, self.theme),
-            #HeadUpAbilityBar('ability_bar', self.preferences.prefs, self.theme),	
             HeadUpTextBox('Text box', self.preferences.prefs, self.theme, {'topics': ['*']}),
             HeadUpDocumentationPanel('Documentation', self.preferences.prefs, self.theme, {'topics': ['documentation']}),            
-            #HeadUpTextBox('Text box two', self.preferences.prefs, self.theme, {'topics': ['your_topic_here'], 'current_topic': 'scope'}),
+            # Extra text boxes can be defined to be assigned to different topics
+            # HeadUpTextBox('Text box two', self.preferences.prefs, self.theme, {'topics': ['your_topic_here'], 'current_topic': 'your_topic_here'}),
+            HeadUpChoicePanel('Choices', self.preferences.prefs, self.theme, {'topics': ['choice'], 'current_topic': 'choice'}),
+
             # Special widgets that have varying positions
-            HeadUpContextMenu('context_menu', self.preferences.prefs, self.theme),            
+            HeadUpContextMenu('context_menu', self.preferences.prefs, self.theme),
         ]
         
         # These pollers should always be active and available when reloading Talon HUD

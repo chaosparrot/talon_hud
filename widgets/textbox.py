@@ -111,7 +111,7 @@ class HeadUpTextBox(LayoutWidget):
             actions.user.hide_context_menu()
 
         # Allow dragging and dropping with the mouse
-        if icon_hovered == -1:
+        if icon_hovered == -1 and footer_icon_hovered == -1:
             super().on_mouse(event)
         
     def layout_content(self, canvas, paint):

@@ -1,8 +1,8 @@
 from talon import actions, cron, scope, Module, ui
 from talon.scripting import Dispatch
-from user.talon_hud.content.typing import HudPanelContent, HudButton
+from user.talon_hud.content.typing import HudPanelContent, HudButton, HudChoice, HudChoices
 import time
-from typing import Callable
+from typing import Callable, Any
 
 max_log_length = 50
 mod = Module()
@@ -172,6 +172,14 @@ class Actions:
     def hud_create_button(text: str, callback: Callable[[], None], image: str = ''):
         """Create a button used in the Talon HUD"""
         return HudButton(image, text, ui.Rect(0,0,0,0), callback)
+
+    def hud_create_choices(choices_list: list[Any], selected_indexes: list[int]):
+        """Creates a list of choices with a single list of dictionaries"""
+        choices = []
+        for index, choice_data in enumerate(choices_list):
+            image = choice_data['image'] if 'image' in choice_data else 'check_icon' if index in selected_indexes else ''
+            choices.append(HudChoice(image, choice_data['text'], choice_data, index in selected_indexes, ui.Rect(0,0,0,0)))
+        return choices
         
     def hud_get_documentation():
         """Publish a specific piece of content to a topic"""
@@ -179,3 +187,13 @@ class Actions:
         
         global hud_content
         hud_content.publish(content)
+        
+        
+    def show_test_choices():
+        """Show a bunch of test buttons to choose from"""
+        choices = actions.user.hud_create_choices([{"text": "Testing"},{"text": "Another choice"},{"text": "Some other choice"},{"text": "Maybe pick this"},], [])
+        choiceContent = HudChoices(choices, print)
+        content = HudPanelContent("choice", "Choices", ["Pick any from the following choices using <*option <number>/>"], [], time.time(), True, choiceContent)
+        
+        global hud_content
+        hud_content.publish(content)        
