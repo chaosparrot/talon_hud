@@ -177,7 +177,7 @@ class Actions:
         """Creates a list of choices with a single list of dictionaries"""
         choices = []
         for index, choice_data in enumerate(choices_list):
-            image = choice_data['image'] if 'image' in choice_data else 'check_icon' if index in selected_indexes else ''
+            image = choice_data['image'] if 'image' in choice_data else ''
             choices.append(HudChoice(image, choice_data['text'], choice_data, index in selected_indexes, ui.Rect(0,0,0,0)))
         return choices
         
@@ -191,8 +191,8 @@ class Actions:
         
     def show_test_choices():
         """Show a bunch of test buttons to choose from"""
-        choices = actions.user.hud_create_choices([{"text": "Testing"},{"text": "Another choice"},{"text": "Some other choice"},{"text": "Maybe pick this"},], [])
-        choiceContent = HudChoices(choices, print)
+        choices = actions.user.hud_create_choices([{"text": "Testing", "image": "next_icon"},{"text": "Another choice"},{"text": "Some other choice"},{"text": "Maybe pick this"},], [1])
+        choiceContent = HudChoices(choices, print, True)
         content = HudPanelContent("choice", "Choices", ["Pick any from the following choices using <*option <number>/>"], [], time.time(), True, choiceContent)
         
         global hud_content

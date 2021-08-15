@@ -25,6 +25,7 @@ class HudChoice:
 class HudChoices:
     choices: list[HudChoice]
     callback: Callable[[Any, Any], None]
+    multiple: bool = False
 
 @dataclass
 class HudIcon:

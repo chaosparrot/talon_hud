@@ -36,3 +36,4 @@ tag: user.talon_hud_available
 test example poller: user.example_poller()
 debug scope: user.debug_scope()
 head up documentation: user.hud_get_documentation()
+test choices: user.show_test_choices()

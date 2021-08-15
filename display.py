@@ -21,11 +21,27 @@ from user.talon_hud.content.typing import HudPanelContent, HudButton
 from user.talon_hud.content.poller import Poller
 from user.talon_hud.utils import string_to_speakable_string
 
+# Taken from knausj/code/numbers to make Talon HUD standalone
+# The numbers should realistically stay very low for choices, because you dont want choice overload for the user, up to 100
+digits = "zero one two three four five six seven eight nine".split()
+teens = "ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen".split()
+tens = "twenty thirty forty fifty sixty seventy eighty ninety".split()
+digits_without_zero = digits[1:]
+numerical_choice_strings = []
+numerical_choice_strings.extend(digits_without_zero)
+numerical_choice_strings.extend(teens)
+for index, ten in enumerate(tens):
+    numerical_choice_strings.append(ten)
+    for digit in digits_without_zero:
+       numerical_choice_strings.append(ten + " " + digit)
+numerical_choice_strings.append("hundred")
+
 ctx = Context()
 mod = Module()
 mod.list("talon_hud_widget_names", desc="List of available widgets by name linked to their identifier")
 mod.list("talon_hud_widget_options", desc="List of options available to the widgets")
 mod.list("talon_hud_choices", desc="Available choices shown on screen")
+mod.list("talon_hud_numerical_choices", desc="Available choices shown on screen numbered")
 mod.list("talon_hud_quick_choices", desc="List of widgets with their quick options")
 mod.tag("talon_hud_available", desc="Tag that shows the availability of the Talon HUD repository for other scripts")
 mod.tag("talon_hud_visible", desc="Tag that shows that the Talon HUD is visible")
@@ -390,22 +406,22 @@ class HeadUpDisplay:
         widget_id, choice_index = choice_string.split("|")
         for widget in self.widgets:
             if widget.id == widget_id:
-                widget.click_button(int(choice_index))
+                if isinstance(widget, HeadUpChoicePanel):
+                    widget.select_choice(int(choice_index))
+                    self.update_context()
+                else:
+                    widget.click_button(int(choice_index))
 
     # Updates the context based on the current HUD state
     def update_context(self):
         tags = [
             'user.talon_hud_available'
         ]
-        if self.enabled:
-            tags.append('user.talon_hud_visible')
-        if self.choices_visible:
-            tags.append('user.talon_hud_choices_visible')
-        ctx.tags = tags
         
         widget_names = {}
         choices = {}
-        quick_choices = {}        
+        quick_choices = {}
+        numerical_choices = {}
         for widget in self.widgets:
             current_widget_names = [string_to_speakable_string(widget.id)]        
             if isinstance(widget, HeadUpTextBox):
@@ -423,13 +439,31 @@ class HeadUpDisplay:
                     for widget_name in current_widget_names:
                         quick_choices[widget_name + " " + choice_title] = widget.id + "|" + str(index)
             
-            # Add choices
+            # Add context choices
             if widget.enabled and isinstance(widget, HeadUpContextMenu):
                 for index, button in enumerate(widget.buttons):
                     choice_title = string_to_speakable_string(button.text)
                     if choice_title:
-                        choices[choice_title] = widget.id + "|" + str(index)                        
-        
+                        choices[choice_title] = widget.id + "|" + str(index)
+             
+            # Add choice panel choices
+            if widget.enabled and isinstance(widget, HeadUpChoicePanel):
+                self.choices_visible = True
+                for index, choice in enumerate(widget.choices):
+                    choice_title = string_to_speakable_string(choice.text)
+                    if choice_title:
+                        choices[choice_title] = widget.id + "|" + str(index)
+                    numerical_choices[numerical_choice_strings[index]] = widget.id + "|" + str(index)
+                        
+                if widget.panel_content.choices and widget.panel_content.choices.multiple:
+                    choices["confirm"] = widget.id + "|" + str(index + 1)
+
+        if self.enabled:
+            tags.append('user.talon_hud_visible')
+        if self.choices_visible:
+            tags.append('user.talon_hud_choices_visible')
+        ctx.tags = tags
+        ctx.lists['user.talon_hud_numerical_choices'] = numerical_choices
         ctx.lists['user.talon_hud_widget_names'] = widget_names
         ctx.lists['user.talon_hud_choices'] = choices
         ctx.lists['user.talon_hud_quick_choices'] = quick_choices
@@ -518,6 +552,12 @@ class Actions:
         """Activate a choice available on the screen"""    
         global hud
         hud.activate_choice(choice_string)
+        
+    def hud_activate_choices(choice_string_list: list[str]):
+        """Activate multiple choices available on the screen"""    
+        global hud
+        for choice_string in choice_string_list:
+            hud.activate_choice(choice_string)
         
     def hud_add_poller(topic: str, poller: Poller, keep_alive: bool = False):
         """Add a content poller / listener to the HUD"""    
