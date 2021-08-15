@@ -47,7 +47,7 @@ class LayoutWidget(BaseWidget):
     def set_page_index(self, page_index: int):
         self.page_index = max(0, min(page_index, len(self.layout) - 1))
         if self.canvas:
-            self.mark_layout_invalid = True        
+            self.mark_layout_invalid = True
             self.canvas.resume()
         
     def setup_move(self, pos):

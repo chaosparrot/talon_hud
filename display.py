@@ -497,7 +497,7 @@ class Actions:
         hud.persist_widgets_preferences()
 
     def enable_hud_id(id: str):
-        """Enables a specific hud element"""
+        """Enables a specific HUD element"""
         global hud        
         hud.enable_id(id)
         
@@ -506,7 +506,7 @@ class Actions:
         hud.set_widget_preference(id, property, value, True)
         
     def disable_hud_id(id: str):
-        """Disables a specific hud element"""
+        """Disables a specific HUD element"""
         global hud
         hud.disable_id(id)
         
