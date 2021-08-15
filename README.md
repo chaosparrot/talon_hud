@@ -132,13 +132,13 @@ Roadmap
 
 These are ideas that I want to implement in no specific order and with no specific timeline in mind.
 
-- A choice widget that can show buttons on the screen like the context menu for easy selection purposes
 - An indicator widget that follows the cursor around to show a single state that is important to the current task at hand
 - An image panel with a header and a close icon which displays image content
 - Dynamically detecting themes and reloading when changed
 - Multiscreen setups and how to best work with those, maybe with multiple preference files per monitor
 - Multi-drag to drag every widget simultaniously
 - Splitting out topics from text boxes into seperate text boxes
+- Fix issues with choice widget layouting when the widget is thin and needs multiple pages. This probably won't happen often, so I'll fix it whenever
 
 If any of these ideas seem cool for you to work on, give me a message on the talon slack so we can coordinate stuff.
 

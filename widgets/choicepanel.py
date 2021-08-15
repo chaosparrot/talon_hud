@@ -37,7 +37,6 @@ class HeadUpChoicePanel(HeadUpTextBox):
         for index, choice in enumerate(self.choices):
             if index in self.visible_indecis and hit_test_button(choice, pos):
                 choice_hovered = index
-        
         confirm_hovered = hit_test_button(self.confirm_button, pos)
         
         # Update the canvas if the hover state has changed
@@ -118,7 +117,6 @@ class HeadUpChoicePanel(HeadUpTextBox):
         current_height_limit = self.limit_height
         self.limit_height = page_height_limit
         layout_pages = super().layout_content(canvas, paint)
-        print( layout_pages[0]['rect'] )
         for index, page in enumerate(layout_pages):
             layout_pages[index]['choice_layouts'] = []
             
@@ -127,15 +125,14 @@ class HeadUpChoicePanel(HeadUpTextBox):
         if self.panel_content.choices and self.minimized == False: 
             last_layout_page = layout_pages[len(layout_pages) - 1]
             y = self.limit_y + last_layout_page['header_height']
-            total_button_height = last_layout_page['content_height'] + self.padding[2] 
-            if total_button_height < page_height_limit:
+            content_start_height = last_layout_page['content_height'] + self.padding[2]
+            if content_start_height < page_height_limit:
                 y = last_layout_page['content_height']
                 total_text_width = last_layout_page['rect'].width
-            
-            print('HEIGHT!', last_layout_page['rect'].height )
-            
+                        
             # Append buttons to the last layout page until the height limit would be exceeded
             # Then create new layouts
+            total_button_height = 0
             for choice_index, choice in enumerate(self.panel_content.choices.choices):
                 icon_offset = self.image_size
                 if choice.image != None:
@@ -145,14 +142,15 @@ class HeadUpChoicePanel(HeadUpTextBox):
                 
                 line_count = 0
                 button_text_height = 0
-                button_y = self.limit_y + total_button_height
+                button_y = self.limit_y + total_button_height + content_start_height
                 for index, text in enumerate(choice_rich_text):
                     line_count = line_count + 1 if text.x == 0 else line_count
                     current_line_length = current_line_length + text.width if text.x != 0 else text.width + icon_offset
                     total_text_width = max( total_text_width, current_line_length )
                     button_text_height = button_text_height + text.height + self.line_padding if text.x == 0 else button_text_height
                 
-                if total_button_height + text_box_header_height * 2 + (button_text_height + self.padding[0] * 3) < page_height_limit:
+                button_height = (button_text_height + self.padding[0] * 3)
+                if content_start_height + total_button_height + text_box_header_height * 2 + button_height < page_height_limit:
                     total_button_height += button_text_height + self.padding[0] * 3
                     layout_pages[len(layout_pages) - 1]['choice_layouts'].append({
                         'choice_index': choice_index,
@@ -162,24 +160,23 @@ class HeadUpChoicePanel(HeadUpTextBox):
                         'line_count': line_count,
                         'text_height': button_text_height + self.padding[0]
                     })
-                    layout_pages[len(layout_pages) - 1]['rect'].height = total_button_height
+                    layout_pages[len(layout_pages) - 1]['rect'].height = total_button_height + content_start_height + text_box_header_height * 2
                     total_button_height += self.padding[0] * 2
-                    print('HEIGHT!', layout_pages[len(layout_pages) - 1]['rect'].height )
                     
                 # Next page of buttons - Layout like the text box with extras
                 else:
-                    total_button_height = self.padding[2] + button_text_height + self.padding[0] * 3
-                    layout_pages[len(layout_pages) - 1]['rect'].height += total_button_height - self.padding[0] * 3 + self.padding[2]
-                    button_y = self.limit_y + total_button_height
+                    total_button_height = button_height
+                    content_start_height = 0
+                    button_y = self.limit_y + content_start_height + total_button_height
                     
                     horizontal_alignment = "right" if self.limit_x < self.x else "left"
                     vertical_alignment = "bottom" if self.limit_y < self.y else "top"
-                    height = total_button_height + text_box_header_height * 2 + self.padding[0] + self.padding[2] * 2
+                    height = total_button_height * 2 + text_box_header_height * 2 + self.padding[0] * 2 + self.padding[2] * 2
                     x = self.x if horizontal_alignment == "left" else self.limit_x + self.limit_width - width
                     y = self.limit_y if vertical_alignment == "top" else self.limit_y + self.limit_height - height
                     
                     layout_pages.append({
-                        "rect": ui.Rect(x, y, total_text_width, height),
+                        "rect": ui.Rect(x, y, total_text_width, height + text_box_header_height),
                         "line_count": 1,
                         "header_text": self.panel_content.title if self.panel_content.title != "" else self.id,
                         "icon_size": len(self.icons) * 2 * self.icon_radius,
@@ -196,7 +193,7 @@ class HeadUpChoicePanel(HeadUpTextBox):
                         }]
                     })
                     total_button_height += self.padding[0] * 2 + button_text_height + self.padding[2]
-                    print('HEIGHT!', layout_pages[len(layout_pages) - 1]['rect'].height )
+                    
             layout_pages[len(layout_pages) - 1]['rect'].height += self.padding[2]
         
         
@@ -210,13 +207,12 @@ class HeadUpChoicePanel(HeadUpTextBox):
                     'rect': ui.Rect(layout_pages[page_index]['rect'].x + self.padding[3] / 2, self.limit_y + layout_pages[page_index]['rect'].height + button_text_height,
                     layout_pages[page_index]['rect'].width - self.padding[1] - self.padding[3], confirm_button_height) 
                 }
-                layout_pages[page_index]['rect'].height += self.confirm_button.rect.height + self.padding[2]
+                layout_pages[page_index]['rect'].height += confirm_button_height + self.padding[2]
         else:
             self.confirm_button.callback = lambda x: None
             self.confirm_button.rect = ui.Rect(0, 0, 0, 0)
         
-        
-        print('HEIGHT!', layout_pages[len(layout_pages) - 1]['rect'].height )        
+        layout_pages[self.page_index]['rect'].height -= confirm_button_height + self.padding[2]
         self.limit_height = current_height_limit
         return layout_pages
             
@@ -232,10 +228,11 @@ class HeadUpChoicePanel(HeadUpTextBox):
         for index, choice_layout in enumerate(layout['choice_layouts']):
             paint.color = self.theme.get_colour('button_hover_background', 'AAAAAA') if self.choice_hovered == choice_layout['choice_index'] \
                 else self.theme.get_colour('button_background', 'CCCCCC')
+                
             self.visible_indecis.append(choice_layout['choice_index'])
             button_height = self.padding[0] / 2 + choice_layout['text_height'] + self.padding[2] / 2 
             rect = ui.Rect(base_button_x, choice_layout['choice_y'], content_dimensions.width - (self.padding[3] + self.padding[1] ) / 2, button_height)
-            self.choices[index].rect = rect
+            self.choices[choice_layout['choice_index']].rect = rect
             canvas.draw_rrect( skia.RoundRect.from_rect(rect, x=10, y=10) )
             
             # Selected style applied
@@ -263,7 +260,6 @@ class HeadUpChoicePanel(HeadUpTextBox):
                 base_button_x + self.padding[3] if not choice_icon else base_button_x + self.padding[3] + self.image_size, 
                 choice_layout['choice_y'] - self.padding[0] / 2, line_height)
 
-
     def draw_content_text(self, canvas, paint, layout) -> int:
         """Draws the content and returns the height of the drawn content"""
         super().draw_content_text(canvas, paint, layout)
@@ -271,7 +267,7 @@ class HeadUpChoicePanel(HeadUpTextBox):
             return        
         self.draw_choices(canvas, paint, layout)
 
-        # Draw multiple choice confirm button        
+        # Draw multiple choice confirm button
         if self.panel_content.choices and self.panel_content.choices.multiple:
             base_button_x = layout['rect'].x
             self.confirm_button.rect = ui.Rect(layout['confirm']['rect'].x, layout['confirm']['rect'].y, layout['confirm']['rect'].width, layout['confirm']['rect'].height )
@@ -290,10 +286,12 @@ class HeadUpChoicePanel(HeadUpTextBox):
                 base_button_x + self.padding[3] * 2 if not confirm_icon else base_button_x + self.padding[3] * 2 + self.image_size, 
                 self.confirm_button.rect.y + self.padding[0], line_height)
 
-    def draw_background(self, canvas, paint, rect): 
-        radius = 10
-        if not self.minimized and self.confirm_button.rect.height > 0:
-            rect = ui.Rect(rect.x, rect.y, rect.width, rect.height - self.confirm_button.rect.height - self.padding[2])
+    def resize_mouse_canvas(self, content_dimensions):
+        rect = content_dimensions["rect"]
+        if self.confirm_button.rect.height > 0:
+            rect = ui.Rect(rect.x, rect.y, rect.width, rect.height + self.confirm_button.rect.height + self.padding[0] + self.padding[2])
         
-        rrect = skia.RoundRect.from_rect(rect, x=radius, y=radius)
-        canvas.draw_rrect(rrect)
+        self.capture_rect = rect
+        self.mouse_capture_canvas.set_rect(rect)
+        self.mouse_capture_canvas.freeze()
+        self.mark_layout_invalid = False

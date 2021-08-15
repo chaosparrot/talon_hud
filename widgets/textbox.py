@@ -324,7 +324,6 @@ class HeadUpTextBox(LayoutWidget):
         # Small divider between the content and the header
         x = dimensions.x + self.padding[3]
         start_y = dimensions.y + dimensions.height - self.padding[0] - self.padding[2] / 2
-        print( start_y, dimensions.height, dimensions.y )
         
         paint.color = self.theme.get_colour('text_colour')
         canvas.draw_text(str(self.page_index + 1 ) + ' of ' + str(len(self.layout)), x, start_y)

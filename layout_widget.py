@@ -98,13 +98,16 @@ class LayoutWidget(BaseWidget):
         # will show up when clicking in or near the text panel
         if self.setup_type == "":
             if self.mark_layout_invalid and self.mouse_capture_canvas:
-                rect = content_dimensions["rect"]
-                self.capture_rect = rect
-                self.mouse_capture_canvas.set_rect(rect)
-                self.mouse_capture_canvas.freeze()
-                self.mark_layout_invalid = False
-
+                self.resize_mouse_canvas(content_dimensions)
         return continue_drawing
+    
+    def resize_mouse_canvas(self, content_dimensions):
+        rect = content_dimensions["rect"]
+        self.capture_rect = rect
+        self.mouse_capture_canvas.set_rect(rect)
+        self.mouse_capture_canvas.freeze()
+        self.mark_layout_invalid = False
+        
         
     def draw_rich_text(self, canvas, paint, rich_text, x, y, line_height, single_line=False):
         # Draw text line by line
