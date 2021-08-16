@@ -32,10 +32,18 @@ This widget works like the command history from knausj, but instead every messag
 
 A catch all-widget for rich text display. It stretches the content until the defined screen limits given by the user. It allows text in a variety of styles, including bold and italic, and various colours.  
 The header contains the name of the panel, including a minimize and a close button. If the content is larger than the allotted screen space, it will create multiple pages which are navigable using a next and previous page button.  
+The text box will align itself based on the given expansion limits. If more space is available to the left, it will align itself to the right, and so on.  
 
-The text box will align itself based on the given expansion limits. If more space is available to the left, it will align itself to the right, and so on.
+By default there is only one text box, but you can define multiple and assign them to specific commands in the display.py file. In the future this functionality will probably move to voice commands instead.
 
-### 4. Context menu
+### 4. Choice panel
+
+This widget shows choices that can be activated with either a mouse click or voice commands.  
+The voice commands follow the simple principle of 'What you see is what you read', meaning that if a button says '2. Test choice' you can either say `option two` or `test choice` to activate it.  
+The widget allows for a short explanation before the choices, and the choices can be defined with either single or multiple selection. With preselected choices also definable.  
+By default there is only one choice panel available, this is to make sure you don't get overloaded with choices on your screen.
+
+### 5. Context menu
 
 A context menu can be configured to open on any widget that has mouse clicks enabled.  
 This widget contains a bunch of buttons that will interact with the widget that it has opened.  
@@ -139,6 +147,8 @@ These are ideas that I want to implement in no specific order and with no specif
 - Multi-drag to drag every widget simultaniously
 - Splitting out topics from text boxes into seperate text boxes
 - Fix issues with choice widget layouting when the widget is thin and needs multiple pages. This probably won't happen often, so I'll fix it whenever
+- Fix issues with layouting whitespace
+- Fix issues with applying styles in rich text
 
 If any of these ideas seem cool for you to work on, give me a message on the talon slack so we can coordinate stuff.
 

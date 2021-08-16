@@ -48,7 +48,7 @@ Publishing to a text box is done using the action hud_publish_content. A quick p
 
 ``` 
 from talon import actions
-actions.user.hud_publish_content('This is my content!')
+actions.user.hud_publish_content("This is my content!")
 ```
 
 These are the values that you can give to the hud_publish_content action
@@ -56,7 +56,61 @@ These are the values that you can give to the hud_publish_content action
 - Topic: This is used to mark your content and will determine where or if your content gets shown.
 - Title: This is the header title that will be shown in the text box. This value will also be used to address the text box. For example, if you set a title 'Command area', the user will be able to say 'Command area hide' to hide the text box.
 - Show: This is a True or False value. If set to True, this will urge a widget to display and enable itself if it isn't shown yet. If the user has minimized the text box, it will not be opened. Defaults to True.
-- Buttons: These are extra HudButton added to the context menu when the user right clicks the text box, or like in the example above, says 'command area options'.
+- Buttons: These are extra HudButton added to the context menu when the user right clicks the text box, or like in the example above, says `command area options`.
+
+# Adding right click buttons to a text box
+
+You can add right click menus to text boxes and other widgets as well that can be opened using the `<widget name> options` command.
+These menus contain a few default options like closing the panel and copying the contents, but you can also add your own buttons. These are given as an extra parameter in the hud_publish_content action.
+
+Let's say we want to add a button to our content that prints to the debug log. What we do is the following:
+
+```
+from talon import actions
+
+button = actions.user.hud_create_button("Print to console", print)
+buttons = [button]
+
+actions.user.hud_publish_content("Text with content", "test", "Test content", True, buttons)
+```
+Now when the content is published, and extra button can be found in the widgets right click menu. Like the other options in it, when it is shown, the text inside the button is used to activate it, in this case, print to console!
+Users can also get accusomed to the option, as it is also available as a quick option. Saying `test content print to console` will activate the button even though the context menu hasn't shown up yet.
+
+# Offering choices and options
+
+For displaying options to the user, you can publish content with choices to the 'choice' topic. The choices attached to this topic will be shown on the screen as buttons for the user to click or to say.
+There are two steps to defining the choices. First, create the choices using the hud_create_choices action. This takes in a list of objects, the function to call when a selection is made, and whether or not we are dealing with multiple or single choice.
+
+For example:
+```
+from talon import actions
+choices = actions.user.hud_create_choices([{"text": "Sugar", "image": "next_icon", "selected": True},{"text": "Milk"},{"text": "Nothing"},{"text": "Sweetener"}, {"text": "Nails"}], print, False)
+``` 
+
+This line will create a list where there are five choices with the text sugar, milk, nothing, sweetener and nails in that order. Where the first option Sugar is preselected. Only one option can be selected.
+
+You can define two things in the choice list, namely: 
+- text: The text to display in the choice. Also used for the voice command to activate it.
+- image: This is a path to an image. By default, the path 'talon_hud/themes/CURRENT_USER_THEME/IMAGE.png' is assumed if no .png is added. Currently, there is no support of adding images outside of the themes yet.
+- selected: Whether or not the choice is preselected
+
+These are the values that you can give to the hud_publish_choices action
+- Choices: The choice list explained above
+- Callback: A defined function to call when the choices have been selected
+- Multiple: True or False - Whether or not the user has to select multiple choices or just one. Defaults to just one.
+
+Now that you have your choices, you will have to publish them using the hud_publish_choices action.
+
+```
+actions.user.hud_publish_choices(choices)
+```
+
+These are the values that you can give to the hud_publish_choices action
+- Choices: A HudChoices object created using the hud_create_choices action.
+- Title: The title of the choice component. Defaults to 'Choices'.
+- Content: The rich text content explanation. Defaults to an explanation about using the option command. 
+
+Published choices will always open the widget up when they are updated.
 
 # Rich text markers
 

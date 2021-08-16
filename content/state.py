@@ -173,13 +173,24 @@ class Actions:
         """Create a button used in the Talon HUD"""
         return HudButton(image, text, ui.Rect(0,0,0,0), callback)
 
-    def hud_create_choices(choices_list: list[Any], selected_indexes: list[int]):
+    def hud_create_choices(choices_list: list[Any], callback: Callable[[Any], None], multiple: bool = False) -> HudChoices:
         """Creates a list of choices with a single list of dictionaries"""
         choices = []
         for index, choice_data in enumerate(choices_list):
             image = choice_data['image'] if 'image' in choice_data else ''
-            choices.append(HudChoice(image, choice_data['text'], choice_data, index in selected_indexes, ui.Rect(0,0,0,0)))
-        return choices
+            choices.append(HudChoice(image, choice_data['text'], choice_data, "selected" in choice_data and choice_data["selected"], ui.Rect(0,0,0,0)))
+        return HudChoices(choices, callback, multiple)
+        
+    def hud_publish_choices(choices: HudChoices, title: str = '', content:str = ''):
+        """Publish choices to a choice panel"""
+        if title == "":
+            title = "Choices"
+        if content == "":
+            content = "Pick any from the following choices using <*option <number>/>"
+        
+        content = HudPanelContent("choice", title, [content], [], time.time(), True, choices)
+        global hud_content
+        hud_content.publish(content)
         
     def hud_get_documentation():
         """Publish a specific piece of content to a topic"""
@@ -188,12 +199,7 @@ class Actions:
         global hud_content
         hud_content.publish(content)
         
-        
     def show_test_choices():
         """Show a bunch of test buttons to choose from"""
-        choices = actions.user.hud_create_choices([{"text": "Testing", "image": "next_icon"},{"text": "Another choice"},{"text": "Some other choice"},{"text": "Maybe pick this"},], [1])
-        choiceContent = HudChoices(choices, print, True)
-        content = HudPanelContent("choice", "Choices", ["Pick any from the following choices using <*option <number>/>"], [], time.time(), True, choiceContent)
-        
-        global hud_content
-        hud_content.publish(content)        
+        choices = actions.user.hud_create_choices([{"text": "Testing", "image": "next_icon"},{"text": "Another choice"},{"text": "Some other choice"},{"text": "Maybe pick this"},], print)
+        actions.user.hud_publish_choices(choices)
