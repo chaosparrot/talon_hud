@@ -146,8 +146,7 @@ These are ideas that I want to implement in no specific order and with no specif
 - Multiscreen setups and how to best work with those, maybe with multiple preference files per monitor
 - Multi-drag to drag every widget simultaniously
 - Splitting out topics from text boxes into seperate text boxes
-- Fix issues with layouting whitespace
-- Fix issues with applying styles in rich text
+- Fix lines being improperly placed height wise
 
 If any of these ideas seem cool for you to work on, give me a message on the talon slack so we can coordinate stuff.
 

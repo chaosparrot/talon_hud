@@ -2,6 +2,7 @@ from talon import skia, ui
 from talon.types.point import Point2d
 from user.talon_hud.content.typing import HudRichText, HudRichTextLine, HudButton, HudIcon
 from textwrap import wrap
+import math
 import re
 import numpy
 
@@ -21,73 +22,85 @@ def remove_tokens_from_rich_text(text:str):
     return re.sub(rich_text_delims_regex, '', text)
 
 def layout_rich_text(paint:skia.Paint, text:str, width:int = 1920, height:int = 1080) -> list[HudRichTextLine]:
-    """Layout a string of text inside the given dimensions"""
-    
-    # Calculate the max characters that fit on a line if we take an average character b
-    # Note - This does cause shorter characters like . or larger ones like A to be calculated as taking as much space as t
-    # To account for this, we take a small amount of pixels away from the total width to make sure the odds of wider glyphs clipping are reduced
-    _, text_bounds = paint.measure_text("B")
-    max_chars_per_line = int( width / text_bounds.width )
+    """Layout a string of text inside the given dimensions"""    
+    _, space_text_bounds = paint.measure_text("-")
     
     lines = text.splitlines()
     final_lines = []
     
     styles = []
-    for line in lines:
-        replaced_line = re.sub(rich_text_delims_regex, '', line)
+    for line_index, line in enumerate(lines):        
+        current_char_index = 0
+        char_indexes = {}
         
-        # No rich text style change - Just do a simple line wrapping
-        if len(replaced_line) == len(line):
-            wrapped_lines = wrap(line, max_chars_per_line)
-            for wrapped_line in wrapped_lines:
-                _, line_text_bounds = paint.measure_text(wrapped_line)
-                final_lines.append(HudRichText(0, line_text_bounds.width, text_bounds.height, styles.copy(), wrapped_line))        
+        tokened_line = re.split(rich_text_delims_regex, line)
+        tokened_line = [x for x in tokened_line if x != ""]
         
-        # Rich text style change! Seperate the text out into tokens
-        else:
-            current_char_index = 0
-            char_indexes = {}
-            
-            tokened_line = re.split(rich_text_delims_regex, line)
-            tokened_line = [x for x in tokened_line if x != ""]
-            untokened_line = "".join([x for x in tokened_line if x not in rich_text_delims])
-            
-            wrapped_lines = wrap(untokened_line, max_chars_per_line)
-            rich_tokens_done = 0            
-            for wrapped_line in wrapped_lines:
-                rich_token_index = 0            
-                start_of_line = current_char_index
-                end_of_line = current_char_index + len(wrapped_line)
-                x_pos = 0
+        x = 0
+        words_to_use = []
+        current_line_bounds = None        
+        for token in tokened_line:
+            if token in rich_text_delims:                
+                # Finish the current words if there are any
+                if current_line_bounds != None and len(words_to_use) > 0:
+                    final_lines.append(HudRichText(x, current_line_bounds.width, current_line_bounds.height, styles.copy(), " ".join(words_to_use)))                
+                    x = x + current_line_bounds.width
+                    current_line_bounds.width = 0
+                    current_line_bounds.height = 0
+                words_to_use = []
+                if token == '/>':
+                    if len(styles) > 0:
+                        styles.pop()
+                else:
+                    styles.append(rich_text_delims_dict[token])
                 
-                token_char_index = 0
-                for token in tokened_line:
-                    total_token_length = len(token)
-                    rich_token_index = rich_token_index if token not in rich_text_delims else rich_token_index + 1
-                    if current_char_index > end_of_line or ( token in rich_text_delims and rich_tokens_done >= rich_token_index ):
-                        continue
+            # Add text
+            else:
+                words = token.split(" ")
+                amount_of_words = len(words)
+                for index, word in enumerate(words):
+                    _, word_bounds = paint.measure_text(word)
+                    
+                    # Edge case - Space character is split on earlier, so empty strings are space characters that we should include
+                    if word == "":
+                       word = " "
+                       word_bounds.width = space_text_bounds.width                    
+                    
+                    if index < amount_of_words - 1:
+                        word_bounds.width += space_text_bounds.width
+                        
+                    if current_line_bounds == None:
+                        current_line_bounds = word_bounds
                     else:
-                        # Add styling
-                        if token in rich_text_delims:
-                            if token == '/>':
-                                if len(styles) > 0:
-                                    styles.pop()
-                            else:
-                                styles.append(rich_text_delims_dict[token])
-                            rich_tokens_done += 1
-                                
-                        # Add text
-                        else:
-                            token_to_use = wrapped_line[token_char_index:token_char_index + len(token)]
+                        current_line_bounds.width += word_bounds.width
+                        current_line_bounds.height = max(word_bounds.height, current_line_bounds.height)
+                    
+                    if x + current_line_bounds.width - space_text_bounds.width > width:                                            
+                        final_lines.append(HudRichText(x, current_line_bounds.width - word_bounds.width, current_line_bounds.height, styles.copy(), " ".join(words_to_use)))
+                        x = 0
+                        
+                        if word_bounds.width < width:
+                            words_to_use = [word]
+                            current_line_bounds = word_bounds                            
                             
-                            # Split the token up if the length of the string exceeds that of the wrapped line
-                            token_length = len(token_to_use)
-                            current_char_index += token_length
-                            _, line_text_bounds = paint.measure_text(token_to_use)
-                            token_char_index += token_length
-                            textwidth = line_text_bounds.width + text_bounds.width if token_to_use.endswith(" ") else line_text_bounds.width
-                            final_lines.append(HudRichText(x_pos, textwidth, text_bounds.height, styles.copy(), token_to_use))
-                            x_pos += int(round(textwidth, 2))
+                        # Edgecase - Single word that exceeds the width - Split according to rough estimate or character width
+                        else:
+                            word_length = len(word)
+                            split_ratio = width / word_bounds.width
+                            wrapped_words = wrap(word, max(1, int(math.floor(word_length * split_ratio))))
+                            for index, wrapped_word in enumerate(wrapped_words):
+                                _, wrapped_word_bounds = paint.measure_text(wrapped_word)                            
+                                if index < len(wrapped_words) - 1:
+                                    final_lines.append(HudRichText(x, wrapped_word_bounds.width, wrapped_word_bounds.height, styles.copy(), wrapped_word))
+                                else:
+                                    current_line_bounds = wrapped_word_bounds
+                                    words_to_use = [wrapped_word]
+                            
+                    else:
+                        words_to_use.append(word) 
+                    
+        if len(words_to_use) > 0:
+            final_lines.append(HudRichText(x, current_line_bounds.width, current_line_bounds.height, styles.copy(), " ".join(words_to_use)))            
     return final_lines
     
 def hex_to_ints(hex: str) -> list[int]:

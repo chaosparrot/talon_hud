@@ -212,7 +212,7 @@ class HeadUpTextBox(LayoutWidget):
                     "header_height": header_height,
                     "content_height": content_height
                 })
-        
+                
         return layout_pages
     
     def draw_content(self, canvas, paint, dimensions) -> bool:

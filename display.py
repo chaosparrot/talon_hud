@@ -469,7 +469,7 @@ class HeadUpDisplay:
         ctx.lists['user.talon_hud_quick_choices'] = quick_choices
     
 
-preferences = HeadUpDisplayUserPreferences()
+preferences = HeadUpDisplayUserPreferences() 
 hud = HeadUpDisplay(hud_content, preferences)
 
 def hud_enable():

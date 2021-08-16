@@ -40,7 +40,7 @@ class ScopePoller(Poller):
             for mode in scopemodes:
                 modes.append(mode)
                 
-        text = "<*<@App: " + scope.get('app')['name'] + "/>/>\n" + scope.get('win')['title'] + "/>\n<*<@Tags:/>/>\n" + "\n".join(sorted(new_tags)) + "\n<*<@Modes:/>/>  " + " - ".join(sorted(modes))
+        text = "<*App: " + scope.get('app')['name'] + "/> " + scope.get('win')['title'] + "/>\n<*Tags:/>\n" + "\n".join(sorted(new_tags)) + "\n<*Modes:/> " + " - ".join(sorted(modes))
         return text
         
         
