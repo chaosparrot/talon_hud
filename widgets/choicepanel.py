@@ -110,7 +110,7 @@ class HeadUpChoicePanel(HeadUpTextBox):
                 current_line_length = current_line_length + text.width if text.x != 0 else text.width + self.image_size
                 total_text_width = max( total_text_width, current_line_length )
                 confirm_button_height = confirm_button_height + text.height + self.line_padding if text.x == 0 else confirm_button_height        
-            page_height_limit -= confirm_button_height
+            page_height_limit -= confirm_button_height + self.padding[2]
     
     
         # Set the height limit to the limit without the confirmation button before calculating the text layout
@@ -126,6 +126,7 @@ class HeadUpChoicePanel(HeadUpTextBox):
             last_layout_page = layout_pages[len(layout_pages) - 1]
             y = self.limit_y + last_layout_page['header_height']
             content_start_height = last_layout_page['content_height'] + self.padding[2]
+            total_text_width = 0
             if content_start_height < page_height_limit:
                 y = last_layout_page['content_height']
                 total_text_width = last_layout_page['rect'].width
@@ -198,21 +199,25 @@ class HeadUpChoicePanel(HeadUpTextBox):
         
         
         # Layout for multiple confirm button
+        if len(layout_pages) == 1:
+            layout_pages[self.page_index]['rect'].height -= text_box_header_height * 2
+        
         if confirm_button_height > 0:
             self.confirm_button.callback = self.confirm_choices
             for page_index in range(len(layout_pages)):
                 layout_pages[page_index]['confirm'] = {
                     'rich_text': confirm_rich_text,
                     'line_count': confirm_line_count,
-                    'rect': ui.Rect(layout_pages[page_index]['rect'].x + self.padding[3] / 2, self.limit_y + layout_pages[page_index]['rect'].height + button_text_height,
+                    'rect': ui.Rect(layout_pages[page_index]['rect'].x + self.padding[3] / 2, self.limit_y + layout_pages[page_index]['rect'].height + self.padding[2] + self.padding[0],
                     layout_pages[page_index]['rect'].width - self.padding[1] - self.padding[3], confirm_button_height) 
                 }
                 layout_pages[page_index]['rect'].height += confirm_button_height + self.padding[2]
+            layout_pages[self.page_index]['rect'].height -= confirm_button_height + self.padding[2]
         else:
             self.confirm_button.callback = lambda x: None
             self.confirm_button.rect = ui.Rect(0, 0, 0, 0)
+            
         
-        layout_pages[self.page_index]['rect'].height -= confirm_button_height + self.padding[2]
         self.limit_height = current_height_limit
         return layout_pages
             

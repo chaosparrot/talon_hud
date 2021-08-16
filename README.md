@@ -146,7 +146,6 @@ These are ideas that I want to implement in no specific order and with no specif
 - Multiscreen setups and how to best work with those, maybe with multiple preference files per monitor
 - Multi-drag to drag every widget simultaniously
 - Splitting out topics from text boxes into seperate text boxes
-- Fix issues with choice widget layouting when the widget is thin and needs multiple pages. This probably won't happen often, so I'll fix it whenever
 - Fix issues with layouting whitespace
 - Fix issues with applying styles in rich text
 
