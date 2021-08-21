@@ -47,7 +47,6 @@ By default there is only one choice panel available, this is to make sure you do
 
 A context menu can be configured to open on any widget that has mouse clicks enabled.  
 This widget contains a bunch of buttons that will interact with the widget that it has opened.  
-Currently it is only supported on the text box, where it allows you to copy the contents of the text box or close the text box.  
 The context menu will attempt to stay on the screen where the right-click was made, and as such will change position accordingly.
 
 Voice commands
