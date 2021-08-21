@@ -11,7 +11,7 @@ class ScopePoller(Poller):
             self.enabled = True
             # Open the widget initially
             scope_state = self.get_state_in_text()        
-            actions.user.hud_publish_content(scope_state, 'scope', 'Scope panel')        
+            actions.user.hud_publish_content(scope_state, 'scope', 'Toolkit scope')        
             
             self.job = cron.interval('100ms', self.state_check)
                 
@@ -24,7 +24,7 @@ class ScopePoller(Poller):
         scope_state = self.get_state_in_text()
         if (scope_state != self.previous_scope_state):
             self.previous_scope_state = scope_state
-            actions.user.hud_publish_content(scope_state, 'scope', 'Scope panel', False)
+            actions.user.hud_publish_content(scope_state, 'scope', 'Toolkit scope', False)
         
     def get_state_in_text(self):
         tags = scope.get('tag')
@@ -52,7 +52,7 @@ mod = Module()
 @mod.action_class
 class Actions:
 
-    def debug_scope():
+    def hud_toolkit_scope():
         """Start debugging the Talon scope in the Talon HUD"""
         actions.user.hud_add_poller('scope', ScopePoller())
         actions.user.hud_activate_poller('scope')

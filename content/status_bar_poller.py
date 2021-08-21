@@ -23,7 +23,7 @@ class StatusBarPoller(Poller):
             'programming_language': {
                 'ext': self.get_lang_extension(self.determine_programming_language()),
                 'forced': self.current_lang_forced and self.determine_mode() != "dictation"
-            },
+            }
         }
         
         hud_content.update(content)        
@@ -33,7 +33,7 @@ class StatusBarPoller(Poller):
         active_modes = scope.get('mode')
 
         # If no mode is given, just show command
-        mode = 'command'
+        mode = 'command' 
         if ( active_modes is not None ):
             if ('sleep' in active_modes):
                 mode = 'sleep'

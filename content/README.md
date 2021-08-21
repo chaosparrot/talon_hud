@@ -42,9 +42,9 @@ These are the values that you can give to hud_add_status_icon:
 TODO - ADD SUPPORT FOR IMAGES OUTSIDE OF TALON_HUD DIRECTORY
 TODO - ADD ICONS THAT ARE FUNCTIONAL LIKE THE MODE ICON
 
-# Publishing to a text box
+# Publishing to a text panel
 
-Publishing to a text box is done using the action hud_publish_content. A quick python example which claims a text box and shows the contents is shown below.
+Publishing to a text panel is done using the action hud_publish_content. A quick python example which claims a text panel and shows the contents is shown below.
 
 ``` 
 from talon import actions
@@ -54,13 +54,13 @@ actions.user.hud_publish_content("This is my content!")
 These are the values that you can give to the hud_publish_content action
 - Content: Content with rich text markers to display in the main body. Rich text markers are explained below.
 - Topic: This is used to mark your content and will determine where or if your content gets shown.
-- Title: This is the header title that will be shown in the text box. This value will also be used to address the text box. For example, if you set a title 'Command area', the user will be able to say 'Command area hide' to hide the text box.
-- Show: This is a True or False value. If set to True, this will urge a widget to display and enable itself if it isn't shown yet. If the user has minimized the text box, it will not be opened. Defaults to True.
-- Buttons: These are extra HudButton added to the context menu when the user right clicks the text box, or like in the example above, says `command area options`.
+- Title: This is the header title that will be shown in the text panel. This value will also be used to address the text panel. For example, if you set a title 'Command area', the user will be able to say 'Command area hide' to hide the text panel.
+- Show: This is a True or False value. If set to True, this will urge a widget to display and enable itself if it isn't shown yet. If the user has minimized the text panel, it will not be opened. Defaults to True.
+- Buttons: These are extra HudButton added to the context menu when the user right clicks the text panel, or like in the example above, says `command area options`.
 
-# Adding right click buttons to a text box
+# Adding right click buttons to a text panel
 
-You can add right click menus to text boxes and other widgets as well that can be opened using the `<widget name> options` command.
+You can add right click menus to text paneles and other widgets as well that can be opened using the `<widget name> options` command.
 These menus contain a few default options like closing the panel and copying the contents, but you can also add your own buttons. These are given as an extra parameter in the hud_publish_content action.
 
 Let's say we want to add a button to our content that prints to the debug log. What we do is the following:
@@ -110,11 +110,14 @@ These are the values that you can give to the hud_publish_choices action
 - Title: The title of the choice component. Defaults to 'Choices'.
 - Content: The rich text content explanation. Defaults to an explanation about using the option command. 
 
-Published choices will always open the widget up when they are updated.
+Published choices will always open the choice panel up when they are updated.
+
+If you want to make multi-level menus ( selections that open up a new choice widget ), you can make the selection function return True. 
+This way it will not automatically close the choice panel upon selection.
 
 # Rich text markers
 
-In certain widgets like the text box, you can add rich text markers. These will apply styling to the text within them. Rich text needs to be opened with a style marker and closed with a closing marker.  
+In certain widgets like the text panel, you can add rich text markers. These will apply styling to the text within them. Rich text needs to be opened with a style marker and closed with a closing marker.  
 Bold and italic markers can be active at the same time. For the colours, only the latest will count.
 
 In order to create text like this: 
@@ -147,7 +150,7 @@ A poller is an object that registered to the Talon HUD, and will be enabled when
 On top of that, if the user changes content, or closes the Talon HUD, your poller will be automatically disabled and reenabled when neccesary, saving some clean up code on your end.  
 In the future I also plan on re-enabling the poller when the user restarts Talon altogether, meaning that your users will not have to activate your content with a voice command with every restart.
 
-Below is an example of a poller that increments a number by one every 200 milliseconds and posts it to a text box.
+Below is an example of a poller that increments a number by one every 200 milliseconds and posts it to a text panel.
 
 ``` 
 from talon import actions, Module, app, cron

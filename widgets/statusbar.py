@@ -4,6 +4,7 @@ import time
 import numpy
 from user.talon_hud.utils import linear_gradient
 from user.talon_hud.widget_preferences import HeadUpDisplayUserWidgetPreferences
+from user.talon_hud.content.typing import HudButton
 
 class HeadUpStatusBar(BaseWidget):
 
@@ -19,14 +20,13 @@ class HeadUpStatusBar(BaseWidget):
     blink_difference = [0, 0, 0]
     blink_colour = [0, 0, 0]
     icon_hover_index = -1
-    dwell_job = None
     icon_hover_activate_dwell_seconds = 1.5
     icon_positions = []
     icons = []
     subscribed_content = [
         "mode",
         "programming_language",
-        "status_icons"
+        "status_icons",
     ]
 
     content = {
@@ -36,10 +36,11 @@ class HeadUpStatusBar(BaseWidget):
             'ext': None,
             'forced': False
         },
-        "status_icons": []        
+        "status_icons": []
     }
     
     animation_max_duration = 60
+    
     
     def refresh(self, new_content):
         if (self.animation_tick == 0 and "mode" in new_content and new_content["mode"] != self.content['mode']):            
@@ -62,6 +63,23 @@ class HeadUpStatusBar(BaseWidget):
         
             self.blink_state = 100 if self.show_animations else 0        
         self.update_icons(new_content)
+        self.update_buttons()
+    
+    def update_buttons(self):
+        buttons = []
+        buttons.append(HudButton("", "Content toolkit", ui.Rect(0,0,0,0), lambda widget: actions.user.hud_toolkit_options()))
+        buttons.append(HudButton("microphone_on", "Add microphone", ui.Rect(0,0,0,0), lambda widget: actions.user.hud_add_single_click_mic_toggle()))
+        buttons.append(HudButton("en_US", "Add language", ui.Rect(0,0,0,0), lambda widget: actions.user.hud_add_language_toggle()))
+        
+        if "active_microphone" in self.subscribed_content:
+            buttons[1].text = "Remove microphone"
+            buttons[1].callback = lambda widget: actions.user.hud_remove_single_click_mic_toggle()
+            
+        if "language" in self.subscribed_content:
+            buttons[2].text = "Remove language"
+            buttons[2].callback = lambda widget: actions.user.hud_remove_language_toggle()
+        
+        self.buttons = buttons
     
     def update_icons(self, new_content):
         mode = self.content["mode"] if "mode" not in new_content else new_content["mode"]
@@ -69,18 +87,23 @@ class HeadUpStatusBar(BaseWidget):
         self.icons = [{
             "id": "mode",
             "image": mode + "_icon",
-            "clickable": mode != "sleep",
-            "explanation": "" # TODO USE THIS FOR TOOLTIPS / HELP MENUS
+            "clickable": mode != "sleep"
         }]
+        
+        if "active_microphone" in self.subscribed_content and "active_microphone" in new_content and new_content["active_microphone"]:
+            self.icons.append({
+                "id": "microphone",
+                "image": "microphone_off" if new_content["active_microphone"] == "None" else "microphone_on", # TODO MICROPHONE ON
+                "clickable": True               
+            })
                 
         if "language" in self.subscribed_content:
             language = self.content["language"] if "language" not in new_content else new_content["language"]
             
             self.icons.append({
-                "id": "language",
+                "id": "language", 
                 "image": language,
-                "clickable": language != 'en_US',
-                "explanation": "" # TODO USE THIS FOR TOOLTIPS / HELP MENUS
+                "clickable": language != 'en_US'
             })
             
         status_icons = self.content["status_icons"] if "status_icons" not in new_content else new_content['status_icons']
@@ -100,25 +123,23 @@ class HeadUpStatusBar(BaseWidget):
         if (event.event == "mousemove"):
             # Only resume for a frame if our button state has changed
             if (self.icon_hover_index != hover_index):
-                self.icon_hover_index = hover_index
-                cron.cancel(self.dwell_job)
-                
-                if (hover_index != -1):
-                    self.dwell_job = cron.interval( str(int(self.icon_hover_activate_dwell_seconds * 1000)) + 'ms', self.activate_icon)
-                
+                self.icon_hover_index = hover_index                
                 self.canvas.resume()
         # Click a button instantly
         elif (event.event == "mouseup" and event.button == 0):
             self.icon_hover_index = hover_index
             self.activate_icon()
         
+        # Right click menu
+        elif (event.event == "mouseup" and event.button == 1):
+        
+            actions.user.show_context_menu(self.id, event.gpos.x, event.gpos.y, self.buttons)
+        
         # Mouse dragging
         if hover_index == -1:
             super().on_mouse(event)
             
-    def activate_icon(self):
-        cron.cancel(self.dwell_job)
-    
+    def activate_icon(self):    
         if self.icon_hover_index < len(self.icon_positions) and self.icon_hover_index > -1:
             actions.user.activate_statusbar_icon(self.icon_positions[self.icon_hover_index]['icon']['id'])
         self.icon_hover_index = -1
@@ -127,6 +148,7 @@ class HeadUpStatusBar(BaseWidget):
         if not self.enabled:
             self.reset_blink()
             self.update_icons({})
+            self.update_buttons()
             super().enable(persist)
     
     def load_theme_values(self):
@@ -276,16 +298,40 @@ class HeadUpStatusBar(BaseWidget):
             self.intro_animation_end_colour[1] - self.intro_animation_start_colour[1],
             self.intro_animation_end_colour[2] - self.intro_animation_start_colour[2]
         ]
-        
+
+previous_microphone = "System Default"
 mod = Module()
 @mod.action_class
 class Actions:
+
+    def hud_add_language_toggle():
+        """Add the language icon to the status bar"""
+        actions.user.hud_widget_subscribe_topic("status_bar", "language")
+        actions.user.hud_refresh_content()
+        
+    def hud_remove_language_toggle():
+        """Removes the language icon from the status bar"""
+        actions.user.hud_widget_unsubscribe_topic("status_bar", "language")
+        actions.user.hud_refresh_content()
     
     def activate_statusbar_icon(id: str):
         """Activate an icon on the status bar"""
         if (id == "mode"):
             actions.speech.disable()
         elif (id == "language"):
+            # TODO THIS NO LONGER SEEMS TO WOKR?
             actions.speech.switch_language('en_US')
+        elif (id == "microphone"):
+            global previous_microphone
+            
+            current_microphone = actions.sound.active_microphone()
+            if current_microphone != "None":
+                actions.sound.set_microphone("None")
+                previous_microphone = current_microphone
+            else:
+                if previous_microphone == "None":
+                    previous_microphone = "System Default"
+                actions.sound.set_microphone("System Default")
+                
         elif (id == "close"):
             actions.user.disable_hud()

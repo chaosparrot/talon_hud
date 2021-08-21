@@ -18,8 +18,8 @@ def minimize_toggle_widget(widget):
     widget.mark_layout_invalid = True
     widget.canvas.resume()
 
-class HeadUpTextBox(LayoutWidget):
-    preferences = HeadUpDisplayUserWidgetPreferences(type="text_box", x=1630, y=100, width=200, height=200, limit_x=1530, limit_y=100, limit_width=300, limit_height=400, enabled=False, alignment="left", expand_direction="down", font_size=18)
+class HeadUpTextPanel(LayoutWidget):
+    preferences = HeadUpDisplayUserWidgetPreferences(type="text_box", x=1680, y=50, width=200, height=200, limit_x=1580, limit_y=50, limit_width=300, limit_height=400, enabled=False, alignment="left", expand_direction="down", font_size=18)
     mouse_enabled = True
 
     # Top, right, bottom, left, same order as CSS padding

@@ -1,12 +1,12 @@
 from talon import skia, ui, Module, cron, actions, clip
 from user.talon_hud.layout_widget import LayoutWidget
-from user.talon_hud.widgets.textbox import HeadUpTextBox
+from user.talon_hud.widgets.textpanel import HeadUpTextPanel
 from user.talon_hud.widget_preferences import HeadUpDisplayUserWidgetPreferences
 from user.talon_hud.utils import layout_rich_text, remove_tokens_from_rich_text, linear_gradient, hit_test_button
 from user.talon_hud.content.typing import HudRichTextLine, HudPanelContent, HudButton, HudIcon, HudChoice
 from talon.types.point import Point2d
 
-class HeadUpChoicePanel(HeadUpTextBox):
+class HeadUpChoicePanel(HeadUpTextPanel):
     preferences = HeadUpDisplayUserWidgetPreferences(type="choices", x=810, y=100, width=300, height=150, limit_x=810, limit_y=100, limit_width=300, limit_height=600, enabled=False, alignment="left", expand_direction="down", font_size=18)
     mouse_enabled = True
 
@@ -78,11 +78,14 @@ class HeadUpChoicePanel(HeadUpTextBox):
     def pick_choice(self, choices: list[HudChoice]):
         # Send a list of choices back in case of multiple choice, send back a single in case of single choice
         choices_data = list(map(lambda choice: choice.data, choices))
+        keep_open = False
         if self.panel_content.choices and self.panel_content.choices.multiple:
-            self.panel_content.choices.callback(choices_data)
+            keep_open = self.panel_content.choices.callback(choices_data)
         else:
-            self.panel_content.choices.callback(choices_data[0] if len(choices_data) > 0 else None)
-        self.disable(True)
+            keep_open = self.panel_content.choices.callback(choices_data[0] if len(choices_data) > 0 else None)
+        
+        if not keep_open:
+            self.disable(True)
         
     def confirm_choices(self):
         choices = list(filter(lambda choice: choice.selected, self.choices))

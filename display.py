@@ -13,7 +13,7 @@ from user.talon_hud.layout_widget import LayoutWidget
 from user.talon_hud.widgets.statusbar import HeadUpStatusBar
 from user.talon_hud.widgets.eventlog import HeadUpEventLog
 from user.talon_hud.widgets.abilitybar import HeadUpAbilityBar
-from user.talon_hud.widgets.textbox import HeadUpTextBox
+from user.talon_hud.widgets.textpanel import HeadUpTextPanel
 from user.talon_hud.widgets.choicepanel import HeadUpChoicePanel
 from user.talon_hud.widgets.documentationpanel import HeadUpDocumentationPanel
 from user.talon_hud.widgets.contextmenu import HeadUpContextMenu
@@ -74,10 +74,10 @@ class HeadUpDisplay:
         self.widgets = [
             HeadUpStatusBar('status_bar', self.preferences.prefs, self.theme),
             HeadUpEventLog('event_log', self.preferences.prefs, self.theme),
-            HeadUpTextBox('Text box', self.preferences.prefs, self.theme, {'topics': ['*']}),
+            HeadUpTextPanel('Text panel', self.preferences.prefs, self.theme, {'topics': ['*']}),
             HeadUpDocumentationPanel('Documentation', self.preferences.prefs, self.theme, {'topics': ['documentation']}),            
             # Extra text boxes can be defined to be assigned to different topics
-            # HeadUpTextBox('Text box two', self.preferences.prefs, self.theme, {'topics': ['your_topic_here'], 'current_topic': 'your_topic_here'}),
+            # HeadUpTextPanel('Text box two', self.preferences.prefs, self.theme, {'topics': ['your_topic_here'], 'current_topic': 'your_topic_here'}),
             HeadUpChoicePanel('Choices', self.preferences.prefs, self.theme, {'topics': ['choice'], 'current_topic': 'choice'}),
 
             # Special widgets that have varying positions
@@ -91,7 +91,7 @@ class HeadUpDisplay:
         }
         self.keep_alive_pollers = ['status', 'history']
         
-        # Uncomment the line below to add language icons
+        # Uncomment the line below to add language icons by default
         # self.subscribe_content_id('status_bar', 'language')
         
     def start(self):
@@ -119,6 +119,9 @@ class HeadUpDisplay:
             self.determine_active_setup_mouse()            
             if persisted:
                 self.preferences.persist_preferences({'enabled': True})
+                
+            # TODO SHOULD PROBABLY FIX THIS FLOW TO MAKE SURE THE CONTENT IS PROPERLY REUSED IN THE WIDGETS INSTEAD
+            actions.user.hud_refresh_content()
             self.update_context()
 
     def disable(self, persisted=False):
@@ -172,6 +175,12 @@ class HeadUpDisplay:
             if widget.id == id:
                 if content_key not in widget.subscribed_content:
                     widget.subscribed_content.append(content_key)
+                    
+    def unsubscribe_content_id(self, id, content_key):
+        for widget in self.widgets:
+            if widget.id == id:
+                if content_key in widget.subscribed_content:
+                    widget.subscribed_content.remove(content_key)
 
     def set_widget_preference(self, id, property, value, persisted=False):
         for widget in self.widgets:
@@ -411,6 +420,8 @@ class HeadUpDisplay:
                     self.update_context()
                 else:
                     widget.click_button(int(choice_index))
+                    self.update_context()
+                    
 
     # Updates the context based on the current HUD state
     def update_context(self):
@@ -424,7 +435,7 @@ class HeadUpDisplay:
         numerical_choices = {}
         for widget in self.widgets:
             current_widget_names = [string_to_speakable_string(widget.id)]        
-            if isinstance(widget, HeadUpTextBox):
+            if isinstance(widget, HeadUpTextPanel):
                 content_title = string_to_speakable_string(widget.panel_content.title)
                 if content_title:
                     current_widget_names.append(string_to_speakable_string(widget.panel_content.title))
@@ -503,7 +514,18 @@ class Actions:
         
     def set_widget_preference(id: str, property: str, value: Any):
         """Set a specific widget preference"""
-        hud.set_widget_preference(id, property, value, True)
+        global hud        
+        hud.set_widget_preference(id, property, value, True)        
+        
+    def hud_widget_subscribe_topic(id: str, topic: str):
+        """Subscribe to a specific type of content on a widget"""
+        global hud
+        hud.subscribe_content_id(id, topic)
+        
+    def hud_widget_unsubscribe_topic(id: str, topic: str):
+        """Unsubscribe from a specific type of content on a widget"""
+        global hud
+        hud.unsubscribe_content_id(id, topic)
         
     def disable_hud_id(id: str):
         """Disables a specific HUD element"""
@@ -563,6 +585,11 @@ class Actions:
         """Add a content poller / listener to the HUD"""    
         global hud
         hud.register_poller(topic, poller, keep_alive)
+        
+    def hud_remove_poller(topic: str):
+        """Remove a content poller / listener to the HUD"""    
+        global hud
+        hud.remove_poller(topic)
         
     def hud_activate_poller(topic: str):
         """Enables a poller and claims a widget"""    

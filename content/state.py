@@ -160,6 +160,11 @@ class Actions:
             "id": id
         })
         
+    def hud_refresh_content():
+        """Sends a refresh event to all the widgets where the content has changed"""
+        global hud_content
+        hud_content.dispatch("content_update", hud_content.content)
+        
     def hud_publish_content(content: str, topic: str = '', title:str = '', show:bool = True, buttons: list[HudButton] = None):
         """Publish a specific piece of content to a topic"""            
         if buttons == None:

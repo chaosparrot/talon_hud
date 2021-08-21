@@ -79,8 +79,8 @@ class BaseWidget(metaclass=ABCMeta):
     
     def set_theme(self, theme):
         self.theme = theme
+        self.load_theme_values()        
         if self.enabled:
-            self.load_theme_values()
             self.canvas.resume()
             self.animation_tick = self.animation_max_duration if self.show_animations else 0
     

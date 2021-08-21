@@ -146,7 +146,13 @@ These are ideas that I want to implement in no specific order and with no specif
 - Multiscreen setups and how to best work with those, maybe with multiple preference files per monitor
 - Multi-drag to drag every widget simultaniously
 - Splitting out topics from text boxes into seperate text boxes
-- Fix lines being improperly placed height wise
+- Proper in-flow documentation that other packages can push content to
+
+Known issues
+---
+- Line breaks not being properly rendered if they do not contain additional characters
+- Lines are improperly spaced height wise when rendering rich text
+- Text panel footers on second page seem to have text go through the footer
 
 If any of these ideas seem cool for you to work on, give me a message on the talon slack so we can coordinate stuff.
 
