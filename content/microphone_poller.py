@@ -1,5 +1,4 @@
 from talon import actions, cron, scope, speech_system, ui, app, Module
-from talon.lib import cubeb
 from user.talon_hud.content.poller import Poller
 from user.talon_hud.content.state import hud_content
 
@@ -12,7 +11,6 @@ class MicrophonePoller(Poller):
     
     choices_open = False
     one_click_toggle = False
-    ctx = cubeb.Context()
     
     def enable(self):
         self.enabled = True
