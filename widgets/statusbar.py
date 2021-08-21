@@ -2,7 +2,9 @@ from user.talon_hud.base_widget import BaseWidget
 from talon import skia, ui, Module, cron, actions
 import time
 import numpy
+from user.talon_hud.utils import linear_gradient
 from user.talon_hud.widget_preferences import HeadUpDisplayUserWidgetPreferences
+from user.talon_hud.content.typing import HudButton
 
 class HeadUpStatusBar(BaseWidget):
 
@@ -18,14 +20,13 @@ class HeadUpStatusBar(BaseWidget):
     blink_difference = [0, 0, 0]
     blink_colour = [0, 0, 0]
     icon_hover_index = -1
-    dwell_job = None
     icon_hover_activate_dwell_seconds = 1.5
     icon_positions = []
     icons = []
     subscribed_content = [
         "mode",
         "programming_language",
-        "status_icons"
+        "status_icons",
     ]
 
     content = {
@@ -35,10 +36,11 @@ class HeadUpStatusBar(BaseWidget):
             'ext': None,
             'forced': False
         },
-        "status_icons": []        
+        "status_icons": []
     }
     
     animation_max_duration = 60
+    
     
     def refresh(self, new_content):
         if (self.animation_tick == 0 and "mode" in new_content and new_content["mode"] != self.content['mode']):            
@@ -48,6 +50,8 @@ class HeadUpStatusBar(BaseWidget):
                 self.blink_colour = self.dictation_blink_colour
             elif (new_content["mode"] == 'sleep'):
                 self.blink_colour = self.sleep_blink_colour
+            elif (new_content["mode"] == 'parrot_switch'):
+                self.blink_colour = self.parrot_blink_colour
             
             # Calculate the colour difference between the blink and the next state
             # To make it easier to calculate during draw
@@ -59,6 +63,23 @@ class HeadUpStatusBar(BaseWidget):
         
             self.blink_state = 100 if self.show_animations else 0        
         self.update_icons(new_content)
+        self.update_buttons()
+    
+    def update_buttons(self):
+        buttons = []
+        buttons.append(HudButton("", "Content toolkit", ui.Rect(0,0,0,0), lambda widget: actions.user.hud_toolkit_options()))
+        buttons.append(HudButton("microphone_on", "Add microphone", ui.Rect(0,0,0,0), lambda widget: actions.user.hud_add_single_click_mic_toggle()))
+        buttons.append(HudButton("en_US", "Add language", ui.Rect(0,0,0,0), lambda widget: actions.user.hud_add_language_toggle()))
+        
+        if "active_microphone" in self.subscribed_content:
+            buttons[1].text = "Remove microphone"
+            buttons[1].callback = lambda widget: actions.user.hud_remove_single_click_mic_toggle()
+            
+        if "language" in self.subscribed_content:
+            buttons[2].text = "Remove language"
+            buttons[2].callback = lambda widget: actions.user.hud_remove_language_toggle()
+        
+        self.buttons = buttons
     
     def update_icons(self, new_content):
         mode = self.content["mode"] if "mode" not in new_content else new_content["mode"]
@@ -66,18 +87,23 @@ class HeadUpStatusBar(BaseWidget):
         self.icons = [{
             "id": "mode",
             "image": mode + "_icon",
-            "clickable": mode != "sleep",
-            "explanation": "" # TODO USE THIS FOR TOOLTIPS / HELP MENUS
+            "clickable": mode != "sleep"
         }]
+        
+        if "active_microphone" in self.subscribed_content and "active_microphone" in new_content and new_content["active_microphone"]:
+            self.icons.append({
+                "id": "microphone",
+                "image": "microphone_off" if new_content["active_microphone"] == "None" else "microphone_on", # TODO MICROPHONE ON
+                "clickable": True               
+            })
                 
         if "language" in self.subscribed_content:
             language = self.content["language"] if "language" not in new_content else new_content["language"]
             
             self.icons.append({
-                "id": "language",
+                "id": "language", 
                 "image": language,
-                "clickable": language != 'en_US',
-                "explanation": "" # TODO USE THIS FOR TOOLTIPS / HELP MENUS
+                "clickable": language != 'en_US'
             })
             
         status_icons = self.content["status_icons"] if "status_icons" not in new_content else new_content['status_icons']
@@ -97,21 +123,23 @@ class HeadUpStatusBar(BaseWidget):
         if (event.event == "mousemove"):
             # Only resume for a frame if our button state has changed
             if (self.icon_hover_index != hover_index):
-                self.icon_hover_index = hover_index
-                cron.cancel(self.dwell_job)
-                
-                if (hover_index != -1):
-                    self.dwell_job = cron.interval( str(int(self.icon_hover_activate_dwell_seconds * 1000)) + 'ms', self.activate_icon)
-                
+                self.icon_hover_index = hover_index                
                 self.canvas.resume()
         # Click a button instantly
         elif (event.event == "mouseup" and event.button == 0):
             self.icon_hover_index = hover_index
             self.activate_icon()
+        
+        # Right click menu
+        elif (event.event == "mouseup" and event.button == 1):
+        
+            actions.user.show_context_menu(self.id, event.gpos.x, event.gpos.y, self.buttons)
+        
+        # Mouse dragging
+        if hover_index == -1:
+            super().on_mouse(event)
             
-    def activate_icon(self):
-        cron.cancel(self.dwell_job)
-    
+    def activate_icon(self):    
         if self.icon_hover_index < len(self.icon_positions) and self.icon_hover_index > -1:
             actions.user.activate_statusbar_icon(self.icon_positions[self.icon_hover_index]['icon']['id'])
         self.icon_hover_index = -1
@@ -120,6 +148,7 @@ class HeadUpStatusBar(BaseWidget):
         if not self.enabled:
             self.reset_blink()
             self.update_icons({})
+            self.update_buttons()
             super().enable(persist)
     
     def load_theme_values(self):
@@ -127,6 +156,7 @@ class HeadUpStatusBar(BaseWidget):
         self.command_blink_colour = self.theme.get_colour_as_ints('command_blink_colour')
         self.sleep_blink_colour = self.theme.get_colour_as_ints('sleep_blink_colour')
         self.dictation_blink_colour = self.theme.get_colour_as_ints('dictation_blink_colour')
+        self.parrot_blink_colour = self.theme.get_colour_as_ints('parrot_blink_colour')
         self.background_colour = self.theme.get_colour_as_ints('background_colour')
         self.intro_animation_start_colour = self.theme.get_colour_as_ints('intro_animation_start_colour')
         self.intro_animation_end_colour = self.theme.get_colour_as_ints('intro_animation_end_colour')
@@ -143,7 +173,7 @@ class HeadUpStatusBar(BaseWidget):
         
         # Draw the background with bigger stroke than 1px
         stroke_colours = (self.theme.get_colour('top_stroke_colour'), self.theme.get_colour('down_stroke_colour'))
-        paint.shader = skia.Shader.linear_gradient(self.x, self.y, self.x, self.y + element_height * 2, stroke_colours, None)
+        paint.shader = linear_gradient(self.x, self.y, self.x, self.y + element_height * 2, stroke_colours)
         self.draw_background(canvas, self.x, self.y, element_width, element_height + (stroke_width * 2), paint)
         
         # Calculate the blinking colour
@@ -163,7 +193,7 @@ class HeadUpStatusBar(BaseWidget):
         # Draw the background based on the state
         accent_colour = red_hex + green_hex + blue_hex
         mode_colour = self.theme.get_colour( self.content["mode"] + '_mode_colour')
-        background_shader = skia.Shader.linear_gradient(self.x, self.y, self.x, self.y + element_height * 2, (mode_colour, accent_colour), None)
+        background_shader = linear_gradient(self.x, self.y, self.x, self.y + element_height * 2, (mode_colour, accent_colour))
         paint.shader = background_shader
         self.draw_background(canvas, self.x + stroke_width, self.y + stroke_width, element_width - stroke_width * 2, element_height, paint)
 
@@ -173,7 +203,7 @@ class HeadUpStatusBar(BaseWidget):
                 paint.shader = background_shader
             else:
                 button_colour = self.theme.get_colour('button_hover_colour') if self.icon_hover_index == index else self.theme.get_colour('button_colour')
-                paint.shader = skia.Shader.linear_gradient(self.x, self.y, self.x, self.y + element_height, (self.theme.get_colour('button_colour'), button_colour), None)                
+                paint.shader = linear_gradient(self.x, self.y, self.x, self.y + element_height, (self.theme.get_colour('button_colour'), button_colour))
             
             # Do not draw icons or buttons without a valid image
             if icon['image'] is not None and self.theme.get_image(icon['image']) is not None:
@@ -185,7 +215,7 @@ class HeadUpStatusBar(BaseWidget):
         # TODO - FAKE BOLD until I find out how to properly use font style
         if ((self.content["mode"] == "command" and self.content["programming_language"]["ext"] is not None) or self.content["mode"] == "dictation"):
             text_colour =  self.theme.get_colour('text_forced_colour') if self.content["programming_language"]["forced"] else self.theme.get_colour('text_colour')
-            paint.shader = skia.Shader.linear_gradient(self.x, self.y, self.x, self.y + element_height, (text_colour, text_colour), None)
+            paint.shader = linear_gradient(self.x, self.y, self.x, self.y + element_height, (text_colour, text_colour))
             paint.style = paint.Style.STROKE
             paint.textsize = self.font_size
             text_x = self.x + circle_margin * 2 + ( len(self.icons) * ( icon_diameter + circle_margin ) )
@@ -196,7 +226,7 @@ class HeadUpStatusBar(BaseWidget):
         # Draw closing icon
         paint.style = paint.Style.FILL
         close_colour = self.theme.get_colour('close_icon_hover_colour') if self.icon_hover_index == len(self.icons) else self.theme.get_colour('close_icon_accent_colour')
-        paint.shader = skia.Shader.linear_gradient(self.x, self.y, self.x, self.y + element_height, (self.theme.get_colour('close_icon_colour'), close_colour), None)
+        paint.shader = linear_gradient(self.x, self.y, self.x, self.y + element_height, (self.theme.get_colour('close_icon_colour'), close_colour))
         close_icon_diameter = icon_diameter / 2
         self.draw_icon(canvas, self.x + element_width - close_icon_diameter - close_icon_diameter / 2 - stroke_width, height_center - close_icon_diameter / 2, close_icon_diameter, paint, {'id': 'close', 'image': None})
 
@@ -268,16 +298,40 @@ class HeadUpStatusBar(BaseWidget):
             self.intro_animation_end_colour[1] - self.intro_animation_start_colour[1],
             self.intro_animation_end_colour[2] - self.intro_animation_start_colour[2]
         ]
-        
+
+previous_microphone = "System Default"
 mod = Module()
 @mod.action_class
 class Actions:
+
+    def hud_add_language_toggle():
+        """Add the language icon to the status bar"""
+        actions.user.hud_widget_subscribe_topic("status_bar", "language")
+        actions.user.hud_refresh_content()
+        
+    def hud_remove_language_toggle():
+        """Removes the language icon from the status bar"""
+        actions.user.hud_widget_unsubscribe_topic("status_bar", "language")
+        actions.user.hud_refresh_content()
     
     def activate_statusbar_icon(id: str):
         """Activate an icon on the status bar"""
         if (id == "mode"):
             actions.speech.disable()
         elif (id == "language"):
+            # TODO THIS NO LONGER SEEMS TO WOKR?
             actions.speech.switch_language('en_US')
+        elif (id == "microphone"):
+            global previous_microphone
+            
+            current_microphone = actions.sound.active_microphone()
+            if current_microphone != "None":
+                actions.sound.set_microphone("None")
+                previous_microphone = current_microphone
+            else:
+                if previous_microphone == "None":
+                    previous_microphone = "System Default"
+                actions.sound.set_microphone("System Default")
+                
         elif (id == "close"):
             actions.user.disable_hud()
