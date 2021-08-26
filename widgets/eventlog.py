@@ -143,20 +143,22 @@ class HeadUpEventLog(BaseWidget):
             current_y = self.y if self.expand_direction == "down" else self.y + self.height
             for index, visual_log in enumerate(self.visual_logs):
             
-                
-            
                 # Split up the text into lines if there are linebreaks
                 # And calculate their dimensions
-                # TODO calculate max text width against the width and see if we need to wrap the text to the next line
-                # TODO emphasis text using **Md bold markers**
                 lines = layout_rich_text(paint, visual_log['message'], self.limit_width, self.limit_height)
-                #lines = visual_log['message'].splitlines()
                 total_text_width = 0
                 total_text_height = 0
+                current_line_width = 0
+                line_count = 0
                 for line in lines:
-                    total_text_width = max( total_text_width, line.width )
-                    total_text_height = total_text_height + line.height + vertical_text_padding
-                log_height = vertical_text_padding * (1 + len(lines)) + total_text_height
+                    if line.x == 0:
+                        line_count += 1
+                        current_line_width = line.width
+                        total_text_height += line.height                 
+                    else:
+                        current_line_width += line.width
+                    total_text_width = max( total_text_width, current_line_width )
+                log_height = vertical_text_padding * ( line_count * 3 ) + total_text_height
             
                 if self.expand_direction == "down":                    
                     offset = 0 if index == 0 else log_margin + log_height
@@ -202,8 +204,7 @@ class HeadUpEventLog(BaseWidget):
                 paint.color = text_colour + opacity_hex
                 
                 line_height = total_text_height / len(lines)
-                for index, line in enumerate(lines):
-                    canvas.draw_text(line.text, text_x, current_y + line_height + index * vertical_text_padding + index * line_height )
+                self.draw_rich_text(canvas, paint, lines, text_x, current_y, line_height )
                 
             return continue_drawing
         else:
@@ -220,3 +221,21 @@ class HeadUpEventLog(BaseWidget):
         rect = ui.Rect(origin_x, origin_y, width, height)
         rrect = skia.RoundRect.from_rect(rect, x=radius, y=radius)
         canvas.draw_rrect(rrect)
+        
+        
+    def draw_rich_text(self, canvas, paint, rich_text, x, y, line_height):
+        text_colour = paint.color
+        count_tokens = len(rich_text)
+        #print( rich_text )
+    
+        current_line = -1
+        for index, text in enumerate(rich_text):
+            paint.font.embolden = "bold" in text.styles
+            paint.font.skew_x = -0.33 if "italic" in text.styles else 0
+            
+            current_line = current_line + 1 if text.x == 0 else current_line
+            if (count_tokens > 1):
+                text_y = y + text.height * 2 + text.y + line_height
+            else:
+                text_y = y + line_height + current_line * line_height
+            canvas.draw_text(text.text, x + text.x, text_y )

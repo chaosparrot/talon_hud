@@ -43,8 +43,9 @@ def layout_rich_text(paint:skia.Paint, text:str, width:int = 1920, height:int = 
             if token in rich_text_delims:                
                 # Finish the current words if there are any
                 if current_line_bounds != None and len(words_to_use) > 0:
-                    final_lines.append(HudRichText(x, current_line_bounds.width, current_line_bounds.height, styles.copy(), " ".join(words_to_use)))                
+                    final_lines.append(HudRichText(x, current_line_bounds.y, current_line_bounds.width, current_line_bounds.height, styles.copy(), " ".join(words_to_use)))                
                     x = x + current_line_bounds.width
+                    current_line_bounds.y = current_line_bounds.y
                     current_line_bounds.width = 0
                     current_line_bounds.height = 0
                 words_to_use = []
@@ -63,7 +64,7 @@ def layout_rich_text(paint:skia.Paint, text:str, width:int = 1920, height:int = 
                     
                     # Edge case - Space character is split on earlier, so empty strings are space characters that we should include
                     if word == "":
-                       word = " "
+                       word = ""
                        word_bounds.width = space_text_bounds.width                    
                     
                     if index < amount_of_words - 1:
@@ -74,10 +75,12 @@ def layout_rich_text(paint:skia.Paint, text:str, width:int = 1920, height:int = 
                     else:
                         current_line_bounds.width += word_bounds.width
                         current_line_bounds.height = max(word_bounds.height, current_line_bounds.height)
+                        current_line_bounds.y = min(word_bounds.y, current_line_bounds.y)
                     
                     if x + current_line_bounds.width - space_text_bounds.width > width:                                            
-                        final_lines.append(HudRichText(x, current_line_bounds.width - word_bounds.width, current_line_bounds.height, styles.copy(), " ".join(words_to_use)))
+                        final_lines.append(HudRichText(x, current_line_bounds.y, current_line_bounds.width - word_bounds.width, current_line_bounds.height, styles.copy(), " ".join(words_to_use)))
                         x = 0
+                        y = 0
                         
                         if word_bounds.width < width:
                             words_to_use = [word]
@@ -91,7 +94,7 @@ def layout_rich_text(paint:skia.Paint, text:str, width:int = 1920, height:int = 
                             for index, wrapped_word in enumerate(wrapped_words):
                                 _, wrapped_word_bounds = paint.measure_text(wrapped_word)                            
                                 if index < len(wrapped_words) - 1:
-                                    final_lines.append(HudRichText(x, wrapped_word_bounds.width, wrapped_word_bounds.height, styles.copy(), wrapped_word))
+                                    final_lines.append(HudRichText(x, wrapped_word_bounds.y, wrapped_word_bounds.width, wrapped_word_bounds.height, styles.copy(), wrapped_word))
                                 else:
                                     current_line_bounds = wrapped_word_bounds
                                     words_to_use = [wrapped_word]
@@ -100,7 +103,7 @@ def layout_rich_text(paint:skia.Paint, text:str, width:int = 1920, height:int = 
                         words_to_use.append(word) 
                     
         if len(words_to_use) > 0:
-            final_lines.append(HudRichText(x, current_line_bounds.width, current_line_bounds.height, styles.copy(), " ".join(words_to_use)))            
+            final_lines.append(HudRichText(x, current_line_bounds.y, current_line_bounds.width, current_line_bounds.height, styles.copy(), " ".join(words_to_use)))            
     return final_lines
     
 def hex_to_ints(hex: str) -> list[int]:

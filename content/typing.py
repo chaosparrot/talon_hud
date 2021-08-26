@@ -6,6 +6,7 @@ from typing import Callable, Any
 @dataclass
 class HudRichText:
     x: int
+    y: int
     width: int
     height: int
     styles: list[str]

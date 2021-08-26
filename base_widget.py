@@ -74,7 +74,6 @@ class BaseWidget(metaclass=ABCMeta):
     
     # Set the topic that has claimed this widget
     def set_topic(self, topic:str):
-
     	self.topic = topic
     
     def set_theme(self, theme):
