@@ -63,10 +63,13 @@ def layout_rich_text(paint:skia.Paint, text:str, width:int = 1920, height:int = 
                     _, word_bounds = paint.measure_text(word)
                     
                     # Edge case - Space character is split on earlier, so empty strings are space characters that we should include
-                    if word == "":
-                       word = ""
-                       word_bounds.width = space_text_bounds.width                    
-                    
+                    if word == "":                    
+                       if index == 0:
+                           word_bounds.width = space_text_bounds.width
+                       # But if there are more words to combine they will be joined later anyway so we do not need to calculate the space width here
+                       else:
+                           continue
+
                     if index < amount_of_words - 1:
                         word_bounds.width += space_text_bounds.width
                         
