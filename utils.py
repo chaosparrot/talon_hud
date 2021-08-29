@@ -70,16 +70,14 @@ def layout_rich_text(paint:skia.Paint, text:str, width:int = 1920, height:int = 
                     _, word_bounds = paint.measure_text(word)
                     
                     # Edge case - Space character is split on earlier, so empty strings are space characters that we should include
-                    if word == "":                    
-                       if index == 0:
-                           word_bounds.width = space_text_bounds.width
-                       # But if there are more words to combine they will be joined later anyway so we do not need to calculate the space width here
-                       else:
-                           continue
-
-                    if index < amount_of_words - 1:
-                        word_bounds.width += space_text_bounds.width
+                    if word == "":
+                        word_bounds.width = space_text_bounds.width
                         
+                    # Only add the space bounds between words if we haven't or aren't about to place a space
+                    elif x == 0 or ( index > 0 and index < len(words) - 1 and \
+                        words[index - 1] != "" and words[index + 1] != ""):
+                        word_bounds.width += space_text_bounds.width
+                                            
                     if current_line_bounds == None:
                         current_line_bounds = word_bounds
                     else:
@@ -110,12 +108,11 @@ def layout_rich_text(paint:skia.Paint, text:str, width:int = 1920, height:int = 
                                     words_to_use = [wrapped_word]
                             
                     else:
-                        words_to_use.append(word) 
+                        words_to_use.append(word)
                     
         if len(words_to_use) > 0:
             final_lines.append(HudRichText(x, current_line_bounds.y, current_line_bounds.width, current_line_bounds.height, styles.copy(), " ".join(words_to_use)))            
     
-    print( final_lines )
     paint.font.embolden = False
     return final_lines
     

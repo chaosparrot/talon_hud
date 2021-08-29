@@ -145,7 +145,7 @@ class HeadUpEventLog(BaseWidget):
             
                 # Split up the text into lines if there are linebreaks
                 # And calculate their dimensions
-                lines = layout_rich_text(paint, visual_log['message'], self.limit_width, self.limit_height)
+                lines = layout_rich_text(paint, visual_log['message'], self.limit_width - text_padding * 2, self.limit_height)
                 total_text_width = 0
                 total_text_height = 0
                 current_line_width = 0
@@ -154,11 +154,11 @@ class HeadUpEventLog(BaseWidget):
                     if line.x == 0:
                         line_count += 1
                         current_line_width = line.width
-                        total_text_height += line.height                 
+                        total_text_height += paint.textsize
                     else:
                         current_line_width += line.width
                     total_text_width = max( total_text_width, current_line_width )
-                log_height = vertical_text_padding * ( line_count * 3 ) + total_text_height
+                log_height = vertical_text_padding * ( 2 + line_count ) + total_text_height
             
                 if self.expand_direction == "down":                    
                     offset = 0 if index == 0 else log_margin + log_height
@@ -203,8 +203,8 @@ class HeadUpEventLog(BaseWidget):
                 opacity_hex = hex(opacity_int)[-2:] if opacity_int > 15 else '0' + hex(opacity_int)[-1:]
                 paint.color = text_colour + opacity_hex
                 
-                line_height = total_text_height / len(lines)
-                self.draw_rich_text(canvas, paint, lines, text_x, current_y, line_height )
+                line_height = paint.textsize + vertical_text_padding# total_text_height / len(lines)
+                self.draw_rich_text(canvas, paint, lines, text_x, current_y + vertical_text_padding * 2, line_height )
                 
             return continue_drawing
         else:
@@ -229,19 +229,21 @@ class HeadUpEventLog(BaseWidget):
     
         current_line = -1
         text_height = 0
-        last_text_y = line_height
-        y += line_height
+        colour = paint.color
+        #paint.color = 'FF0000'
+        #canvas.draw_rect(ui.Rect(x, y, self.width, 1))
+        #paint.color = colour
+        y += line_height / 2
         for index, text in enumerate(rich_text):
             paint.font.embolden = "bold" in text.styles
             paint.font.skew_x = -0.33 if "italic" in text.styles else 0
             
             current_line = current_line + 1 if text.x == 0 else current_line
-            if text.x == 0:
-                y += ( text_height - abs(last_text_y) ) + line_height
+            if text.x == 0 and index != 0:
+                y += line_height
                 text_height = 0
-                last_text_y = line_height
+            #canvas.draw_rect(ui.Rect(x, y, self.width, 1))            
             
             text_y = y
-            last_text_y = min(last_text_y, text.y)
             text_height = max(text_height, text.height)
             canvas.draw_text(text.text, x + text.x, text_y )
