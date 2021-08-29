@@ -75,7 +75,8 @@ class HeadUpDisplay:
             HeadUpStatusBar('status_bar', self.preferences.prefs, self.theme),
             HeadUpEventLog('event_log', self.preferences.prefs, self.theme),
             HeadUpTextPanel('Text panel', self.preferences.prefs, self.theme, {'topics': ['*']}),
-            HeadUpDocumentationPanel('Documentation', self.preferences.prefs, self.theme, {'topics': ['documentation']}),            
+            HeadUpDocumentationPanel('Documentation', self.preferences.prefs, self.theme, {'topics': ['documentation']}),
+            HeadUpAbilityBar('ability_bar', self.preferences.prefs, self.theme),
             # Extra text boxes can be defined to be assigned to different topics
             # HeadUpTextPanel('Text box two', self.preferences.prefs, self.theme, {'topics': ['your_topic_here'], 'current_topic': 'your_topic_here'}),
             HeadUpChoicePanel('Choices', self.preferences.prefs, self.theme, {'topics': ['choice'], 'current_topic': 'choice'}),

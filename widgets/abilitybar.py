@@ -50,13 +50,13 @@ class HeadUpAbilityBar(BaseWidget):
     def draw_ability(self, canvas, origin_x, origin_y, diameter, paint, ability ):
         radius = diameter / 2
         animating = False
-        
+                
         opacity = int('FF' if ability['colour'] is None or len(ability['colour']) < 8 else ability['colour'][-2:], 16) / 255
         opacity_value = int(opacity / 6 * 255) if ability['enabled'] == False else int(opacity * 255)
         opacity_hex = '0' + format(opacity_value, 'x') if opacity_value <= 15 else format(opacity_value, 'x')        
         
         if ability['colour'] is not None:
-            colour = list(ability['colour'])
+            colour = list( self.theme.get_colour(ability['colour'], ability['colour']) )
             colour[6:] = opacity_hex
             paint.color = "".join(colour)
             canvas.draw_circle( origin_x + radius, origin_y + radius, radius, paint)
@@ -64,7 +64,10 @@ class HeadUpAbilityBar(BaseWidget):
         if (ability['image'] is not None and self.theme.get_image(ability['image']) is not None ):
             paint.color = opacity_value
             image = self.theme.get_image(ability['image'])
-            canvas.draw_image(image, origin_x + radius - image.width / 2, origin_y + radius - image.height / 2 )
+            
+            offset_x = 0 if 'image_offset_x' not in ability else ability['image_offset_x']
+            offset_y = 0 if 'image_offset_y' not in ability else ability['image_offset_y']            
+            canvas.draw_image(image, origin_x + radius - image.width / 2 + offset_x, origin_y + radius - image.height / 2 + offset_y)
             
         if ability['activated'] > 0:
             paint.color = self.theme.get_colour("ability_activation_colour", "FFFFFFAA")

@@ -142,15 +142,17 @@ class Actions:
             "id": id
         })
 
-    def hud_add_ability(id: str, image: str, colour: str, enabled: bool, activated: bool):
+    def hud_add_ability(id: str, image: str, colour: str, enabled: int, activated: int, image_offset_x: int = 0, image_offset_y: int = 0):
         """Add a hud ability or update it"""
         global hud_content
         hud_content.add_to_set("abilities", {
             "id": id,
             "image": image,
             "colour": colour,
-            "enabled": enabled,
-            "activated": 5 if activated else 0
+            "enabled": enabled > 0,
+            "activated": 5 if activated > 0 else 0,
+            "image_offset_x": image_offset_x,
+            "image_offset_y": image_offset_y
         })
 
     def hud_remove_ability(id: str):

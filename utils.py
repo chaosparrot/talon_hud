@@ -52,7 +52,14 @@ def layout_rich_text(paint:skia.Paint, text:str, width:int = 1920, height:int = 
                 if token == '/>':
                     if len(styles) > 0:
                         styles.pop()
+                        
+                    # Unbold the text for the proper height measurements
+                    if "bold" not in styles:
+                        paint.font.embolden = False
                 else:
+                    # Bold the text for the proper height measurements
+                    if rich_text_delims_dict[token] == "bold":                        
+                        paint.font.embolden = True
                     styles.append(rich_text_delims_dict[token])
                 
             # Add text
@@ -107,6 +114,9 @@ def layout_rich_text(paint:skia.Paint, text:str, width:int = 1920, height:int = 
                     
         if len(words_to_use) > 0:
             final_lines.append(HudRichText(x, current_line_bounds.y, current_line_bounds.width, current_line_bounds.height, styles.copy(), " ".join(words_to_use)))            
+    
+    print( final_lines )
+    paint.font.embolden = False
     return final_lines
     
 def hex_to_ints(hex: str) -> list[int]:

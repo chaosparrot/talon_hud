@@ -226,16 +226,22 @@ class HeadUpEventLog(BaseWidget):
     def draw_rich_text(self, canvas, paint, rich_text, x, y, line_height):
         text_colour = paint.color
         count_tokens = len(rich_text)
-        #print( rich_text )
     
         current_line = -1
+        text_height = 0
+        last_text_y = line_height
+        y += line_height
         for index, text in enumerate(rich_text):
             paint.font.embolden = "bold" in text.styles
             paint.font.skew_x = -0.33 if "italic" in text.styles else 0
             
             current_line = current_line + 1 if text.x == 0 else current_line
-            if (count_tokens > 1):
-                text_y = y + text.height * 2 + text.y + line_height
-            else:
-                text_y = y + line_height + current_line * line_height
+            if text.x == 0:
+                y += ( text_height - abs(last_text_y) ) + line_height
+                text_height = 0
+                last_text_y = line_height
+            
+            text_y = y
+            last_text_y = min(last_text_y, text.y)
+            text_height = max(text_height, text.height)
             canvas.draw_text(text.text, x + text.x, text_y )
