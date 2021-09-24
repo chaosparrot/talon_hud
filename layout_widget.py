@@ -17,7 +17,7 @@ class LayoutWidget(BaseWidget):
     mouse_capture_canvas: canvas.Canvas
     layout = []
     page_index = 0
-    
+        
     def enable(self, persisted=False):
         if not self.enabled:
             if self.mouse_enabled:
@@ -47,8 +47,13 @@ class LayoutWidget(BaseWidget):
     def set_page_index(self, page_index: int):
         self.page_index = max(0, min(page_index, len(self.layout) - 1))
         if self.canvas:
+            self.start_setup("")        
             self.mark_layout_invalid = True
             self.canvas.resume()
+        
+    def start_setup(self, setup_type):
+        self.mark_layout_invalid = True
+        super().start_setup(setup_type)
         
     def setup_move(self, pos):
         self.mark_layout_invalid = True

@@ -10,7 +10,9 @@ def close_widget(widget):
     widget.disable(True)
     
 def minimize_toggle_widget(widget):
-    widget.minimized = not widget.minimized
+    widget.minimized = not widget.minimized    
+    widget.drag_positions = []
+    widget.start_setup("")
     if widget.minimized:
         widget.set_preference("minimized", 1)
     else:
@@ -65,7 +67,7 @@ class HeadUpTextPanel(LayoutWidget):
     def set_preference(self, preference, value, persisted=False):
         self.mark_layout_invalid = True
         super().set_preference(preference, value, persisted)
-    
+        
     def load_theme_values(self):
         self.intro_animation_start_colour = self.theme.get_colour_as_ints('intro_animation_start_colour')
         self.intro_animation_end_colour = self.theme.get_colour_as_ints('intro_animation_end_colour')

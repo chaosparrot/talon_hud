@@ -78,6 +78,6 @@ class HeadUpAbilityBar(BaseWidget):
             animating = True
         
         return animating
-        
+
     def draw_animation(self, canvas, animation_tick):
-        return True
+        return len(self.content['abilities']) > 0

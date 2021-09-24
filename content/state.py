@@ -90,8 +90,7 @@ class HeadUpDisplayContent(Dispatch):
         
 hud_content = HeadUpDisplayContent()
 
-documentation = """
-By default, the widgets except for the status bar will hide when Talon goes in sleep mode, but you can keep them around, or hide them, with the following commands.  
+documentation = """By default, the widgets except for the status bar will hide when Talon goes in sleep mode, but you can keep them around, or hide them, with the following commands.  
 <*head up show <widget name> on sleep/> keeps the chosen widget enabled during sleep mode.  
 <*head up hide <widget name> on sleep/> hides the chosen widget when sleep mode is turned on.
 

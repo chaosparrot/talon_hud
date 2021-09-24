@@ -149,10 +149,8 @@ These are ideas that I want to implement in no specific order and with no specif
 
 Known issues
 ---
-- Line breaks not being properly rendered if they do not contain additional characters
 - Lines are improperly spaced height wise when rendering rich text
 - Text panel footers on second page seem to have text go through the footer
-- Some click dragging issues with the documentation panel where it stays sticky
 
 If any of these ideas seem cool for you to work on, give me a message on the talon slack so we can coordinate stuff.
 

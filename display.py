@@ -22,7 +22,7 @@ from user.talon_hud.content.poller import Poller
 from user.talon_hud.utils import string_to_speakable_string
 
 # Taken from knausj/code/numbers to make Talon HUD standalone
-# The numbers should realistically stay very low for choices, because you dont want choice overload for the user, up to 100
+# The numbers should realistically stay very low for choices, because you don't want choice overload for the user, up to 100
 digits = "zero one two three four five six seven eight nine".split()
 teens = "ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen".split()
 tens = "twenty thirty forty fifty sixty seventy eighty ninety".split()

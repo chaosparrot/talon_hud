@@ -35,10 +35,16 @@ def layout_rich_text(paint:skia.Paint, text:str, width:int = 1920, height:int = 
         
         tokened_line = re.split(rich_text_delims_regex, line)
         tokened_line = [x for x in tokened_line if x != ""]
-        
+            
         x = 0
+        
+        # Edge case - Empty newline
+        if len(tokened_line) == 0:
+            final_lines.append(HudRichText(x, space_text_bounds.y, space_text_bounds.width, space_text_bounds.height, [], " "))
+            continue        
+        
         words_to_use = []
-        current_line_bounds = None        
+        current_line_bounds = None
         for token in tokened_line:
             if token in rich_text_delims:                
                 # Finish the current words if there are any

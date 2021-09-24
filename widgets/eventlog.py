@@ -212,7 +212,7 @@ class HeadUpEventLog(BaseWidget):
         
     def draw_animation(self, canvas, animation_tick):
         if self.enabled:
-            return True
+            return len(self.visual_logs) > 0
         else:
             return self.draw(canvas)
 
@@ -221,7 +221,6 @@ class HeadUpEventLog(BaseWidget):
         rect = ui.Rect(origin_x, origin_y, width, height)
         rrect = skia.RoundRect.from_rect(rect, x=radius, y=radius)
         canvas.draw_rrect(rrect)
-        
         
     def draw_rich_text(self, canvas, paint, rich_text, x, y, line_height):
         text_colour = paint.color
