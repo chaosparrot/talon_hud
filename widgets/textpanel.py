@@ -12,7 +12,7 @@ def close_widget(widget):
 def minimize_toggle_widget(widget):
     widget.minimized = not widget.minimized    
     widget.drag_positions = []
-    widget.start_setup("")
+    widget.start_setup("")    
     if widget.minimized:
         widget.set_preference("minimized", 1)
     else:
@@ -200,14 +200,14 @@ class HeadUpTextPanel(LayoutWidget):
                 layout_pages[0]['content_height'] += current_line_height
             else: 
                 width = min( self.limit_width, max(self.width, total_text_width + self.padding[1] + self.padding[3]))
-                content_height = header_height if self.minimized else total_text_height + self.padding[0] + self.padding[2] + header_height
+                content_height = header_height if self.minimized else total_text_height + self.padding[0] + self.padding[2] + header_height * 2
                 height = header_height + self.padding[0] * 2 if self.minimized else min(self.limit_height, max(self.height, content_height))
                 x = self.x if horizontal_alignment == "left" else self.limit_x + self.limit_width - width
                 y = self.limit_y if vertical_alignment == "top" else self.limit_y + self.limit_height - height
                 
                 layout_pages.append({
                     "rect": ui.Rect(x, y, width, height), 
-                    "line_count": max(1, line_count),
+                    "line_count": max(1, line_count + 2 ),
                     "header_text": header_text,
                     "icon_size": icon_size,
                     "content_text": current_page_text,
