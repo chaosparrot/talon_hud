@@ -1,9 +1,12 @@
 from talon import actions, cron, scope, Module, ui
+from talon_init import TALON_USER
 from talon.scripting import Dispatch
 from user.talon_hud.content.typing import HudPanelContent, HudButton, HudChoice, HudChoices
 import time
 from typing import Callable, Any
+import os
 
+hud_directory = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 max_log_length = 50
 mod = Module()
 
@@ -90,32 +93,6 @@ class HeadUpDisplayContent(Dispatch):
         
 hud_content = HeadUpDisplayContent()
 
-documentation = """By default, the widgets except for the status bar will hide when Talon goes in sleep mode, but you can keep them around, or hide them, with the following commands.  
-<*head up show <widget name> on sleep/> keeps the chosen widget enabled during sleep mode.  
-<*head up hide <widget name> on sleep/> hides the chosen widget when sleep mode is turned on.
-
-On top of being able to turn widgets on and off, you can configure their attributes to your liking.  
-Currently, you can change the size, position, alignment, animation and font size.  
-
-<*head up drag <widget name>/> starts dragging the widget.  
-<*head up resize <widget name>/> starts resizing the widgets width and height.  
-<*head up expand <widget name>/> changes the maximum size of the widget in case the content does not fit the regular width and height.  
-By default these two dimensions are the same so the widget does not grow when more content is added.  
-<*head up text scale <widget name>/> starts resizing the text in the widget.  
-<*head up drop/> confirms and saves the changes of your changed widgets.  
-<*head up cancel/> cancels the changes. Hiding a widget also discards of the current changes.
-
-Some widgets like the event log also allow you to change the text direction and alignment  
-<*head up align <widget name> left/> aligns the text and the widget to the left side of its bounds.  
-<*head up align <widget name> right/> aligns the text and the widget to the right side of its bounds.  
-<*head up align <widget name> top/> changes the direction in which content is placed upwards.  
-<*head up align <widget name> bottom/> changes the direction in which content is placed downwards.
-
-If you prefer having a more basic animation free set up, or want to switch back to an animated display, you can use the following commands  
-<*head up basic <widget name>/> disables animations on the chosen widget.  
-<*head up fancy <widget name>/> enables animations on the chosen widget.
-"""
-
 @mod.action_class
 class Actions:
 
@@ -200,6 +177,10 @@ class Actions:
         
     def hud_get_documentation():
         """Publish a specific piece of content to a topic"""
+        text_file = open(str(hud_directory) + "/docs/hud_widget_documentation.txt", "r")
+        documentation = text_file.read()
+        text_file.close()
+        
         content = HudPanelContent("documentation", "Head up documentation", [documentation], [], time.time(), True)
         
         global hud_content
