@@ -174,18 +174,7 @@ class Actions:
         content = HudPanelContent("choice", title, [content], [], time.time(), True, choices)
         global hud_content
         hud_content.publish(content)
-        
-    def hud_get_documentation():
-        """Publish a specific piece of content to a topic"""
-        text_file = open(str(hud_directory) + "/docs/hud_widget_documentation.txt", "r")
-        documentation = text_file.read()
-        text_file.close()
-        
-        content = HudPanelContent("documentation", "Head up documentation", [documentation], [], time.time(), True)
-        
-        global hud_content
-        hud_content.publish(content)
-        
+                
     def show_test_choices():
         """Show a bunch of test buttons to choose from"""
         choices = actions.user.hud_create_choices([{"text": "Testing", "image": "next_icon"},{"text": "Another choice"},{"text": "Some other choice"},{"text": "Maybe pick this"},], print)
