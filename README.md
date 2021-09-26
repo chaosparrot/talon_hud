@@ -21,7 +21,8 @@ This widget will display the current Talon mode ( Command, dictation or sleep ) 
 The buttons can also be clicked to activate the dwell action immediately.  
 
 You can customize the status bar in multiple ways
-- You can add the current natural languge by uncommenting line 67 from the display.py file
+- You can add the current natural language by uncommenting line 96 from the display.py file
+- You can add the microphone toggle by uncommenting line 100 from the display.py file
 - You can change the functionality of the icons by changing the activate_statusbar_icon action in the widgets/statusbar.py file all the way at the bottom.
 
 ### 2. Event log

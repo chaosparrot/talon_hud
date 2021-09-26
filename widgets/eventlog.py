@@ -185,10 +185,17 @@ class HeadUpEventLog(BaseWidget):
                 
                 max_opacity = self.theme.get_opacity('event_log_opacity')
                 text_colour = self.theme.get_colour('event_log_text_colour', self.theme.get_colour('text_colour') )                
-                if visual_log['type'] != "event":
+                if visual_log['type'] not in ["event", "success", "error", "warning"]:
                     background_colour = default_background_colour
                 else:
-                    background_colour = self.theme.get_colour('info_colour', '30AD9E')
+                    if visual_log['type'] == "event":
+                        background_colour = self.theme.get_colour('info_colour', '30AD9E')
+                    elif visual_log['type'] == "error":
+                        background_colour = self.theme.get_colour('error_colour', 'AA0000')
+                    elif visual_log['type'] == "warning":
+                        background_colour = self.theme.get_colour('warning_colour', 'F75B00')
+                    elif visual_log['type'] == "success":
+                        background_colour = self.theme.get_colour('success_colour', '00CC00')
                     max_opacity = 255
                     text_colour = 'FFFFFF'
                 opacity_int = min(max_opacity, int(max_opacity * opacity))

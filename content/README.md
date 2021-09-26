@@ -5,7 +5,7 @@ You can publish all kinds of content to the various widgets of the HUD.
 For example:
 - Status bar icons to display a certain state
 - Log messages
-- Textual content with options to bold, slant or emphasise in a number of colours
+- Textual content with options to bold, slant or emphasize in a number of colours
 - Context menu options for various widgets
 
 Publishing content to head up display can be done using actions found in content/state.py.
@@ -21,7 +21,8 @@ from talon import actions
 actions.user.hud_add_log('command', 'This is a log message!')
 ```
 The following values can be added to hud_add_log
-- Type: What style we need to use to render the log. Currently supports 'event' for info styling, and 'command' for regular styling.
+- Type: What style we need to use to render the log. 
+  Currently supports 'command' for regular styling, 'success', 'warning' and 'error' for various validation messages, and 'event' for notices.
 - Message: The log message to display
 
 # Publishing icons to the status bar
@@ -39,7 +40,6 @@ These are the values that you can give to hud_add_status_icon:
 - Identifier: This is a value that uniquely identifies your icon. You can use this to later remove the icon using hud_remove_status_icon
 - Image: This is a path to an image. By default, the path 'talon_hud/themes/CURRENT_USER_THEME/IMAGE.png' is assumed if no .png is added. Currently, there is no support of adding images outside of the themes yet.
 
-TODO - ADD SUPPORT FOR IMAGES OUTSIDE OF TALON_HUD DIRECTORY
 TODO - ADD ICONS THAT ARE FUNCTIONAL LIKE THE MODE ICON
 
 # Publishing to a text panel
@@ -143,7 +143,7 @@ There isn't a firm styling for voice commands yet, so for now just apply a bold 
 
 # Polling / continuously updating content
 
-For simple usecases, like popping up a single piece of text, just being able to publish content is enough. However, sometimes you want to listen continuously for changes, like changing scopes or updating the list of recent commands.  
+For simple use cases, like popping up a single piece of text, just being able to publish content is enough. However, sometimes you want to listen continuously for changes, like changing scopes or updating the list of recent commands.  
 You can do your own event handling if you like, but the HUD also supports a concept called Pollers, some examples can be found in the talon_hud/content folder.
 
 A poller is an object that registered to the Talon HUD, and will be enabled when the user requests it.  

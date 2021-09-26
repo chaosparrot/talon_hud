@@ -6,5 +6,6 @@ and tag: user.talon_hud_visible
 toolkit options$: user.hud_toolkit_options()
 toolkit scope$: user.hud_toolkit_scope()
 toolkit microphones$: user.show_microphone_options()
-head up documentation: user.hud_show_documentation()
+toolkit documentation: user.hud_show_documentation()
+
 widget documentation: user.hud_show_documentation("Widget documentation")

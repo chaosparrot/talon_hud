@@ -93,9 +93,12 @@ class HeadUpDisplay:
         self.keep_alive_pollers = ['status', 'history']
         
         # Uncomment the line below to add language icons by default
-        # self.subscribe_content_id('status_bar', 'language')
+        # self.subscribe_content_id('status_bar', 'language')       
         
     def start(self):
+        # Uncomment the line below to add the single click mic toggle by default
+        # actions.user.hud_add_single_click_mic_toggle()    
+    
         if (self.preferences.prefs['enabled']):
             self.enable()    	
             
