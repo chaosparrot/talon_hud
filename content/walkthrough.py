@@ -17,8 +17,7 @@ class HeadUpWalkthroughState:
     walkthroughs = None
     walkthrough_steps = None    
     current_walkthrough = None
-    current_stepnumber = -1
-    
+    current_stepnumber = -1    
     
     def __init__(self):
         self.walkthroughs = {}
@@ -70,15 +69,25 @@ class HeadUpWalkthroughState:
     def show_options(self):
         """Show all the available walkthroughs"""
         if len(self.walkthroughs) > 0:
-            # TODO ADD CHOICE LIST OF WALK THROUGHS
-            pass
+            choice_texts = []
+            for title in self.walkthroughs:
+                done = title in self.walkthrough_steps and \
+                    self.walkthrough_steps[title] >= len(self.walkthroughs[title].steps)
+                choice_texts.append({"text": title, "selected": done})
+            choices = actions.user.hud_create_choices(choice_texts, self.pick_walkthrough)
+            actions.user.hud_publish_choices(choices, "Walkthrough options", 
+                "Pick a walkthrough from the options below by saying <*option <number>/> or by saying the name.")
+
+    def pick_walkthrough(self, data):
+        """Pick a walkthrough from the options menu"""
+        self.start_walkthrough(data["text"])
         
     def add_walkthrough(self, walkthrough: HudWalkThrough):
-        """Add a walkthrough to the list of walkthroughs"""    
+        """Add a walkthrough to the list of walkthroughs"""
         if walkthrough.title not in self.order:
             self.order.append(walkthrough.title)
         self.walkthroughs[walkthrough.title] = walkthrough
-
+     
     def start_walkthrough(self, walkthrough_title: str):
         """Start the given walkthrough if it exists"""
         if walkthrough_title in self.walkthroughs:            

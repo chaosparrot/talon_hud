@@ -6,19 +6,6 @@ from user.talon_hud.content.typing import HudRichTextLine, HudPanelContent, HudB
 from talon.types.point import Point2d
 
 icon_radius = 10
-def close_widget(widget):
-    widget.disable(True)
-    
-def minimize_toggle_widget(widget):
-    widget.minimized = not widget.minimized    
-    widget.drag_positions = []
-    widget.start_setup("")    
-    if widget.minimized:
-        widget.set_preference("minimized", 1)
-    else:
-        widget.set_preference("minimized", 0)
-    widget.mark_layout_invalid = True
-    widget.canvas.resume()
 
 class HeadUpWalkThroughPanel(LayoutWidget):
     preferences = HeadUpDisplayUserWidgetPreferences(type="walk_through", x=910, y=1000, width=100, height=20, limit_x=480, limit_y=700, limit_width=960, limit_height=124, enabled=False, sleep_enabled=True, alignment="center", expand_direction="up", font_size=24)
@@ -29,19 +16,9 @@ class HeadUpWalkThroughPanel(LayoutWidget):
     line_padding = 6
     
     # Options given to the context menu
-    buttons = []
-    
-    # All the header icons in a right to left order
-    icon_radius = 10
-    icon_hovered = -1
-    icons = [HudIcon("close", "", Point2d(0,0), icon_radius, close_widget),
-        HudIcon("minimize", "", Point2d(0,0), icon_radius, minimize_toggle_widget),
-    ]
-    
-    # All the footer icons in a right to left order
-    footer_icon_hovered = -1
-    footer_icons = [HudIcon("next", "next_icon", Point2d(0,0), icon_radius, lambda widget: widget.set_page_index(widget.page_index + 1)),
-        HudIcon("previous", "previous_icon", Point2d(0,0), icon_radius, lambda widget: widget.set_page_index(widget.page_index - 1))
+    buttons = [
+        HudButton("next_icon", "Skip this step", ui.Rect(0,0,0,0), lambda widget: actions.user.hud_skip_walkthrough_step()),
+        HudButton("check_icon", "Mark as done", ui.Rect(0,0,0,0), lambda widget: actions.user.hud_skip_walkthrough_all())
     ]
 
     subscribed_content = ["mode"]
@@ -52,11 +29,15 @@ class HeadUpWalkThroughPanel(LayoutWidget):
     animation_max_duration = 30
 
     def update_panel(self, panel_content) -> bool:
-        # Update the content buttons
-        self.buttons = list(panel_content.buttons)
-        self.buttons.extend(self.default_buttons)
         return super().update_panel(panel_content)
     
+    def on_mouse(self, event):
+        if event.button == 1 and event.event == "mouseup":            
+            actions.user.show_context_menu(self.id, event.gpos.x, event.gpos.y, self.buttons)
+        elif event.button == 0 and event.event == "mouseup":
+            actions.user.hide_context_menu()
+        super().on_mouse(event)
+
     def set_preference(self, preference, value, persisted=False):
         self.mark_layout_invalid = True
         super().set_preference(preference, value, persisted)
@@ -69,46 +50,7 @@ class HeadUpWalkThroughPanel(LayoutWidget):
             self.intro_animation_end_colour[1] - self.intro_animation_start_colour[1],
             self.intro_animation_end_colour[2] - self.intro_animation_start_colour[2]        
         ]
-    
-    def on_mouse(self, event):
-        icon_hovered = -1
-        for index, icon in enumerate(self.icons):
-            if hit_test_icon(icon, event.gpos):
-                icon_hovered = index
-                
-        footer_icon_hovered = -1
-        if icon_hovered == -1:
-            for index, icon in enumerate(self.footer_icons):
-                if hit_test_icon(icon, event.gpos):
-                    footer_icon_hovered = index
 
-        if icon_hovered != self.icon_hovered or footer_icon_hovered != self.footer_icon_hovered:
-            self.icon_hovered = icon_hovered
-            self.footer_icon_hovered = footer_icon_hovered
-            self.canvas.resume()
-        
-        if event.event == "mouseup" and event.button == 0:
-            clicked_icon = None
-            if icon_hovered != -1:
-                clicked_icon = self.icons[icon_hovered]
-            elif footer_icon_hovered != -1:
-                clicked_icon = self.footer_icons[footer_icon_hovered]
-                
-            if clicked_icon != None:
-                self.icon_hovered = -1
-                self.footer_icon_hovered = -1
-                clicked_icon.callback(self)
-
-        if event.button == 1 and event.event == "mouseup":            
-            actions.user.show_context_menu(self.id, event.gpos.x, event.gpos.y, self.buttons)
-
-        if event.button == 0 and event.event == "mouseup":
-            actions.user.hide_context_menu()
-
-        # Allow dragging and dropping with the mouse
-        if icon_hovered == -1 and footer_icon_hovered == -1:
-            super().on_mouse(event)
-        
     def layout_content(self, canvas, paint):
         paint.textsize = self.font_size
         self.line_padding = int(self.font_size / 2) + 1 if self.font_size <= 17 else 5
@@ -122,7 +64,6 @@ class HeadUpWalkThroughPanel(LayoutWidget):
     
         layout_width = max(self.width - self.padding[1] * 2 - self.padding[3] * 2, 
             self.limit_width - self.padding[1] * 2 - self.padding[3] * 2)
-        icon_size = len(self.icons) * 2 * self.icon_radius
     
         content_text = [] if self.minimized else layout_rich_text(paint, self.panel_content.content[0], layout_width, self.limit_height)
         layout_pages = []
@@ -161,7 +102,6 @@ class HeadUpWalkThroughPanel(LayoutWidget):
                     layout_pages.append({
                         "rect": ui.Rect(x, y, width, height), 
                         "line_count": max(1, line_count - 1),
-                        "icon_size": icon_size,
                         "content_text": current_page_text,
                         "content_height": current_content_height
                     })
@@ -192,7 +132,6 @@ class HeadUpWalkThroughPanel(LayoutWidget):
                 layout_pages.append({
                     "rect": ui.Rect(x, y, width, height), 
                     "line_count": max(1, line_count + 2 ),
-                    "icon_size": icon_size,
                     "content_text": current_page_text,
                     "content_height": content_height
                 })
