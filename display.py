@@ -100,7 +100,10 @@ class HeadUpDisplay:
         # actions.user.hud_add_single_click_mic_toggle()    
     
         if (self.preferences.prefs['enabled']):
-            self.enable()    	
+            self.enable()
+            
+            if actions.sound.active_microphone() == "None":
+                actions.user.hud_add_log("warning", "Microphone is set to 'None'!\n\nNo voice commands will be registered.")
             
     def enable(self, persisted=False):
         if not self.enabled:
@@ -164,7 +167,11 @@ class HeadUpDisplay:
             if not widget.enabled and widget.id == id:
                 widget.enable(True)
                 if widget.topic in self.pollers and not self.pollers[widget.topic].enabled:
-                	self.pollers[widget.topic].enable()                
+                	self.pollers[widget.topic].enable()
+
+                if isinstance(widget, HeadUpTextPanel) and widget.panel_content.tags != None \
+                   and len(widget.panel_content.tags) > 0:
+                   self.update_context()
 
     def disable_id(self, id):
         for widget in self.widgets:
@@ -172,6 +179,10 @@ class HeadUpDisplay:
                 widget.disable(True)
                 if widget.topic in self.pollers and widget.topic not in self.keep_alive_pollers:
                 	self.pollers[widget.topic].disable()
+                    
+                if isinstance(widget, HeadUpTextPanel) and widget.panel_content.tags != None \
+                   and len(widget.panel_content.tags) > 0:
+                   self.update_context()
         self.determine_active_setup_mouse()
         
     def subscribe_content_id(self, id, content_key):
@@ -453,6 +464,11 @@ class HeadUpDisplay:
                 if choice_title:
                     for widget_name in current_widget_names:
                         quick_choices[widget_name + " " + choice_title] = widget.id + "|" + str(index)
+
+            # Add tags set for specific content on display
+            if widget.enabled and isinstance(widget, HeadUpTextPanel) and widget.panel_content.tags is not None:
+                for index, tag in enumerate(widget.panel_content.tags):
+                    tags.append(tag)
             
             # Add context choices
             if widget.enabled and isinstance(widget, HeadUpContextMenu):

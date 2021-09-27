@@ -143,11 +143,13 @@ class Actions:
         global hud_content
         hud_content.dispatch("content_update", hud_content.content)
         
-    def hud_publish_content(content: str, topic: str = '', title:str = '', show:bool = True, buttons: list[HudButton] = None):
+    def hud_publish_content(content: str, topic: str = '', title:str = '', show:bool = True, buttons: list[HudButton] = None, tags: list[str] = None):
         """Publish a specific piece of content to a topic"""            
         if buttons == None:
             buttons = []
-        content = HudPanelContent(topic, title, [content], buttons, time.time(), show)
+        if tags == None:
+            tags = []
+        content = HudPanelContent(topic, title, [content], buttons, time.time(), show, tags = tags)
         
         global hud_content
         hud_content.publish(content)

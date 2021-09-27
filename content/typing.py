@@ -52,3 +52,4 @@ class HudPanelContent:
     published_at: float
     show: bool
     choices: HudChoices = None
+    tags: list[str] = None

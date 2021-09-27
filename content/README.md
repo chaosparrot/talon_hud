@@ -38,7 +38,18 @@ actions.user.hud_remove_status_icon('my_status_icon')
 
 These are the values that you can give to hud_add_status_icon:
 - Identifier: This is a value that uniquely identifies your icon. You can use this to later remove the icon using hud_remove_status_icon
-- Image: This is a path to an image. By default, the path 'talon_hud/themes/CURRENT_USER_THEME/IMAGE.png' is assumed if no .png is added. Currently, there is no support of adding images outside of the themes yet.
+- Image: This is a path to an image. By default, the path 'talon_hud/themes/CURRENT_USER_THEME/IMAGE.png' is assumed if no .png is added. 
+However, you can use any path on the system to display an image. 
+If you are shipping a seperate repository, I recommend making the path relative to the directory where you are running your code from
+As that makes no assumptions how the user has built up their talon_user folder.
+Something like this:
+```
+from talon import actions
+import os
+my_file_dir = os.path.dirname(os.path.abspath(__file__))
+icon = my_file_dir + '/image.png'
+actions.user.hud_add_status_icon('my_status_icon', icon)
+```
 
 TODO - ADD ICONS THAT ARE FUNCTIONAL LIKE THE MODE ICON
 
@@ -57,6 +68,7 @@ These are the values that you can give to the hud_publish_content action
 - Title: This is the header title that will be shown in the text panel. This value will also be used to address the text panel. For example, if you set a title 'Command area', the user will be able to say 'Command area hide' to hide the text panel.
 - Show: This is a True or False value. If set to True, this will urge a widget to display and enable itself if it isn't shown yet. If the user has minimized the text panel, it will not be opened. Defaults to True.
 - Buttons: These are extra HudButton added to the context menu when the user right clicks the text panel, or like in the example above, says `command area options`.
+- Tags: Tags to be enabled while this content is visible on the screen. You can use this to add exploratory voice commands embedded in your text.
 
 # Adding right click buttons to a text panel
 

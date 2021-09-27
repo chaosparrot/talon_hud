@@ -1,7 +1,11 @@
-from talon import app, Module, actions
+from talon import app, Module, actions, Context
 import os
 
 mod = Module()
+mod.tag("talon_hud_documentation_overview", desc="Whether or not the documentation overview is on display")
+mod.list("talon_hud_documentation_title", desc="List of titles of added documentation in Talon HUD")
+
+ctx = Context()
 
 class HeadUpDocumentation:
     order = None
@@ -21,6 +25,7 @@ class HeadUpDocumentation:
                 
             if title not in self.order:
                 self.order.append(title)
+                ctx.lists['user.talon_hud_documentation_title'] = self.order
         else:
             app.notify(filename + " could not be found")
 
@@ -39,11 +44,11 @@ class HeadUpDocumentation:
                 documentation += ": " + self.descriptions[order]
             documentation += "\n"
         
-        actions.user.hud_publish_content(documentation, "documentation", "Documentation panel")
+        actions.user.hud_publish_content(documentation, "documentation", "Documentation panel", True, [], ["user.talon_hud_documentation_overview"])
 
 hud_directory = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 hud_documentation = HeadUpDocumentation()
-hud_documentation.add_file("Widget documentation", "shows the general HUD commands",
+hud_documentation.add_file("Widget settings", "shows the general Talon HUD commands related to widgets",
     str(hud_directory) + "/docs/hud_widget_documentation.txt")
 
 @mod.action_class
