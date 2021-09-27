@@ -3,6 +3,10 @@ from user.talon_hud.content.typing import HudWalkThrough, HudWalkThroughStep
 from user.talon_hud.utils import retrieve_available_voice_commands
 import os
 
+semantic_directory = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+walkthrough_file_location = semantic_directory + "/preferences/walkthrough.csv"
+initial_walkthrough_title = "Head up display"
+
 mod = Module()
 mod.tag("talon_hud_walkthrough", desc="Whether or not the walk through widget is on display")
 ctx = Context()
@@ -10,16 +14,61 @@ ctx = Context()
 class HeadUpWalkthroughState:
 
     scope_job = None
-
     walkthroughs = None
+    walkthrough_steps = None    
     current_walkthrough = None
     current_stepnumber = -1
     
+    
     def __init__(self):
         self.walkthroughs = {}
+        self.walkthrough_steps = {}
         self.order = []
     
+    def load_state(self):
+        if not os.path.exists(walkthrough_file_location):
+            self.persist_walkthrough_steps(self.walkthrough_steps)
+
+        fh = open(walkthrough_file_location, "r")
+        lines = fh.readlines()
+        fh.close()
+        
+        walkthrough_steps = {}
+        for index,line in enumerate(lines):
+            split_line = line.strip('\n').split(',')
+            key = split_line[0]
+            value = split_line[1]
+            walkthrough_steps[key] = int(value)
+        self.walkthrough_steps = walkthrough_steps
+        
+        # For the initial loading, start the walkthrough if it hasn't been completed fully yet
+        if initial_walkthrough_title not in self.walkthrough_steps or \
+            self.walkthrough_steps[initial_walkthrough_title] < len(self.walkthroughs[initial_walkthrough_title].steps):
+            cron.after('1s', self.start_up_hud)
+
+    def persist_walkthrough_steps(self, steps):
+        handle = open(walkthrough_file_location, "w")    
+    
+        walkthrough_items = []
+        for key in steps.keys():
+            walkthrough_items.append(str(key) + "," + str(steps[key]))
+        
+        if len(walkthrough_items) > 0:
+            handle.write("\n".join(walkthrough_items))
+        
+        handle.close()
+        
+    def start_up_hud(self):
+        """Start up the HUD - Used for the initial walkthrough"""
+        actions.user.enable_hud()
+        cron.after('2s', self.start_initial_walkthrough)
+        
+    def start_initial_walkthrough(self):
+        """Start the initial walkthrough"""    
+        self.start_walkthrough(initial_walkthrough_title)
+    
     def show_options(self):
+        """Show all the available walkthroughs"""
         if len(self.walkthroughs) > 0:
             # TODO ADD CHOICE LIST OF WALK THROUGHS
             pass
@@ -38,14 +87,28 @@ class HeadUpWalkthroughState:
             self.scope_job = cron.interval('1500ms', self.check_context)
             ctx.tags = ["user.talon_hud_walkthrough"]
             self.current_walkthrough = self.walkthroughs[walkthrough_title]
-            actions.user.enable_hud_id("walk_through")            
+            actions.user.enable_hud_id("walk_through")
+            if walkthrough_title in self.walkthrough_steps:
+            
+                # If we have started a walkthrough but haven't finished it - continue where we left off
+                if self.walkthrough_steps[walkthrough_title] < len(self.current_walkthrough.steps):
+                    self.current_stepnumber = self.walkthrough_steps[walkthrough_title] - 1                    
+                # Otherwise, just start over
+                else:
+                    self.current_stepnumber = -1
             self.next_step()
 
     def next_step(self):
         """Navigate to the next step in the walkthrough"""
         if self.current_walkthrough is not None:
+
+            # Update the walkthrough CSV state
+            self.walkthrough_steps[self.current_walkthrough.title] = self.current_stepnumber + 1                        
+            self.persist_walkthrough_steps(self.walkthrough_steps)
+            
             if self.current_stepnumber + 1 < len(self.current_walkthrough.steps):
                 self.transition_to_step(self.current_stepnumber + 1)
+                self.walkthrough_steps[self.current_walkthrough.title] = self.current_stepnumber
             else:
                 self.end_walkthrough()
         
@@ -56,22 +119,31 @@ class HeadUpWalkthroughState:
         
     def end_walkthrough(self, hide: bool = True):
         """End the current walkthrough"""
+        
+        # Persist the walkthrough as done
+        if hide:
+            self.walkthrough_steps[self.current_walkthrough.title] = len(self.current_walkthrough.steps)
+            self.persist_walkthrough_steps(self.walkthrough_steps)
+            actions.user.hud_publish_content("No walk through started", "walk_through")
+            actions.user.disable_hud_id("walk_through")
+            actions.user.hud_add_log("event", "Finished the \"" + self.current_walkthrough.title + "\" walkthrough!")
+
         cron.cancel(self.scope_job)
         self.scope_job = None
         speech_system.unregister("post:phrase", self.check_step)
         self.current_walkthrough = None
         self.current_stepnumber = -1
         ctx.tags = []
-        if hide:
-            actions.user.hud_publish_content("No walk through started", "walk_through")
-            actions.user.disable_hud_id("walk_through")
     
     def check_context(self):
+        in_right_context = True
         if self.current_walkthrough is not None:
             if self.current_stepnumber in self.current_walkthrough.steps:
                 step = self.current_walkthrough.steps[self.current_stepnumber]
                 # Check if we are in the right context here
-        print( "YEET" )
+                
+            if not in_right_context:
+                actions.user.hud_publish_content(step.context_explanation, "walk_through")            
     
     def check_step(self, phrase):
         if self.current_walkthrough is not None:
@@ -82,25 +154,18 @@ class HeadUpWalkthroughState:
     
 hud_walkthrough = HeadUpWalkthroughState()
 
-def add_walkthrough():
+def load_walkthrough():
     steps = []
-    steps.append( actions.user.hud_create_walkthrough_step("Welcome to Talon HUD!\nThis is a short walk through of the content available.\nSay <cmd@skip step/> to move to the next step."))
+    steps.append( actions.user.hud_create_walkthrough_step("Welcome to Talon HUD!\nThis is a short walkthrough of the content available.\nSay <cmd@skip step/> to move to the next step."))
     steps.append( actions.user.hud_create_walkthrough_step("Enter the next step by saying <cmd@yeet/>"))
     walkthrough = actions.user.hud_create_walkthrough("Head up display", steps)
-    hud_walkthrough.start_walkthrough('Head up display')    
+    
+    hud_walkthrough.load_state()
 
-app.register('ready', add_walkthrough)
-
+app.register('ready', load_walkthrough)
 
 @mod.action_class
 class Actions:
-    content: str = ''
-    documentation_content: str = ''
-    context_explanation: str = ''
-    tags: list[str] = None
-    modes: list[str] = None
-    voice_commands: list[str] = None
-    app_title: str = ''
 
     def hud_create_walkthrough_step(content: str, documentation_content: str = '', context_explanation: str = '', tags: list[str] = None, modes: list[str] = None, app_title: str = ''):
         """Create a step for a walk through"""

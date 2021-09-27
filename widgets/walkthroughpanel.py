@@ -21,7 +21,7 @@ def minimize_toggle_widget(widget):
     widget.canvas.resume()
 
 class HeadUpWalkThroughPanel(LayoutWidget):
-    preferences = HeadUpDisplayUserWidgetPreferences(type="walk_through", x=910, y=1000, width=100, height=20, limit_x=480, limit_y=700, limit_width=960, limit_height=124, enabled=True, alignment="center", expand_direction="up", font_size=24)
+    preferences = HeadUpDisplayUserWidgetPreferences(type="walk_through", x=910, y=1000, width=100, height=20, limit_x=480, limit_y=700, limit_width=960, limit_height=124, enabled=False, sleep_enabled=True, alignment="center", expand_direction="up", font_size=24)
     mouse_enabled = True
 
     # Top, right, bottom, left, same order as CSS padding
@@ -48,7 +48,7 @@ class HeadUpWalkThroughPanel(LayoutWidget):
     content = {
         'mode': 'command',
     }
-    panel_content = HudPanelContent('walk_through', 'Walkthrough', ['<*This is a test to see how looks!/>'], [], 0, False)
+    panel_content = HudPanelContent('walk_through', '', [''], [], 0, False)
     animation_max_duration = 30
 
     def update_panel(self, panel_content) -> bool:
@@ -200,6 +200,11 @@ class HeadUpWalkThroughPanel(LayoutWidget):
         return layout_pages
     
     def draw_content(self, canvas, paint, dimensions) -> bool:
+        # Disable if there is no content
+        if len(self.panel_content.content[0]) == 0:
+            self.disable(True)
+            return False
+
         paint.textsize = self.font_size
         
         paint.style = paint.Style.FILL
@@ -215,7 +220,7 @@ class HeadUpWalkThroughPanel(LayoutWidget):
         return False
 
     def draw_animation(self, canvas, animation_tick):
-        if self.enabled:
+        if self.enabled and len(self.panel_content.content[0]) > 0:
             paint = canvas.paint
             if self.mark_layout_invalid and animation_tick == self.animation_max_duration - 1:
                 self.layout = self.layout_content(canvas, paint)
