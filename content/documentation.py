@@ -14,7 +14,7 @@ class HeadUpDocumentation:
     
     def __init__(self):
         self.files = {}
-        self.descriptions = {}        
+        self.descriptions = {}
         self.order = []
     
     def add_file(self, title: str, description: str, filename: str):

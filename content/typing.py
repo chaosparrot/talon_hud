@@ -53,3 +53,18 @@ class HudPanelContent:
     show: bool
     choices: HudChoices = None
     tags: list[str] = None
+
+@dataclass
+class HudWalkThroughStep:
+    content: str = ''
+    documentation_content: str = ''
+    context_explanation: str = ''
+    tags: list[str] = None
+    modes: list[str] = None
+    app_title: str = ''
+    voice_commands: list[str] = None
+
+@dataclass    
+class HudWalkThrough:
+    title: str
+    steps: list[HudWalkThroughStep]

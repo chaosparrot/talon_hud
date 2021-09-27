@@ -14,12 +14,46 @@ rich_text_delims_dict = {
     '<!!': 'error', # COLOUR
     '<!': 'warning', # COLOUR
     '<@': 'notice', # COLOUR
+    
+    # Semantic information
+    '<cmd@': 'command_available', # Voice command available
+    '<cmd.': 'command_done', # Voice command done
 }
 rich_text_delims = rich_text_delims_dict.keys()
-rich_text_delims_regex = r'(/>|<\*|</|<\+|<\!\!|<\!|<@)'
+rich_text_delims_regex = r'(/>|<\*|</|<\+|<\!\!|<\!|<@|<cmd@|<cmd.)'
 
 def remove_tokens_from_rich_text(text:str):
     return re.sub(rich_text_delims_regex, '', text)
+    
+def retrieve_available_voice_commands(text: str):
+    voice_commands = []
+    tokened_text = re.split( rich_text_delims_regex, text)
+    tokened_text = [x for x in tokened_text if x != ""]
+    words_to_use = []
+    
+    styles = []
+    for token in tokened_text:
+        if token in rich_text_delims:
+            if token == '/>':
+                if len(styles) > 0:
+                    in_voice_command = "command_available" in styles
+                    styles.pop()
+                    if in_voice_command and "command_available" not in styles and len(words_to_use) > 0:
+                        voice_commands.append(string_to_speakable_string(" ".join(words_to_use)))
+                        words_to_use = []                        
+            else:
+                if rich_text_delims_dict[token] == "command_available" and \
+                    "command_available" not in styles:
+                    words_to_use = []
+                styles.append(rich_text_delims_dict[token])
+        else:
+            words_to_use += token.split()
+        
+    # Edge case - Clean up remaining commands        
+    if "command_available" in styles:
+        voice_commands.append(string_to_speakable_string(" ".join(words_to_use)))
+    
+    return voice_commands
 
 def layout_rich_text(paint:skia.Paint, text:str, width:int = 1920, height:int = 1080) -> list[HudRichTextLine]:
     """Layout a string of text inside the given dimensions"""    
