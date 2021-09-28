@@ -1,4 +1,4 @@
-from talon import app, Module, actions, Context, registry, speech_system, cron
+from talon import app, Module, actions, Context, speech_system, cron, scope
 from user.talon_hud.content.typing import HudWalkThrough, HudWalkThroughStep
 from user.talon_hud.utils import retrieve_available_voice_commands
 import os
@@ -17,7 +17,9 @@ class HeadUpWalkthroughState:
     walkthroughs = None
     walkthrough_steps = None    
     current_walkthrough = None
-    current_stepnumber = -1    
+    current_stepnumber = -1
+    current_words = []
+    in_right_context = True
     
     def __init__(self):
         self.walkthroughs = {}
@@ -93,7 +95,7 @@ class HeadUpWalkthroughState:
         if walkthrough_title in self.walkthroughs:            
             self.end_walkthrough(False)
             speech_system.register("post:phrase", self.check_step)
-            self.scope_job = cron.interval('1500ms', self.check_context)
+            self.scope_job = cron.interval('1500ms', self.display_step_based_on_context)
             ctx.tags = ["user.talon_hud_walkthrough"]
             self.current_walkthrough = self.walkthroughs[walkthrough_title]
             actions.user.enable_hud_id("walk_through")
@@ -114,6 +116,7 @@ class HeadUpWalkthroughState:
             # Update the walkthrough CSV state
             self.walkthrough_steps[self.current_walkthrough.title] = self.current_stepnumber + 1                        
             self.persist_walkthrough_steps(self.walkthrough_steps)
+            self.current_words = []
             
             if self.current_stepnumber + 1 < len(self.current_walkthrough.steps):
                 self.transition_to_step(self.current_stepnumber + 1)
@@ -124,7 +127,7 @@ class HeadUpWalkthroughState:
     def transition_to_step(self, stepnumber):
         """Transition to the next step"""
         self.current_stepnumber = stepnumber
-        actions.user.hud_publish_content(self.current_walkthrough.steps[stepnumber].content, "walk_through")        
+        self.display_step_based_on_context(True)
         
     def end_walkthrough(self, hide: bool = True):
         """End the current walkthrough"""
@@ -143,30 +146,58 @@ class HeadUpWalkthroughState:
         self.current_walkthrough = None
         self.current_stepnumber = -1
         ctx.tags = []
+        self.in_right_context = False
     
-    def check_context(self):
+    def is_in_right_context(self):
+        """Check if we are in the right context for the step"""    
         in_right_context = True
         if self.current_walkthrough is not None:
-            if self.current_stepnumber in self.current_walkthrough.steps:
+            if self.current_stepnumber < len(self.current_walkthrough.steps):
                 step = self.current_walkthrough.steps[self.current_stepnumber]
-                # Check if we are in the right context here
-                
+                tags = scope.get('tag')
+                modes = scope.get('mode')
+                app_name = scope.get('app')['name']                
+                in_correct_tags = set(step.tags) <= tags
+                in_correct_modes = set(step.modes) <= modes
+                in_correct_app = True                
+                in_correct_app = step.app == "" or step.app in app_name
+                in_right_context = in_correct_tags and in_correct_modes and in_correct_app
+        return in_right_context                
+    
+    def display_step_based_on_context(self, force_publish = False):
+        """Display the correct step information based on the context matching"""
+        in_right_context = self.is_in_right_context()
+        if self.in_right_context != in_right_context or force_publish:
+            step = self.current_walkthrough.steps[self.current_stepnumber]        
             if not in_right_context:
                 actions.user.hud_publish_content(step.context_explanation, "walk_through")            
+            else:
+                actions.user.hud_publish_content(step.content, "walk_through")
+            self.in_right_context = in_right_context
     
     def check_step(self, phrase):
-        if self.current_walkthrough is not None:
-            if self.current_stepnumber in self.current_walkthrough.steps:
+        """Check if contents in the phrase match the voice commands available in the step"""
+        if self.current_walkthrough is not None and self.is_in_right_context():
+            phrase_to_check = " ".join(phrase['phrase']).lower()
+            if self.current_stepnumber < len(self.current_walkthrough.steps):
                 step = self.current_walkthrough.steps[self.current_stepnumber]
                 
-        print(" ".join(phrase['phrase']).lower())
+                current_length = len(self.current_words)
+                for voice_command in step.voice_commands:
+                    if voice_command in phrase_to_check and voice_command not in self.current_words:
+                        self.current_words.append(voice_command)
+                
+                # Send an update about the voice commands said during the step if it has changed
+                if current_length != len(self.current_words):
+                    actions.user.hud_set_walkthrough_voice_commands(self.current_words)                
+                
     
 hud_walkthrough = HeadUpWalkthroughState()
 
 def load_walkthrough():
     steps = []
-    steps.append( actions.user.hud_create_walkthrough_step("Welcome to Talon HUD!\nThis is a short walkthrough of the content available.\nSay <cmd@skip step/> to move to the next step."))
-    steps.append( actions.user.hud_create_walkthrough_step("Enter the next step by saying <cmd@yeet/>"))
+    steps.append( actions.user.hud_create_walkthrough_step("Welcome to Talon HUD!\nThis is a short walkthrough of the content available.\nSay <*skip step/> to move to the next step."))
+    steps.append( actions.user.hud_create_walkthrough_step("Enter the next step by saying <cmd@test log/>", '', 'Please navigate to Notepad++ :)', [], [], 'Notepad++'))
     walkthrough = actions.user.hud_create_walkthrough("Head up display", steps)
     
     hud_walkthrough.load_state()
@@ -176,10 +207,12 @@ app.register('ready', load_walkthrough)
 @mod.action_class
 class Actions:
 
-    def hud_create_walkthrough_step(content: str, documentation_content: str = '', context_explanation: str = '', tags: list[str] = None, modes: list[str] = None, app_title: str = ''):
+    def hud_create_walkthrough_step(content: str, documentation_content: str = '', context_explanation: str = '', tags: list[str] = None, modes: list[str] = None, app: str = ''):
         """Create a step for a walk through"""
         voice_commands = retrieve_available_voice_commands(content)
-        return HudWalkThroughStep(content, documentation_content, context_explanation, tags, modes, app_title, voice_commands)
+        tags = [] if tags is None else tags
+        modes = [] if modes is None else modes
+        return HudWalkThroughStep(content, documentation_content, context_explanation, tags, modes, app, voice_commands)
 
     def hud_create_walkthrough(title: str, steps: list[HudWalkThroughStep]):
         """Create a walk through with all the required steps"""

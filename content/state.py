@@ -26,6 +26,7 @@ class HeadUpDisplayContent(Dispatch):
         "status_icons": [],
         "log": [],
         "abilities": [],
+        "walkthrough_voice_commands": [],
         "topics": {
             'debug': HudPanelContent('debug', '', 'Debug panel', [], 0, False),
         }
@@ -110,6 +111,11 @@ class Actions:
             "explanation": "",
             "clickable": False
         })
+
+    def hud_set_walkthrough_voice_commands(commands: list[str]):
+        """Set the voice commands uttered by the user during the walkthrough step"""
+        global hud_content
+        hud_content.update({"walkthrough_said_voice_commands": commands})
 
     def hud_remove_status_icon(id: str):
         """Remove an icon to the status bar"""

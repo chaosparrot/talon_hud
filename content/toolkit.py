@@ -13,7 +13,7 @@ def pick_toolkit_option(data):
         return False
     elif data["text"] == "Walkthroughs":
         actions.user.hud_show_walkthroughs()
-        return False
+        return True
 
 mod = Module()
 

@@ -61,7 +61,7 @@ class HudWalkThroughStep:
     context_explanation: str = ''
     tags: list[str] = None
     modes: list[str] = None
-    app_title: str = ''
+    app: str = ''
     voice_commands: list[str] = None
 
 @dataclass    

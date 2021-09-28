@@ -1,7 +1,7 @@
 from talon import skia, ui, Module, cron, actions, clip
 from user.talon_hud.layout_widget import LayoutWidget
 from user.talon_hud.widget_preferences import HeadUpDisplayUserWidgetPreferences
-from user.talon_hud.utils import layout_rich_text, remove_tokens_from_rich_text, linear_gradient, hit_test_icon
+from user.talon_hud.utils import layout_rich_text, remove_tokens_from_rich_text, linear_gradient, retrieve_available_voice_commands
 from user.talon_hud.content.typing import HudRichTextLine, HudPanelContent, HudButton, HudIcon
 from talon.types.point import Point2d
 
@@ -14,6 +14,8 @@ class HeadUpWalkThroughPanel(LayoutWidget):
     # Top, right, bottom, left, same order as CSS padding
     padding = [10, 20, 10, 8]
     line_padding = 6
+
+    animation_max_duration = 30    
     
     # Options given to the context menu
     buttons = [
@@ -21,12 +23,25 @@ class HeadUpWalkThroughPanel(LayoutWidget):
         HudButton("check_icon", "Mark as done", ui.Rect(0,0,0,0), lambda widget: actions.user.hud_skip_walkthrough_all())
     ]
 
-    subscribed_content = ["mode"]
+    subscribed_content = ["mode", "walkthrough_said_voice_commands"]
     content = {
         'mode': 'command',
+        'walkthrough_said_voice_commands': []
     }
     panel_content = HudPanelContent('walk_through', '', [''], [], 0, False)
-    animation_max_duration = 30
+    voice_commands_available = []
+
+    def refresh(self, new_content):
+        super().refresh(new_content)
+
+        # Navigate to the next step if all our voice commands have been exhausted
+        if len(self.voice_commands_available) > 0 and "walkthrough_said_voice_commands" in new_content and \
+            len(self.voice_commands_available) == len(new_content["walkthrough_said_voice_commands"]):
+            
+            if self.show_animations:
+               cron.after('1s', actions.user.hud_skip_walkthrough_step)
+            else:
+               actions.user.hud_skip_walkthrough_step()
 
     def update_panel(self, panel_content) -> bool:
         return super().update_panel(panel_content)
@@ -57,14 +72,14 @@ class HeadUpWalkThroughPanel(LayoutWidget):
         
         horizontal_alignment = "right" if self.limit_x < self.x else "left"
         vertical_alignment = "bottom" if self.limit_y < self.y else "top"
-        
         if self.alignment == "center" or \
             ( self.x + self.width < self.limit_x + self.limit_width and self.limit_x < self.x ):
             horizontal_alignment = "center"
     
         layout_width = max(self.width - self.padding[1] * 2 - self.padding[3] * 2, 
             self.limit_width - self.padding[1] * 2 - self.padding[3] * 2)
-    
+
+        self.voice_commands_available = retrieve_available_voice_commands(self.panel_content.content[0])
         content_text = [] if self.minimized else layout_rich_text(paint, self.panel_content.content[0], layout_width, self.limit_height)
         layout_pages = []
         
