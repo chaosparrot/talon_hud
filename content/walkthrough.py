@@ -136,6 +136,7 @@ class HeadUpWalkthroughState:
         if hide:
             self.walkthrough_steps[self.current_walkthrough.title] = len(self.current_walkthrough.steps)
             self.persist_walkthrough_steps(self.walkthrough_steps)
+            actions.user.hud_set_walkthrough_voice_commands([])
             actions.user.hud_publish_content("No walk through started", "walk_through")
             actions.user.disable_hud_id("walk_through")
             actions.user.hud_add_log("event", "Finished the \"" + self.current_walkthrough.title + "\" walkthrough!")
@@ -162,7 +163,7 @@ class HeadUpWalkthroughState:
                 in_correct_app = True                
                 in_correct_app = step.app == "" or step.app in app_name
                 in_right_context = in_correct_tags and in_correct_modes and in_correct_app
-        return in_right_context                
+        return in_right_context
     
     def display_step_based_on_context(self, force_publish = False):
         """Display the correct step information based on the context matching"""
@@ -197,7 +198,10 @@ hud_walkthrough = HeadUpWalkthroughState()
 def load_walkthrough():
     steps = []
     steps.append( actions.user.hud_create_walkthrough_step("Welcome to Talon HUD!\nThis is a short walkthrough of the content available.\nSay <*skip step/> to move to the next step."))
-    steps.append( actions.user.hud_create_walkthrough_step("Enter the next step by saying <cmd@test log/>", '', 'Please navigate to Notepad++ :)', [], [], 'Notepad++'))
+    steps.append( actions.user.hud_create_walkthrough_step("Talon HUD has a bunch of content hidden behind a central hub called Toolkit.\nTo see what is inside, say <cmd@toolkit options/>", '', 
+    'Please enable the command mode by clicking on the statusbar icon', [], ['command']))
+    steps.append( actions.user.hud_create_walkthrough_step("Toolkit has an overview of the content available, like documentation, walkthroughs and some debugging helpers. \nFor instance, if you say <cmd@talon scope/> it will open up a text panel containing the current scope!", '', 
+    'Please enable the command mode by clicking on the statusbar icon', [], ['command']))    
     walkthrough = actions.user.hud_create_walkthrough("Head up display", steps)
     
     hud_walkthrough.load_state()

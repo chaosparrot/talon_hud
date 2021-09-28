@@ -4,6 +4,7 @@ from user.talon_hud.widget_preferences import HeadUpDisplayUserWidgetPreferences
 from user.talon_hud.utils import layout_rich_text, remove_tokens_from_rich_text, linear_gradient, retrieve_available_voice_commands
 from user.talon_hud.content.typing import HudRichTextLine, HudPanelContent, HudButton, HudIcon
 from talon.types.point import Point2d
+from talon.skia import Paint
 
 icon_radius = 10
 
@@ -15,7 +16,16 @@ class HeadUpWalkThroughPanel(LayoutWidget):
     padding = [10, 20, 10, 8]
     line_padding = 6
 
-    animation_max_duration = 30    
+    # Animation frame related variables
+    animation_max_duration = 30
+    max_transition_animation_state = 30
+    max_animated_word_state = 10
+    transition_animation_state = 0
+    animated_word_state = 0
+    animated_word = ""
+
+    # Previous dimensions to transition from
+    previous_content_dimensions = None    
     
     # Options given to the context menu
     buttons = [
@@ -30,6 +40,11 @@ class HeadUpWalkThroughPanel(LayoutWidget):
     }
     panel_content = HudPanelContent('walk_through', '', [''], [], 0, False)
     voice_commands_available = []
+    
+    def disable(self, persisted=False):
+       self.previous_content_dimensions = None
+       self.transition_animation_state = 0
+       super().disable(persisted)
 
     def refresh(self, new_content):
         super().refresh(new_content)
@@ -38,12 +53,15 @@ class HeadUpWalkThroughPanel(LayoutWidget):
         if len(self.voice_commands_available) > 0 and "walkthrough_said_voice_commands" in new_content and \
             len(self.voice_commands_available) == len(new_content["walkthrough_said_voice_commands"]):
             
-            if self.show_animations:
-               cron.after('1s', actions.user.hud_skip_walkthrough_step)
-            else:
-               actions.user.hud_skip_walkthrough_step()
+            cron.after('1500ms', actions.user.hud_skip_walkthrough_step)
 
-    def update_panel(self, panel_content) -> bool:
+    def update_panel(self, panel_content) -> bool:    
+        # Animate the transition
+        if self.show_animations:
+            should_animate = self.previous_content_dimensions is not None and self.enabled == True
+            self.previous_content_dimensions = self.layout[self.page_index]['rect'] if self.page_index < len(self.layout) else None
+            self.transition_animation_state = self.max_transition_animation_state if should_animate else 0
+
         return super().update_panel(panel_content)
     
     def on_mouse(self, event):
@@ -166,12 +184,32 @@ class HeadUpWalkThroughPanel(LayoutWidget):
         # Draw the background first
         background_colour = self.theme.get_colour('text_box_background', 'F5F5F5')
         paint.color = background_colour
-        self.draw_background(canvas, paint, dimensions["rect"])
         
-        paint.color = self.theme.get_colour('text_colour')
-        self.draw_content_text(canvas, paint, dimensions)
+        # Animate the transition if an animation state has been set
+        self.transition_animation_state = max(0, self.transition_animation_state - 1)
+        if self.transition_animation_state > 0:
+            growth = (self.max_transition_animation_state - self.transition_animation_state ) / self.max_transition_animation_state
+            easeInOutQuint = 16 * growth ** 5 if growth < 0.5 else 1 - pow(-2 * growth + 2, 5) / 2
+                        
+            difference = ui.Rect((dimensions["rect"].x - self.previous_content_dimensions.x ) * easeInOutQuint,
+                ( dimensions["rect"].y - self.previous_content_dimensions.y ) * easeInOutQuint,
+                ( dimensions["rect"].width - self.previous_content_dimensions.width ) * easeInOutQuint,
+                ( dimensions["rect"].height - self.previous_content_dimensions.height ) * easeInOutQuint)
+                
+            background_rect = ui.Rect(self.previous_content_dimensions.x + difference.x, 
+                self.previous_content_dimensions.y + difference.y, 
+                self.previous_content_dimensions.width + difference.width, 
+                self.previous_content_dimensions.height + difference.height)
         
-        return False
+            self.draw_background(canvas, paint, background_rect)
+        else:
+            self.draw_background(canvas, paint, dimensions["rect"])
+        
+            paint.color = self.theme.get_colour('text_colour')
+            self.draw_voice_command_backgrounds(canvas, paint, dimensions)
+            self.draw_content_text(canvas, paint, dimensions)
+        
+        return self.transition_animation_state > 0
 
     def draw_animation(self, canvas, animation_tick):
         if self.enabled and len(self.panel_content.content[0]) > 0:
@@ -192,7 +230,6 @@ class HeadUpWalkThroughPanel(LayoutWidget):
             green_hex = '0' + format(green, 'x') if green <= 15 else format(green, 'x')
             blue_hex = '0' + format(blue, 'x') if blue <= 15 else format(blue, 'x')
             paint.color = red_hex + green_hex + blue_hex
-            
             
             horizontal_alignment = "right" if self.limit_x < self.x else "left"
             if self.alignment == "center" or \
@@ -238,3 +275,39 @@ class HeadUpWalkThroughPanel(LayoutWidget):
         radius = 10
         rrect = skia.RoundRect.from_rect(rect, x=radius, y=radius)
         canvas.draw_rrect(rrect)
+        
+    def draw_voice_command_backgrounds(self, canvas, paint, dimensions):
+        text_colour = paint.color    
+        rich_text = dimensions["content_text"]
+        content_height = dimensions["content_height"]
+        line_count = dimensions["line_count"]
+        dimensions = dimensions["rect"]
+        x = dimensions.x + self.padding[3]
+        y = dimensions.y + self.padding[0] + self.padding[2]
+        
+        line_height = ( content_height - self.padding[0] - self.padding[2] ) / line_count    
+    
+        current_line = -1
+        for index, text in enumerate(rich_text):
+            current_line = current_line + 1 if text.x == 0 else current_line        
+            if "command_available" in text.styles:
+                command_padding = 5
+                # TODO PROPER BACKGROUND FOR MULTIPLE TAGS ETC.
+                rect = ui.Rect(x + text.x - command_padding, y + text.y + line_height + current_line * line_height - command_padding, 
+                    text.width + command_padding * 4, text.height + command_padding * 2)
+                paint.color = "6cc653" if text.text.lower() in self.content['walkthrough_said_voice_commands'] else "535353"
+                paint.style = Paint.Style.FILL
+                canvas.draw_rrect(skia.RoundRect.from_rect(rect, x=5, y=5))
+                
+                paint.color = "535353"
+                paint.style = Paint.Style.STROKE                
+                rect.x -= 3
+                rect.y -= 3
+                rect.height += 6
+                rect.width += 6
+                canvas.draw_rrect(skia.RoundRect.from_rect(rect, x=5, y=5))
+                
+                paint.style = Paint.Style.FILL
+                paint.color = text_colour if text.text.lower() in self.content['walkthrough_said_voice_commands'] else "DDDDDD"                
+                paint.font.embolden = False
+        paint.color = text_colour

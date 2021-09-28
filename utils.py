@@ -17,10 +17,9 @@ rich_text_delims_dict = {
     
     # Semantic information
     '<cmd@': 'command_available', # Voice command available
-    '<cmd.': 'command_done', # Voice command done
 }
 rich_text_delims = rich_text_delims_dict.keys()
-rich_text_delims_regex = r'(/>|<\*|</|<\+|<\!\!|<\!|<@|<cmd@|<cmd.)'
+rich_text_delims_regex = r'(/>|<\*|</|<\+|<\!\!|<\!|<@|<cmd@)'
 
 def remove_tokens_from_rich_text(text:str):
     return re.sub(rich_text_delims_regex, '', text)
