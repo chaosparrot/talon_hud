@@ -277,9 +277,9 @@ class HeadUpWalkThroughPanel(LayoutWidget):
         dimensions = dimensions["rect"]
        
         text_x = dimensions.x + self.padding[3]
-        text_y = dimensions.y + self.padding[0] + self.padding[2]
+        text_y = dimensions.y
         
-        line_height = ( content_height - self.padding[0] - self.padding[2] ) / line_count
+        line_height = self.font_size + self.line_padding
         self.draw_rich_text(canvas, paint, rich_text, text_x, text_y, line_height)
 
     def draw_background(self, canvas, paint, rect):
@@ -294,21 +294,25 @@ class HeadUpWalkThroughPanel(LayoutWidget):
         line_count = dimensions["line_count"]
         dimensions = dimensions["rect"]
         x = dimensions.x + self.padding[3]
-        y = dimensions.y + self.padding[0] + self.padding[2]
+        y = dimensions.y + self.padding[0]
         
-        line_height = ( content_height - self.padding[0] - self.padding[2] ) / line_count    
+        line_height = paint.textsize + self.line_padding    
     
         non_spoken_background_colour = self.theme.get_colour('voice_command_background_colour', '535353')
         spoken_background_colour = self.theme.get_colour('spoken_voice_command_background_colour', '6CC653')
     
         current_line = -1
         for index, text in enumerate(rich_text):
-            current_line = current_line + 1 if text.x == 0 else current_line        
+            current_line = current_line + 1 if text.x == 0 else current_line
+            
+            if text.x == 0 and index != 0:
+                y += line_height
+            
             if "command_available" in text.styles:
                 command_padding = 5
                 
                 # TODO PROPER BACKGROUND FOR MULTIPLE TAGS ETC.
-                rect = ui.Rect(x + text.x - command_padding, y + text.y + line_height + current_line * line_height - command_padding, 
+                rect = ui.Rect(x + text.x - command_padding, y - command_padding, 
                     text.width + command_padding * 4, text.height + command_padding * 2)
                 
                 if animation_state > 0 and text.text in self.animated_words:

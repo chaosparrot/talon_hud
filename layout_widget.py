@@ -121,6 +121,7 @@ class LayoutWidget(BaseWidget):
         warning_colour = self.theme.get_colour('warning_colour', 'F75B00')
         success_colour = self.theme.get_colour('success_colour', '00CC00')
         info_colour = self.theme.get_colour('info_colour', '30AD9E')
+        y += line_height
     
         current_line = -1
         for index, text in enumerate(rich_text):
@@ -140,5 +141,7 @@ class LayoutWidget(BaseWidget):
             if single_line and current_line > 0:
                 return
             
-            text_y = y + line_height + current_line * line_height
-            canvas.draw_text(text.text, x + text.x, text_y )
+            if text.x == 0 and index != 0:
+                y += line_height
+            
+            canvas.draw_text(text.text, x + text.x, y )
