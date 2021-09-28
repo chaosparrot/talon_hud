@@ -190,7 +190,7 @@ class HeadUpWalkthroughState:
                 
                 # Send an update about the voice commands said during the step if it has changed
                 if current_length != len(self.current_words):
-                    actions.user.hud_set_walkthrough_voice_commands(self.current_words)                
+                    actions.user.hud_set_walkthrough_voice_commands(self.current_words)
                 
     
 hud_walkthrough = HeadUpWalkthroughState()

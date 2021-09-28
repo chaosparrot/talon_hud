@@ -1,7 +1,7 @@
 from talon import skia, ui, Module, cron, actions, clip
 from user.talon_hud.layout_widget import LayoutWidget
 from user.talon_hud.widget_preferences import HeadUpDisplayUserWidgetPreferences
-from user.talon_hud.utils import layout_rich_text, remove_tokens_from_rich_text, linear_gradient, retrieve_available_voice_commands
+from user.talon_hud.utils import layout_rich_text, remove_tokens_from_rich_text, linear_gradient, retrieve_available_voice_commands, hex_to_ints
 from user.talon_hud.content.typing import HudRichTextLine, HudPanelContent, HudButton, HudIcon
 from talon.types.point import Point2d
 from talon.skia import Paint
@@ -19,10 +19,10 @@ class HeadUpWalkThroughPanel(LayoutWidget):
     # Animation frame related variables
     animation_max_duration = 30
     max_transition_animation_state = 30
-    max_animated_word_state = 10
+    max_animated_word_state = 20
     transition_animation_state = 0
     animated_word_state = 0
-    animated_word = ""
+    animated_words = []
 
     # Previous dimensions to transition from
     previous_content_dimensions = None    
@@ -47,13 +47,22 @@ class HeadUpWalkThroughPanel(LayoutWidget):
        super().disable(persisted)
 
     def refresh(self, new_content):
-        super().refresh(new_content)
+        # Animate the new words
+        if "walkthrough_said_voice_commands" in new_content:
+            if self.show_animations and len(new_content["walkthrough_said_voice_commands"]) > 0 and \
+                new_content["walkthrough_said_voice_commands"] != self.content["walkthrough_said_voice_commands"]:
+                self.animated_words = list(set(new_content["walkthrough_said_voice_commands"]) - set(self.content["walkthrough_said_voice_commands"]))
+                self.animated_word_state = self.max_animated_word_state
+            elif len(new_content["walkthrough_said_voice_commands"]) == 0:
+                self.animated_words = []
+                self.animated_word_state = 0
 
         # Navigate to the next step if all our voice commands have been exhausted
         if len(self.voice_commands_available) > 0 and "walkthrough_said_voice_commands" in new_content and \
             len(self.voice_commands_available) == len(new_content["walkthrough_said_voice_commands"]):
-            
             cron.after('1500ms', actions.user.hud_skip_walkthrough_step)
+
+        super().refresh(new_content)
 
     def update_panel(self, panel_content) -> bool:    
         # Animate the transition
@@ -61,6 +70,7 @@ class HeadUpWalkThroughPanel(LayoutWidget):
             should_animate = self.previous_content_dimensions is not None and self.enabled == True
             self.previous_content_dimensions = self.layout[self.page_index]['rect'] if self.page_index < len(self.layout) else None
             self.transition_animation_state = self.max_transition_animation_state if should_animate else 0
+            self.animated_words = []
 
         return super().update_panel(panel_content)
     
@@ -203,13 +213,14 @@ class HeadUpWalkThroughPanel(LayoutWidget):
         
             self.draw_background(canvas, paint, background_rect)
         else:
+            self.animated_word_state = max(0, self.animated_word_state - 1)        
             self.draw_background(canvas, paint, dimensions["rect"])
         
             paint.color = self.theme.get_colour('text_colour')
-            self.draw_voice_command_backgrounds(canvas, paint, dimensions)
+            self.draw_voice_command_backgrounds(canvas, paint, dimensions, self.animated_word_state)
             self.draw_content_text(canvas, paint, dimensions)
         
-        return self.transition_animation_state > 0
+        return self.transition_animation_state > 0 or self.animated_word_state > 0
 
     def draw_animation(self, canvas, animation_tick):
         if self.enabled and len(self.panel_content.content[0]) > 0:
@@ -276,7 +287,7 @@ class HeadUpWalkThroughPanel(LayoutWidget):
         rrect = skia.RoundRect.from_rect(rect, x=radius, y=radius)
         canvas.draw_rrect(rrect)
         
-    def draw_voice_command_backgrounds(self, canvas, paint, dimensions):
+    def draw_voice_command_backgrounds(self, canvas, paint, dimensions, animation_state):
         text_colour = paint.color    
         rich_text = dimensions["content_text"]
         content_height = dimensions["content_height"]
@@ -287,27 +298,55 @@ class HeadUpWalkThroughPanel(LayoutWidget):
         
         line_height = ( content_height - self.padding[0] - self.padding[2] ) / line_count    
     
+        non_spoken_background_colour = self.theme.get_colour('voice_command_background_colour', '535353')
+        spoken_background_colour = self.theme.get_colour('spoken_voice_command_background_colour', '6CC653')
+    
         current_line = -1
         for index, text in enumerate(rich_text):
             current_line = current_line + 1 if text.x == 0 else current_line        
             if "command_available" in text.styles:
                 command_padding = 5
+                
                 # TODO PROPER BACKGROUND FOR MULTIPLE TAGS ETC.
                 rect = ui.Rect(x + text.x - command_padding, y + text.y + line_height + current_line * line_height - command_padding, 
                     text.width + command_padding * 4, text.height + command_padding * 2)
-                paint.color = "6cc653" if text.text.lower() in self.content['walkthrough_said_voice_commands'] else "535353"
-                paint.style = Paint.Style.FILL
-                canvas.draw_rrect(skia.RoundRect.from_rect(rect, x=5, y=5))
                 
-                paint.color = "535353"
-                paint.style = Paint.Style.STROKE                
-                rect.x -= 3
-                rect.y -= 3
-                rect.height += 6
-                rect.width += 6
-                canvas.draw_rrect(skia.RoundRect.from_rect(rect, x=5, y=5))
-                
-                paint.style = Paint.Style.FILL
-                paint.color = text_colour if text.text.lower() in self.content['walkthrough_said_voice_commands'] else "DDDDDD"                
-                paint.font.embolden = False
+                if animation_state > 0 and text.text in self.animated_words:
+                    growth = (self.max_animated_word_state - animation_state ) / self.max_animated_word_state
+                    easeOutQuad = 1 - pow(1 - growth, 4)                    
+                    easeOutQuint = 1 - pow(1 - growth, 5)
+                    
+                    # Draw the colour shifting rectangle
+                    colour_from = hex_to_ints(non_spoken_background_colour)
+                    colour_to = hex_to_ints(spoken_background_colour)
+                    red_value = int(round(colour_from[0] + ( colour_to[0] - colour_from[0] ) * easeOutQuad))
+                    green_value = int(round(colour_from[1] + ( colour_to[1] - colour_from[1] ) * easeOutQuad))
+                    blue_value = int(round(colour_from[2] + ( colour_to[2] - colour_from[2] ) * easeOutQuad))
+                    red_hex = '0' + format(red_value, 'x') if red_value <= 15 else format(red_value, 'x')
+                    green_hex = '0' + format(green_value, 'x') if green_value <= 15 else format(green_value, 'x')
+                    blue_hex = '0' + format(blue_value, 'x') if blue_value <= 15 else format(blue_value, 'x')
+                    colour = red_hex + green_hex + blue_hex
+                    paint.color = colour
+                    paint.style = Paint.Style.FILL
+                    canvas.draw_rrect(skia.RoundRect.from_rect(rect, x=5, y=5))
+                    
+                    # Draw the expanding border
+                    expand = ( self.font_size / 2 ) * easeOutQuint
+                    alpha = int(round( 255 * (1 - easeOutQuint) ))
+                    alpha_hex = '0' + format(alpha, 'x') if alpha <= 15 else format(alpha, 'x')
+                    paint.color = colour + alpha_hex
+                    paint.style = Paint.Style.STROKE                
+                    rect.x -= int(round(expand / 2))
+                    rect.y -= int(round(expand / 2))
+                    rect.height += int(round(expand))
+                    rect.width += int(round(expand))
+                    canvas.draw_rrect(skia.RoundRect.from_rect(rect, x=5, y=5))
+                    
+                # Not an animated set of words - Just draw the state
+                else:
+                    paint.color = spoken_background_colour if text.text.lower() in self.content['walkthrough_said_voice_commands'] else non_spoken_background_colour
+                    paint.style = Paint.Style.FILL
+                    canvas.draw_rrect(skia.RoundRect.from_rect(rect, x=5, y=5))
+        
         paint.color = text_colour
+        paint.style = Paint.Style.FILL
