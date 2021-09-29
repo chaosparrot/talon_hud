@@ -105,16 +105,15 @@ class HeadUpChoicePanel(HeadUpTextPanel):
         page_height_limit = self.limit_height - text_box_header_height / 2 
         if self.panel_content.choices and self.panel_content.choices.multiple:
             confirm_rich_text = layout_rich_text(paint, self.confirm_button.text, self.limit_width - self.image_size, self.limit_height)
-            confirm_button_height = self.padding[0] + self.padding[2]
+            confirm_button_height = self.padding[0] + self.font_size + self.padding[2]
             confirm_line_count = 0
             total_text_width = 0
             for index, text in enumerate(confirm_rich_text):
                 confirm_line_count = confirm_line_count + 1 if text.x == 0 else confirm_line_count
                 current_line_length = current_line_length + text.width if text.x != 0 else text.width + self.image_size
                 total_text_width = max( total_text_width, current_line_length )
-                confirm_button_height = confirm_button_height + text.height + self.line_padding if text.x == 0 else confirm_button_height        
+                confirm_button_height = confirm_button_height + self.font_size + self.line_padding if text.x == 0 and index != 0 else confirm_button_height        
             page_height_limit -= confirm_button_height + self.padding[2]
-    
     
         # Set the height limit to the limit without the confirmation button before calculating the text layout
         current_height_limit = self.limit_height
@@ -145,13 +144,13 @@ class HeadUpChoicePanel(HeadUpTextPanel):
                     self.limit_width - icon_offset, self.limit_height)
                 
                 line_count = 0
-                button_text_height = 0
+                button_text_height = self.font_size
                 button_y = self.limit_y + total_button_height + content_start_height
                 for index, text in enumerate(choice_rich_text):
                     line_count = line_count + 1 if text.x == 0 else line_count
                     current_line_length = current_line_length + text.width if text.x != 0 else text.width + icon_offset
                     total_text_width = max( total_text_width, current_line_length )
-                    button_text_height = button_text_height + text.height + self.line_padding if text.x == 0 else button_text_height
+                    button_text_height = button_text_height + self.font_size + self.line_padding if text.x == 0 and index != 0 else button_text_height
                 
                 button_height = (button_text_height + self.padding[0] * 3)
                 if content_start_height + total_button_height + text_box_header_height * 2 + button_height < page_height_limit:
@@ -263,10 +262,9 @@ class HeadUpChoicePanel(HeadUpTextPanel):
             
             paint.color = self.theme.get_colour('button_hover_text_colour', '000000') if self.choice_hovered == choice_layout['choice_index'] \
                 else self.theme.get_colour('button_text_colour', '000000')
-            line_height = ( choice_layout['text_height'] ) / choice_layout['line_count']
             self.draw_rich_text(canvas, paint, choice_layout['rich_text'], 
                 base_button_x + self.padding[3] if not choice_icon else base_button_x + self.padding[3] + self.image_size, 
-                choice_layout['choice_y'] - self.padding[0] / 2, line_height)
+                choice_layout['choice_y'] - self.padding[0] / 2, self.line_padding)
 
     def draw_content_text(self, canvas, paint, layout) -> int:
         """Draws the content and returns the height of the drawn content"""

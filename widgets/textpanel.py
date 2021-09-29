@@ -118,6 +118,10 @@ class HeadUpTextPanel(LayoutWidget):
         
     def layout_content(self, canvas, paint):
         paint.textsize = self.font_size
+        
+        # Line padding needs to accumulate to at least 1.5 times the font size
+        # In order to make it readable according to WCAG specifications
+        # https://www.w3.org/TR/WCAG21/#visual-presentation
         self.line_padding = int(self.font_size / 2) + 1 if self.font_size <= 17 else 5
         
         horizontal_alignment = "right" if self.limit_x < self.x else "left"
@@ -152,7 +156,7 @@ class HeadUpTextPanel(LayoutWidget):
         page_height_limit = self.limit_height - header_height * 2
         
         # We do not render content if the text box is minimized
-        current_content_height = 0
+        current_content_height = self.font_size + self.line_padding
         current_page_text = []
         current_line_height = 0
         if not self.minimized:
@@ -161,10 +165,15 @@ class HeadUpTextPanel(LayoutWidget):
                 line_count = line_count + 1 if text.x == 0 else line_count
                 current_line_length = current_line_length + text.width if text.x != 0 else text.width
                 total_text_width = max( total_text_width, current_line_length )
-                total_text_height = total_text_height + text.height + self.line_padding if text.x == 0 else total_text_height
-                
+                total_text_height = total_text_height + current_line_height if text.x == 0 else total_text_height
                 current_content_height = total_text_height + self.padding[0] + self.padding[2] + header_height
-                current_line_height = text.height + self.line_padding
+                
+                # Recalculate current line height if we are starting a new line
+                if text.x == 0:
+                    current_line_height = max(text.height, self.font_size) + self.line_padding
+                else:
+                    current_line_height = max(current_line_height,  max(text.height, self.font_size) + self.line_padding)
+
                 if page_height_limit > current_content_height:
                     current_page_text.append(text)
                     
@@ -367,8 +376,8 @@ class HeadUpTextPanel(LayoutWidget):
         text_x = dimensions.x + self.padding[3]
         text_y = dimensions.y + header_height + self.padding[0] * 2
         
-        line_height = ( content_height - header_height - self.padding[0] - self.padding[2] ) / line_count
-        self.draw_rich_text(canvas, paint, rich_text, text_x, text_y, line_height)
+        #line_height = ( content_height - header_height - self.padding[0] - self.padding[2] ) / line_count
+        self.draw_rich_text(canvas, paint, rich_text, text_x, text_y, self.line_padding)
 
     def draw_background(self, canvas, paint, rect):
         radius = 10

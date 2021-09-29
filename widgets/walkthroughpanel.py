@@ -271,6 +271,11 @@ class HeadUpWalkThroughPanel(LayoutWidget):
         """Draws the content and returns the height of the drawn content"""
         paint.textsize = self.font_size
         
+        # Line padding needs to accumulate to at least 1.5 times the font size
+        # In order to make it readable according to WCAG specifications
+        # https://www.w3.org/TR/WCAG21/#visual-presentation
+        self.line_padding = int(self.font_size / 2) + 1 if self.font_size <= 17 else 5        
+        
         rich_text = dimensions["content_text"]
         content_height = dimensions["content_height"]
         line_count = dimensions["line_count"]
@@ -279,8 +284,7 @@ class HeadUpWalkThroughPanel(LayoutWidget):
         text_x = dimensions.x + self.padding[3]
         text_y = dimensions.y
         
-        line_height = self.font_size + self.line_padding
-        self.draw_rich_text(canvas, paint, rich_text, text_x, text_y, line_height)
+        self.draw_rich_text(canvas, paint, rich_text, text_x, text_y, self.line_padding)
 
     def draw_background(self, canvas, paint, rect):
         radius = 10
@@ -295,9 +299,7 @@ class HeadUpWalkThroughPanel(LayoutWidget):
         dimensions = dimensions["rect"]
         x = dimensions.x + self.padding[3]
         y = dimensions.y + self.padding[0]
-        
-        line_height = paint.textsize + self.line_padding    
-    
+            
         non_spoken_background_colour = self.theme.get_colour('voice_command_background_colour', '535353')
         spoken_background_colour = self.theme.get_colour('spoken_voice_command_background_colour', '6CC653')
     
@@ -305,15 +307,17 @@ class HeadUpWalkThroughPanel(LayoutWidget):
         for index, text in enumerate(rich_text):
             current_line = current_line + 1 if text.x == 0 else current_line
             
-            if text.x == 0 and index != 0:
-                y += line_height
+            if text.x == 0:
+                y += paint.textsize
+                if index != 0:
+                    y += self.line_padding
             
             if "command_available" in text.styles:
-                command_padding = 5
+                command_padding = self.line_padding / 2
                 
                 # TODO PROPER BACKGROUND FOR MULTIPLE TAGS ETC.
-                rect = ui.Rect(x + text.x - command_padding, y - command_padding, 
-                    text.width + command_padding * 4, text.height + command_padding * 2)
+                rect = ui.Rect(x + text.x - command_padding, y - paint.textsize - self.line_padding, 
+                    text.width + command_padding * 2, paint.textsize + command_padding * 2)
                 
                 if animation_state > 0 and text.text in self.animated_words:
                     growth = (self.max_animated_word_state - animation_state ) / self.max_animated_word_state

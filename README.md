@@ -153,7 +153,6 @@ These are ideas that I want to implement in no specific order and with no specif
 
 Known issues
 ---
-- Lines are improperly spaced height wise when rendering rich text
 - Dragging issues when doing a left click on a draggable widget
 - Spaces tend to be added on the edge of style transitions
 - Voice commands styling split up on lines don't get properly styled by the walkthrough widget
