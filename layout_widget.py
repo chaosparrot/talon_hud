@@ -146,11 +146,12 @@ class LayoutWidget(BaseWidget):
                 if index != 0:
                     y += line_padding
             
-            paint_colour = paint.color
             
-            paint.color = self.get_random_colour() + "DD"
+            # Keep this debugging code in here in case we need to test sizes again
+            #paint_colour = paint.color
+            #paint.color = self.get_random_colour() + "DD"
             #canvas.draw_rect( ui.Rect(x + text.x, y + text.y, text.width, paint.textsize) )            
-            paint.color = paint_colour            
+            #paint.color = paint_colour            
             canvas.draw_text(text.text, x + text.x, y )
 
     def get_random_colour(self):    

@@ -55,8 +55,10 @@ def retrieve_available_voice_commands(text: str):
     return voice_commands
 
 def layout_rich_text(paint:skia.Paint, text:str, width:int = 1920, height:int = 1080) -> list[HudRichTextLine]:
-    """Layout a string of text inside the given dimensions"""    
-    _, space_text_bounds = paint.measure_text("-")
+    """Layout a string of text inside the given dimensions"""
+    _, e_text_bounds = paint.measure_text("E")
+    _, space_text_bounds = paint.measure_text("E E")
+    space_text_bounds.width -= e_text_bounds.width * 2
     
     lines = text.splitlines()
     final_lines = []
@@ -74,7 +76,7 @@ def layout_rich_text(paint:skia.Paint, text:str, width:int = 1920, height:int = 
         # Edge case - Empty newline
         if len(tokened_line) == 0:
             final_lines.append(HudRichText(x, space_text_bounds.y, space_text_bounds.width, space_text_bounds.height, [], " "))
-            continue        
+            continue
         
         words_to_use = []
         current_line_bounds = None
@@ -104,34 +106,52 @@ def layout_rich_text(paint:skia.Paint, text:str, width:int = 1920, height:int = 
             # Add text
             else:
                 words = token.split(" ")
+                current_words = []
                 amount_of_words = len(words)
                 for index, word in enumerate(words):
-                    _, word_bounds = paint.measure_text(word)
+                    current_words.append(word)
                     
-                    # Edge case - Space character is split on earlier, so empty strings are space characters that we should include
-                    if word == "":
-                        word_bounds.width = space_text_bounds.width
-                        
-                    # Only add the space bounds between words if we haven't or aren't about to place a space
-                    elif x == 0 or ( index > 0 and index < len(words) - 1 and \
-                        words[index - 1] != "" and words[index + 1] != ""):
-                        word_bounds.width += space_text_bounds.width
-                                            
-                    if current_line_bounds == None:
-                        current_line_bounds = word_bounds
+                    # Edge case - string starts with a space
+                    if word == "" and len(current_words) == 0:
+                        current_line_bounds = space_text_bounds
+                        word_bounds = space_text_bounds
                     else:
-                        current_line_bounds.width += word_bounds.width
-                        current_line_bounds.height = max(word_bounds.height, current_line_bounds.height)
-                        current_line_bounds.y = min(word_bounds.y, current_line_bounds.y)
+                        _, word_bounds = paint.measure_text(word)
+                        _, current_line_bounds = paint.measure_text(" ".join(current_words))
                     
-                    if x + current_line_bounds.width - space_text_bounds.width > width:                                            
-                        final_lines.append(HudRichText(x, current_line_bounds.y, current_line_bounds.width - word_bounds.width, current_line_bounds.height, styles.copy(), " ".join(words_to_use)))
+                    # Calculate the space required for starting and trailing spaces
+                    current_words_joined = " ".join(current_words)
+                    leading_spaces_count = len(current_words_joined) - len(current_words_joined.lstrip(' '))
+                    trailing_spaces_count = len(current_words_joined) - len(current_words_joined.rstrip(' '))
+                    extra_spaces_count = leading_spaces_count + trailing_spaces_count
+                    
+                    # Edge case - Spaces only
+                    if len(current_words_joined.lstrip(' ')) == 0:
+                        extra_spaces_count = leading_spaces_count
+                    current_line_bounds.width += extra_spaces_count * space_text_bounds.width                    
+                    
+                    if x + current_line_bounds.width > width:
+                        current_words.pop()
+                        _, current_line_bounds = paint.measure_text(" ".join(current_words))
+
+                        # Calculate the space required for starting and trailing spaces
+                        current_words_joined = " ".join(current_words)
+                        leading_spaces_count = len(current_words_joined) - len(current_words_joined.lstrip(' '))
+                        trailing_spaces_count = len(current_words_joined) - len(current_words_joined.rstrip(' '))
+                        extra_spaces_count = leading_spaces_count + trailing_spaces_count
+                        
+                        # Edge case - Spaces only
+                        if len(current_words_joined.lstrip(' ')) == 0:
+                            extra_spaces_count = leading_spaces_count - 1
+                        current_line_bounds.width += extra_spaces_count * space_text_bounds.width                    
+
+                        final_lines.append(HudRichText(x, current_line_bounds.y, current_line_bounds.width, current_line_bounds.height, styles.copy(), " ".join(words_to_use)))
                         x = 0
                         y = 0
                         
                         if word_bounds.width < width:
+                            current_words = [word]
                             words_to_use = [word]
-                            current_line_bounds = word_bounds                            
                             
                         # Edgecase - Single word that exceeds the width - Split according to rough estimate or character width
                         else:

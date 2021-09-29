@@ -204,6 +204,14 @@ def load_walkthrough():
     'Please enable the command mode by clicking on the statusbar icon', [], ['command']))    
     walkthrough = actions.user.hud_create_walkthrough("Head up display", steps)
     
+    steps = []
+    steps.append( actions.user.hud_create_walkthrough_step("What if we could document our workflows using walkthroughs?!\n\n<cmd@air/> <cmd@bat/> <cmd@cap/> <cmd@drum/>\n"))
+    steps.append( actions.user.hud_create_walkthrough_step("Hey it transitions to a new step when all the commands are said! <cmd@each/> <cmd@fine/>\n"))
+    steps.append( actions.user.hud_create_walkthrough_step("\"But Chaos\" I hear you think, \"What if the user is in the wrong context? The commands won't work!\". <cmd@gust/>", '', 
+    'Please enable command mode before continuing', [], ['command']))
+    steps.append( actions.user.hud_create_walkthrough_step("\"Hmm.. but what if the user cannot say or does not want to say the command?\".\n<cmd@Like and subscribe to my youtube channel lmao/>"))
+    walkthrough = actions.user.hud_create_walkthrough("Alphabet", steps)
+    
     hud_walkthrough.load_state()
 
 app.register('ready', load_walkthrough)

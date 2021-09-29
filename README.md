@@ -154,7 +154,6 @@ These are ideas that I want to implement in no specific order and with no specif
 Known issues
 ---
 - Dragging issues when doing a left click on a draggable widget
-- Spaces tend to be added on the edge of style transitions
 - Voice commands styling split up on lines don't get properly styled by the walkthrough widget
 
 If any of these ideas seem cool for you to work on, give me a message on the talon slack so we can coordinate stuff.
