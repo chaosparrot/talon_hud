@@ -113,7 +113,7 @@ class HeadUpContextMenu(LayoutWidget):
             
             if self.canvas:
                 self.canvas.move(self.x, self.y)
-                self.mouse_capture_canvas.set_rect(ui.Rect(self.x, self.y, dimensions.width, dimensions.height))
+                self.mouse_capture_canvas.rect = ui.Rect(self.x, self.y, dimensions.width, dimensions.height)
             self.mark_position_invalid = False
             return True
             

@@ -104,7 +104,7 @@ class LayoutWidget(BaseWidget):
     def resize_mouse_canvas(self, content_dimensions):
         rect = content_dimensions["rect"]
         self.capture_rect = rect
-        self.mouse_capture_canvas.set_rect(rect)
+        self.mouse_capture_canvas.rect = rect
         self.mouse_capture_canvas.freeze()
         self.mark_layout_invalid = False
         
