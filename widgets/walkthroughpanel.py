@@ -118,7 +118,7 @@ class HeadUpWalkThroughPanel(LayoutWidget):
         page_height_limit = self.limit_height
         
         # We do not render content if the text box is minimized
-        current_content_height = 0
+        current_content_height = self.padding[0] + self.padding[2]
         current_page_text = []
         current_line_height = 0
         if not self.minimized:
@@ -127,10 +127,10 @@ class HeadUpWalkThroughPanel(LayoutWidget):
                 line_count = line_count + 1 if text.x == 0 else line_count
                 current_line_length = current_line_length + text.width if text.x != 0 else text.width
                 total_text_width = max( total_text_width, current_line_length )
-                total_text_height = total_text_height + text.height + self.line_padding if text.x == 0 else total_text_height
+                total_text_height = total_text_height + max(text.height, self.font_size) + self.line_padding if text.x == 0 else total_text_height
                 
-                current_content_height = total_text_height + self.padding[0] + self.padding[2]
-                current_line_height = text.height + self.line_padding
+                current_content_height = total_text_height
+                current_line_height = max(text.height, self.font_size) + self.line_padding
                 if page_height_limit > current_content_height:
                     current_page_text.append(text)
                     
@@ -152,6 +152,7 @@ class HeadUpWalkThroughPanel(LayoutWidget):
                     # Reset the variables
                     total_text_height = current_line_height
                     current_page_text = [text]
+                    current_content_height = self.padding[0] + self.padding[2]
                     line_count = 1
                   
         # Make sure the remainder of the content gets placed on the final page
@@ -282,7 +283,7 @@ class HeadUpWalkThroughPanel(LayoutWidget):
         dimensions = dimensions["rect"]
        
         text_x = dimensions.x + self.padding[3]
-        text_y = dimensions.y
+        text_y = dimensions.y + self.padding[0] / 2
         
         self.draw_rich_text(canvas, paint, rich_text, text_x, text_y, self.line_padding)
 
@@ -316,8 +317,9 @@ class HeadUpWalkThroughPanel(LayoutWidget):
                 command_padding = self.line_padding / 2
                 
                 # TODO PROPER BACKGROUND FOR MULTIPLE TAGS ETC.
+                text_size = max(paint.textsize, text.height)
                 rect = ui.Rect(x + text.x - command_padding, y - paint.textsize - self.line_padding, 
-                    text.width + command_padding * 2, paint.textsize + command_padding * 2)
+                    text.width + command_padding * 2, text_size + command_padding * 2)
                 
                 if animation_state > 0 and text.text in self.animated_words:
                     growth = (self.max_animated_word_state - animation_state ) / self.max_animated_word_state
@@ -360,3 +362,43 @@ class HeadUpWalkThroughPanel(LayoutWidget):
         
         paint.color = text_colour
         paint.style = Paint.Style.FILL
+        
+        
+    def draw_rich_text(self, canvas, paint, rich_text, x, y, line_padding, single_line=False):
+        # Mostly copied over from layout_widget
+        # Draw text line by line
+        text_colour = paint.color
+        error_colour = self.theme.get_colour('error_colour', 'AA0000')
+        warning_colour = self.theme.get_colour('warning_colour', 'F75B00')
+        success_colour = self.theme.get_colour('success_colour', '00CC00')
+        info_colour = self.theme.get_colour('info_colour', '30AD9E')
+    
+        current_line = -1
+        for index, text in enumerate(rich_text):
+            paint.font.embolden = "bold" in text.styles
+            paint.font.skew_x = -0.33 if "italic" in text.styles else 0
+            paint.color = text_colour
+            if "command_available" in text.styles:
+                paint.color = self.theme.get_colour('spoken_voice_command_text_colour', '000000FF') \
+                    if text.text.lower() in self.content["walkthrough_said_voice_commands"] else \
+                    self.theme.get_colour('voice_command_text_colour', 'DDDDDD')
+            else:
+                if "warning" in text.styles:
+                    paint.color = warning_colour
+                elif "success" in text.styles:
+                    paint.color = success_colour
+                elif "error" in text.styles:
+                    paint.color = error_colour
+                elif "notice" in text.styles:
+                    paint.color = info_colour
+           
+            current_line = current_line + 1 if text.x == 0 else current_line
+            if single_line and current_line > 0:
+                return
+            
+            if text.x == 0:
+                y += paint.textsize
+                if index != 0:
+                    y += line_padding
+            
+            canvas.draw_text(text.text, x + text.x, y )

@@ -84,6 +84,7 @@ def layout_rich_text(paint:skia.Paint, text:str, width:int = 1920, height:int = 
             if token in rich_text_delims:                
                 # Finish the current words if there are any
                 if current_line_bounds != None and len(words_to_use) > 0:
+                    current_line_bounds = calculate_words_bounds(words_to_use, paint, space_text_bounds)
                     final_lines.append(HudRichText(x, current_line_bounds.y, current_line_bounds.width, current_line_bounds.height, styles.copy(), " ".join(words_to_use)))                
                     x = x + current_line_bounds.width
                     current_line_bounds.y = current_line_bounds.y
@@ -117,34 +118,11 @@ def layout_rich_text(paint:skia.Paint, text:str, width:int = 1920, height:int = 
                         word_bounds = space_text_bounds
                     else:
                         _, word_bounds = paint.measure_text(word)
-                        _, current_line_bounds = paint.measure_text(" ".join(current_words))
-                    
-                    # Calculate the space required for starting and trailing spaces
-                    current_words_joined = " ".join(current_words)
-                    leading_spaces_count = len(current_words_joined) - len(current_words_joined.lstrip(' '))
-                    trailing_spaces_count = len(current_words_joined) - len(current_words_joined.rstrip(' '))
-                    extra_spaces_count = leading_spaces_count + trailing_spaces_count
-                    
-                    # Edge case - Spaces only
-                    if len(current_words_joined.lstrip(' ')) == 0:
-                        extra_spaces_count = leading_spaces_count
-                    current_line_bounds.width += extra_spaces_count * space_text_bounds.width                    
+                        current_line_bounds = calculate_words_bounds(current_words, paint, space_text_bounds)
                     
                     if x + current_line_bounds.width > width:
                         current_words.pop()
-                        _, current_line_bounds = paint.measure_text(" ".join(current_words))
-
-                        # Calculate the space required for starting and trailing spaces
-                        current_words_joined = " ".join(current_words)
-                        leading_spaces_count = len(current_words_joined) - len(current_words_joined.lstrip(' '))
-                        trailing_spaces_count = len(current_words_joined) - len(current_words_joined.rstrip(' '))
-                        extra_spaces_count = leading_spaces_count + trailing_spaces_count
-                        
-                        # Edge case - Spaces only
-                        if len(current_words_joined.lstrip(' ')) == 0:
-                            extra_spaces_count = leading_spaces_count - 1
-                        current_line_bounds.width += extra_spaces_count * space_text_bounds.width                    
-
+                        current_line_bounds = calculate_words_bounds(current_words, paint, space_text_bounds)
                         final_lines.append(HudRichText(x, current_line_bounds.y, current_line_bounds.width, current_line_bounds.height, styles.copy(), " ".join(words_to_use)))
                         x = 0
                         y = 0
@@ -170,10 +148,31 @@ def layout_rich_text(paint:skia.Paint, text:str, width:int = 1920, height:int = 
                         words_to_use.append(word)
                     
         if len(words_to_use) > 0:
+            current_line_bounds = calculate_words_bounds(words_to_use, paint, space_text_bounds)
+        
             final_lines.append(HudRichText(x, current_line_bounds.y, current_line_bounds.width, current_line_bounds.height, styles.copy(), " ".join(words_to_use)))            
     
     paint.font.embolden = False
     return final_lines
+
+def calculate_words_bounds(words: list[str], paint, space_text_bounds) -> ui.Rect:
+    current_words_joined = " ".join(words)
+    _, current_line_bounds = paint.measure_text(current_words_joined)            
+    
+    # Edge case - dealing with single space
+    if len(words) == 1 and words[0] == "":
+        current_line_bounds = space_text_bounds
+    else:
+        leading_spaces_count = len(current_words_joined) - len(current_words_joined.lstrip(' '))
+        trailing_spaces_count = len(current_words_joined) - len(current_words_joined.rstrip(' '))
+        extra_spaces_count = leading_spaces_count + trailing_spaces_count
+        
+        # Edge case - Spaces only
+        if len(current_words_joined.lstrip(' ')) == 0:
+            extra_spaces_count = leading_spaces_count
+        current_line_bounds.width += extra_spaces_count * space_text_bounds.width
+
+    return current_line_bounds
     
 def hex_to_ints(hex: str) -> list[int]:
     # Snippet used https://stackoverflow.com/questions/41848722/how-to-convert-hex-str-into-int-array

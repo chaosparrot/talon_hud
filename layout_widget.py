@@ -136,7 +136,7 @@ class LayoutWidget(BaseWidget):
                 paint.color = error_colour
             elif "notice" in text.styles:
                 paint.color = info_colour
-            
+                        
             current_line = current_line + 1 if text.x == 0 else current_line
             if single_line and current_line > 0:
                 return
@@ -151,7 +151,7 @@ class LayoutWidget(BaseWidget):
             #paint_colour = paint.color
             #paint.color = self.get_random_colour() + "DD"
             #canvas.draw_rect( ui.Rect(x + text.x, y + text.y, text.width, paint.textsize) )            
-            #paint.color = paint_colour            
+            #paint.color = paint_colour
             canvas.draw_text(text.text, x + text.x, y )
 
     def get_random_colour(self):    

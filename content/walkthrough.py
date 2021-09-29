@@ -190,7 +190,7 @@ class HeadUpWalkthroughState:
                 
                 # Send an update about the voice commands said during the step if it has changed
                 if current_length != len(self.current_words):
-                    actions.user.hud_set_walkthrough_voice_commands(self.current_words)
+                    actions.user.hud_set_walkthrough_voice_commands(list(self.current_words))
                 
     
 hud_walkthrough = HeadUpWalkthroughState()
@@ -205,7 +205,7 @@ def load_walkthrough():
     walkthrough = actions.user.hud_create_walkthrough("Head up display", steps)
     
     steps = []
-    steps.append( actions.user.hud_create_walkthrough_step("What if we could document our workflows using walkthroughs?!\n\n<cmd@air/> <cmd@bat/> <cmd@cap/> <cmd@drum/>\n"))
+    steps.append( actions.user.hud_create_walkthrough_step("What if we could document our workflows using walkthroughs?!\n\n<cmd@air/>  <cmd@bat/>  <cmd@cap/>  <cmd@drum/>\n"))
     steps.append( actions.user.hud_create_walkthrough_step("Hey it transitions to a new step when all the commands are said! <cmd@each/> <cmd@fine/>\n"))
     steps.append( actions.user.hud_create_walkthrough_step("\"But Chaos\" I hear you think, \"What if the user is in the wrong context? The commands won't work!\". <cmd@gust/>", '', 
     'Please enable command mode before continuing', [], ['command']))
