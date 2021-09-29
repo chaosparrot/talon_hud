@@ -339,12 +339,14 @@ class HeadUpWalkThroughPanel(LayoutWidget):
                     alpha = int(round( 255 * (1 - easeOutQuint) ))
                     alpha_hex = '0' + format(alpha, 'x') if alpha <= 15 else format(alpha, 'x')
                     paint.color = colour + alpha_hex
-                    paint.style = Paint.Style.STROKE                
+                    paint.style = Paint.Style.STROKE
+                    paint.stroke_width = 4
                     rect.x -= int(round(expand / 2))
                     rect.y -= int(round(expand / 2))
                     rect.height += int(round(expand))
                     rect.width += int(round(expand))
                     canvas.draw_rrect(skia.RoundRect.from_rect(rect, x=5, y=5))
+                    paint.stroke_width = 1                    
                     
                 # Not an animated set of words - Just draw the state
                 else:
