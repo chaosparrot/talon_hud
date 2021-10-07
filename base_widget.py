@@ -297,7 +297,7 @@ class BaseWidget(metaclass=ABCMeta):
                 
                 if self.canvas:
                     rect = ui.Rect(self.x, self.y, self.width, self.height)                    
-                    self.canvas.set_rect(rect)
+                    self.canvas.rect = rect
                 
                 self.setup_type = ""
                 self.canvas.resume()
@@ -375,7 +375,7 @@ class BaseWidget(metaclass=ABCMeta):
                     
                     rect = ui.Rect(canvas_x, canvas_y, self.limit_width, self.limit_height  )
             
-                self.canvas.set_rect(rect)
+                self.canvas.rect = rect
             elif (self.setup_type == "font_size"):
                 total_distance = numpy.linalg.norm(numpy.array(total_direction))
                 

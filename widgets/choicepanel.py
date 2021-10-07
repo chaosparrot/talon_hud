@@ -298,6 +298,6 @@ class HeadUpChoicePanel(HeadUpTextPanel):
             rect = ui.Rect(rect.x, rect.y, rect.width, rect.height + self.confirm_button.rect.height + self.padding[0] + self.padding[2])
         
         self.capture_rect = rect
-        self.mouse_capture_canvas.set_rect(rect)
+        self.mouse_capture_canvas.rect = rect
         self.mouse_capture_canvas.freeze()
         self.mark_layout_invalid = False
