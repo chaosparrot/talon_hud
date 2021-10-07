@@ -153,8 +153,8 @@ These are ideas that I want to implement in no specific order and with no specif
 
 Known issues
 ---
+- Multiple page walkthrough panel does not work properly with text indecis
 - Dragging issues when doing a left click on a draggable widget
-- Voice commands styling split up on lines don't get properly styled or checked by the walkthrough widget
 
 If any of these ideas seem cool for you to work on, give me a message on the talon slack so we can coordinate stuff.
 

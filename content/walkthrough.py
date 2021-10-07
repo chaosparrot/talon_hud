@@ -173,6 +173,11 @@ class HeadUpWalkthroughState:
             if not in_right_context:
                 actions.user.hud_publish_content(step.context_explanation, "walk_through")            
             else:
+                # Forced publication must clear the voice commands said as well
+                # To ensure a clean widget state
+                if force_publish:
+                    actions.user.hud_set_walkthrough_voice_commands([])
+                
                 actions.user.hud_publish_content(step.content, "walk_through")
             self.in_right_context = in_right_context
     
@@ -197,20 +202,12 @@ hud_walkthrough = HeadUpWalkthroughState()
 
 def load_walkthrough():
     steps = []
-    steps.append( actions.user.hud_create_walkthrough_step("Welcome to Talon HUD!\nThis is a short walkthrough of the content available.\nSay <*skip step/> to move to the next step."))
+    steps.append( actions.user.hud_create_walkthrough_step("This is a short walkthrough of the content available.\nSay <cmd@toolkit \n options/> and <cmd@toolkit \n options hide/> to move to the next step."))
     steps.append( actions.user.hud_create_walkthrough_step("Talon HUD has a bunch of content hidden behind a central hub called Toolkit.\nTo see what is inside, say <cmd@toolkit options/>", '', 
     'Please enable the command mode by clicking on the statusbar icon', [], ['command']))
     steps.append( actions.user.hud_create_walkthrough_step("Toolkit has an overview of the content available, like documentation, walkthroughs and some debugging helpers. \nFor instance, if you say <cmd@talon scope/> it will open up a text panel containing the current scope!", '', 
-    'Please enable the command mode by clicking on the statusbar icon', [], ['command']))    
+    'Please enable the command mode by clicking on the statusbar icon', [], ['command']))
     walkthrough = actions.user.hud_create_walkthrough("Head up display", steps)
-    
-    steps = []
-    steps.append( actions.user.hud_create_walkthrough_step("What if we could document our workflows using walkthroughs?!\n\n<cmd@air/>  <cmd@bat/>  <cmd@cap/>  <cmd@drum/>\n"))
-    steps.append( actions.user.hud_create_walkthrough_step("Hey it transitions to a new step when all the commands are said! <cmd@each/> <cmd@fine/>\n"))
-    steps.append( actions.user.hud_create_walkthrough_step("\"But Chaos\" I hear you think, \"What if the user is in the wrong context? The commands won't work!\". <cmd@gust/>", '', 
-    'Please enable command mode before continuing', [], ['command']))
-    steps.append( actions.user.hud_create_walkthrough_step("\"Hmm.. but what if the user cannot say or does not want to say the command?\".\n<cmd@Like and subscribe to my youtube channel lmao/>"))
-    walkthrough = actions.user.hud_create_walkthrough("Alphabet", steps)
     
     hud_walkthrough.load_state()
 

@@ -1,7 +1,7 @@
 from talon import skia, ui, Module, cron, actions, clip
 from user.talon_hud.layout_widget import LayoutWidget
 from user.talon_hud.widget_preferences import HeadUpDisplayUserWidgetPreferences
-from user.talon_hud.utils import layout_rich_text, remove_tokens_from_rich_text, linear_gradient, retrieve_available_voice_commands, hex_to_ints
+from user.talon_hud.utils import layout_rich_text, remove_tokens_from_rich_text, linear_gradient, retrieve_available_voice_commands, hex_to_ints, string_to_speakable_string
 from user.talon_hud.content.typing import HudRichTextLine, HudPanelContent, HudButton, HudIcon
 from talon.types.point import Point2d
 from talon.skia import Paint
@@ -23,6 +23,7 @@ class HeadUpWalkThroughPanel(LayoutWidget):
     transition_animation_state = 0
     animated_word_state = 0
     animated_words = []
+    commands_positions = {}
 
     # Previous dimensions to transition from
     previous_content_dimensions = None    
@@ -71,7 +72,7 @@ class HeadUpWalkThroughPanel(LayoutWidget):
             self.previous_content_dimensions = self.layout[self.page_index]['rect'] if self.page_index < len(self.layout) else None
             self.transition_animation_state = self.max_transition_animation_state if should_animate else 0
             self.animated_words = []
-
+            
         return super().update_panel(panel_content)
     
     def on_mouse(self, event):
@@ -107,8 +108,34 @@ class HeadUpWalkThroughPanel(LayoutWidget):
         layout_width = max(self.width - self.padding[1] * 2 - self.padding[3] * 2, 
             self.limit_width - self.padding[1] * 2 - self.padding[3] * 2)
 
-        self.voice_commands_available = retrieve_available_voice_commands(self.panel_content.content[0])
         content_text = [] if self.minimized else layout_rich_text(paint, self.panel_content.content[0], layout_width, self.limit_height)
+        
+        # Start segmenting the available voice commands by indexes
+        self.voice_commands_available = []
+        self.commands_positions = {}
+        voice_command_words = []
+        voice_command_indecis = []
+        for index, text in enumerate(content_text):
+            if "command_available" in text.styles:
+                voice_command_words += string_to_speakable_string(text.text).split()
+                voice_command_indecis.append(index)
+            elif len(voice_command_words) > 0:
+                voice_command = " ".join(voice_command_words)
+                self.voice_commands_available.append(voice_command)
+                for voice_command_index in voice_command_indecis:
+                    self.commands_positions[str(voice_command_index)] = voice_command
+                voice_command_words = []
+                voice_command_indecis = []
+
+        # Add remaining voice commands if they haven't been added yet
+        if len(voice_command_words) > 0:
+            voice_command = " ".join(voice_command_words)
+            self.voice_commands_available.append(voice_command)
+            for voice_command_index in voice_command_indecis:
+                self.commands_positions[str(voice_command_index)] = voice_command
+                voice_command_words = []
+                voice_command_indecis = []
+
         layout_pages = []
         
         line_count = 0
@@ -316,12 +343,12 @@ class HeadUpWalkThroughPanel(LayoutWidget):
             if "command_available" in text.styles:
                 command_padding = self.line_padding / 2
                 
-                # TODO PROPER BACKGROUND FOR MULTIPLE TAGS ETC.
                 text_size = max(paint.textsize, text.height)
                 rect = ui.Rect(x + text.x - command_padding, y - paint.textsize - self.line_padding, 
                     text.width + command_padding * 2, text_size + command_padding * 2)
                 
-                if animation_state > 0 and text.text in self.animated_words:
+                if animation_state > 0 and str(index) in self.commands_positions and \
+                    self.commands_positions[str(index)] in self.animated_words:
                     growth = (self.max_animated_word_state - animation_state ) / self.max_animated_word_state
                     easeOutQuad = 1 - pow(1 - growth, 4)                    
                     easeOutQuint = 1 - pow(1 - growth, 5)
@@ -356,7 +383,8 @@ class HeadUpWalkThroughPanel(LayoutWidget):
                     
                 # Not an animated set of words - Just draw the state
                 else:
-                    paint.color = spoken_background_colour if text.text.lower() in self.content['walkthrough_said_voice_commands'] else non_spoken_background_colour
+                    paint.color = spoken_background_colour if str(index) in self.commands_positions and \
+                        self.commands_positions[str(index)] in self.content['walkthrough_said_voice_commands'] else non_spoken_background_colour
                     paint.style = Paint.Style.FILL
                     canvas.draw_rrect(skia.RoundRect.from_rect(rect, x=5, y=5))
         
@@ -380,7 +408,7 @@ class HeadUpWalkThroughPanel(LayoutWidget):
             paint.color = text_colour
             if "command_available" in text.styles:
                 paint.color = self.theme.get_colour('spoken_voice_command_text_colour', '000000FF') \
-                    if text.text.lower() in self.content["walkthrough_said_voice_commands"] else \
+                    if str(index) in self.commands_positions and self.commands_positions[str(index)] in self.content["walkthrough_said_voice_commands"] else \
                     self.theme.get_colour('voice_command_text_colour', 'DDDDDD')
             else:
                 if "warning" in text.styles:
