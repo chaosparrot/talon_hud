@@ -11,8 +11,9 @@ mod = Module()
 mod.tag("talon_hud_walkthrough", desc="Whether or not the walk through widget is on display")
 ctx = Context()
 
-class HeadUpWalkthroughState:
+class WalkthroughPoller:
 
+    enabled = False
     scope_job = None
     walkthroughs = None
     walkthrough_steps = None    
@@ -25,6 +26,21 @@ class HeadUpWalkthroughState:
         self.walkthroughs = {}
         self.walkthrough_steps = {}
         self.order = []
+
+    def enable(self):
+        if self.enabled == False:
+            speech_system.register("post:phrase", self.check_step)
+            self.scope_job = cron.interval('1500ms', self.display_step_based_on_context)
+            ctx.tags = ["user.talon_hud_walkthrough"]        
+        self.enabled = True
+
+    def disable(self):
+        if self.enabled == True:
+            cron.cancel(self.scope_job)
+            self.scope_job = None
+            speech_system.unregister("post:phrase", self.check_step)        
+            ctx.tags = []
+        self.enabled = False    
     
     def load_state(self):
         if not os.path.exists(walkthrough_file_location):
@@ -94,9 +110,7 @@ class HeadUpWalkthroughState:
         """Start the given walkthrough if it exists"""
         if walkthrough_title in self.walkthroughs:            
             self.end_walkthrough(False)
-            speech_system.register("post:phrase", self.check_step)
-            self.scope_job = cron.interval('1500ms', self.display_step_based_on_context)
-            ctx.tags = ["user.talon_hud_walkthrough"]
+            self.enable()
             self.current_walkthrough = self.walkthroughs[walkthrough_title]
             actions.user.enable_hud_id("walk_through")
             if walkthrough_title in self.walkthrough_steps:
@@ -141,12 +155,9 @@ class HeadUpWalkthroughState:
             actions.user.disable_hud_id("walk_through")
             actions.user.hud_add_log("event", "Finished the \"" + self.current_walkthrough.title + "\" walkthrough!")
 
-        cron.cancel(self.scope_job)
-        self.scope_job = None
-        speech_system.unregister("post:phrase", self.check_step)
+        self.disable()
         self.current_walkthrough = None
         self.current_stepnumber = -1
-        ctx.tags = []
         self.in_right_context = False
     
     def is_in_right_context(self):
@@ -198,7 +209,7 @@ class HeadUpWalkthroughState:
                     actions.user.hud_set_walkthrough_voice_commands(list(self.current_words))
                 
     
-hud_walkthrough = HeadUpWalkthroughState()
+hud_walkthrough = WalkthroughPoller()
 
 def load_walkthrough():
     steps = []
@@ -209,7 +220,7 @@ def load_walkthrough():
     'Please enable the command mode by clicking on the statusbar icon', [], ['command']))
     walkthrough = actions.user.hud_create_walkthrough("Head up display", steps)
     
-    hud_walkthrough.load_state()
+    actions.user.hud_add_poller('walk_through', hud_walkthrough)
 
 app.register('ready', load_walkthrough)
 
