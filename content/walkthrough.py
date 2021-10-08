@@ -2,6 +2,7 @@ from talon import app, Module, actions, Context, speech_system, cron, scope
 from user.talon_hud.content.typing import HudWalkThrough, HudWalkThroughStep
 from user.talon_hud.utils import retrieve_available_voice_commands
 import os
+import json
 
 semantic_directory = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 walkthrough_file_location = semantic_directory + "/preferences/walkthrough.csv"
@@ -29,7 +30,7 @@ class WalkthroughPoller:
 
     def enable(self):
         if self.enabled == False:
-            speech_system.register("post:phrase", self.check_step)
+            speech_system.register("pre:phrase", self.check_step)
             self.scope_job = cron.interval('1500ms', self.display_step_based_on_context)
             ctx.tags = ["user.talon_hud_walkthrough"]        
         self.enabled = True
@@ -38,7 +39,7 @@ class WalkthroughPoller:
         if self.enabled == True:
             cron.cancel(self.scope_job)
             self.scope_job = None
-            speech_system.unregister("post:phrase", self.check_step)        
+            speech_system.unregister("pre:phrase", self.check_step)        
             ctx.tags = []
         self.enabled = False    
     
@@ -78,7 +79,7 @@ class WalkthroughPoller:
     def start_up_hud(self):
         """Start up the HUD - Used for the initial walkthrough"""
         actions.user.enable_hud()
-        cron.after('2s', self.start_initial_walkthrough)
+        cron.after('1s', self.start_initial_walkthrough)
         
     def start_initial_walkthrough(self):
         """Start the initial walkthrough"""    
@@ -140,6 +141,7 @@ class WalkthroughPoller:
         
     def transition_to_step(self, stepnumber):
         """Transition to the next step"""
+        print( "TRANSITION!", str(stepnumber) )
         self.current_stepnumber = stepnumber
         self.display_step_based_on_context(True)
         
@@ -182,7 +184,7 @@ class WalkthroughPoller:
         if self.in_right_context != in_right_context or force_publish:
             step = self.current_walkthrough.steps[self.current_stepnumber]        
             if not in_right_context:
-                actions.user.hud_publish_content(step.context_explanation, "walk_through")            
+                actions.user.hud_publish_content(step.context_hint, "walk_through")            
             else:
                 # Forced publication must clear the voice commands said as well
                 # To ensure a clean widget state
@@ -210,29 +212,40 @@ class WalkthroughPoller:
                 
     
 hud_walkthrough = WalkthroughPoller()
+hud_directory = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 def load_walkthrough():
-    steps = []
-    steps.append( actions.user.hud_create_walkthrough_step("This is a short walkthrough of the content available.\nSay <cmd@toolkit \n options/> and <cmd@toolkit \n options hide/> to move to the next step."))
-    steps.append( actions.user.hud_create_walkthrough_step("Talon HUD has a bunch of content hidden behind a central hub called Toolkit.\nTo see what is inside, say <cmd@toolkit options/>", '', 
-    'Please enable the command mode by clicking on the statusbar icon', [], ['command']))
-    steps.append( actions.user.hud_create_walkthrough_step("Toolkit has an overview of the content available, like documentation, walkthroughs and some debugging helpers. \nFor instance, if you say <cmd@talon scope/> it will open up a text panel containing the current scope!", '', 
-    'Please enable the command mode by clicking on the statusbar icon', [], ['command']))
-    walkthrough = actions.user.hud_create_walkthrough("Head up display", steps)
-    
+    global hud_walkthrough
+    actions.user.hud_add_walkthrough('Head up display', hud_directory + '/docs/hud_walkthrough.json')
     actions.user.hud_add_poller('walk_through', hud_walkthrough)
+    hud_walkthrough.load_state()
 
 app.register('ready', load_walkthrough)
 
 @mod.action_class
 class Actions:
 
-    def hud_create_walkthrough_step(content: str, documentation_content: str = '', context_explanation: str = '', tags: list[str] = None, modes: list[str] = None, app: str = ''):
+    def hud_add_walkthrough(title: str, filename: str):
+        """Add a walk through through a file"""
+        global hud_walkthrough 
+        walkthrough_defaults = {"content": "", "context_hint": "", "modes": [], "tags": [], "app": ""}
+        with open(filename) as json_file:
+            jsondata = json.load(json_file)
+            steps = []
+            if isinstance(jsondata, list):
+                for unfiltered_step in jsondata:
+                    step = { key: unfiltered_step[key] if key in unfiltered_step else walkthrough_defaults[key] for key in walkthrough_defaults.keys() }
+                    steps.append( actions.user.hud_create_walkthrough_step(**step) )
+            
+            if len(steps) > 0:
+                actions.user.hud_create_walkthrough(title, steps)
+
+    def hud_create_walkthrough_step(content: str, context_hint: str = '', tags: list[str] = None, modes: list[str] = None, app: str = ''):
         """Create a step for a walk through"""
         voice_commands = retrieve_available_voice_commands(content)
         tags = [] if tags is None else tags
         modes = [] if modes is None else modes
-        return HudWalkThroughStep(content, documentation_content, context_explanation, tags, modes, app, voice_commands)
+        return HudWalkThroughStep(content, context_hint, tags, modes, app, voice_commands)
 
     def hud_create_walkthrough(title: str, steps: list[HudWalkThroughStep]):
         """Create a walk through with all the required steps"""
@@ -247,7 +260,7 @@ class Actions:
     def hud_skip_walkthrough_step():
         """Skip the current walk through step"""
         global hud_walkthrough
-        hud_walkthrough.next_step()
+        cron.after('500ms', hud_walkthrough.next_step)
         
     def hud_skip_walkthrough_all():
         """Skip the current walk through step"""

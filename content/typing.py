@@ -57,8 +57,7 @@ class HudPanelContent:
 @dataclass
 class HudWalkThroughStep:
     content: str = ''
-    documentation_content: str = ''
-    context_explanation: str = ''
+    context_hint: str = ''
     tags: list[str] = None
     modes: list[str] = None
     app: str = ''

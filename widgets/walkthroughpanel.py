@@ -61,7 +61,9 @@ class HeadUpWalkThroughPanel(LayoutWidget):
         # Navigate to the next step if all our voice commands have been exhausted
         if len(self.voice_commands_available) > 0 and "walkthrough_said_voice_commands" in new_content and \
             len(self.voice_commands_available) == len(new_content["walkthrough_said_voice_commands"]):
-            cron.after('1500ms', actions.user.hud_skip_walkthrough_step)
+            if not "skip step" in self.voice_commands_available:
+                print( "SCHEDULING SKIP STEP!" )
+                cron.after('1500ms', actions.user.hud_skip_walkthrough_step)
 
         super().refresh(new_content)
 
