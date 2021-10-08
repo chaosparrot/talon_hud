@@ -93,28 +93,28 @@ class HeadUpContextMenu(LayoutWidget):
             screen = determine_screen_for_pos(Point2d(self.x, self.y))
             layout = self.layout_content(canvas, canvas.paint)
             dimensions = layout[self.page_index]['rect']
-            
-            should_go_left = dimensions.x + dimensions.width >= screen.x + screen.width
-            should_go_up = dimensions.y + dimensions.height >= screen.y + screen.height
-            can_go_middle_hor = dimensions.x + dimensions.width / 2 < screen.x + screen.width
-            can_go_middle_ver = dimensions.y + dimensions.height / 2 < screen.y + screen.height            
-            
-            if can_go_middle_hor:
-                self.limit_x = int(dimensions.x - dimensions.width / 2)
-            elif should_go_left:
-                self.limit_x = int(dimensions.x - dimensions.width)
-            self.x = self.limit_x    
+            if dimensions is not None and screen is not None:
+                should_go_left = dimensions.x + dimensions.width >= screen.x + screen.width
+                should_go_up = dimensions.y + dimensions.height >= screen.y + screen.height
+                can_go_middle_hor = dimensions.x + dimensions.width / 2 < screen.x + screen.width
+                can_go_middle_ver = dimensions.y + dimensions.height / 2 < screen.y + screen.height            
+                
+                if can_go_middle_hor:
+                    self.limit_x = int(dimensions.x - dimensions.width / 2)
+                elif should_go_left:
+                    self.limit_x = int(dimensions.x - dimensions.width)
+                self.x = self.limit_x    
 
-            if can_go_middle_ver:
-                self.limit_y = int(dimensions.y - dimensions.height / 2 if not can_go_middle_hor else self.limit_y)
-            if should_go_up:
-                self.limit_y = int(dimensions.y - dimensions.height)
-            self.y = self.limit_y
-            
-            if self.canvas:
-                self.canvas.move(self.x, self.y)
-                self.mouse_capture_canvas.rect = ui.Rect(self.x, self.y, dimensions.width, dimensions.height)
-            self.mark_position_invalid = False
+                if can_go_middle_ver:
+                    self.limit_y = int(dimensions.y - dimensions.height / 2 if not can_go_middle_hor else self.limit_y)
+                if should_go_up:
+                    self.limit_y = int(dimensions.y - dimensions.height)
+                self.y = self.limit_y
+                
+                if self.canvas:
+                    self.canvas.move(self.x, self.y)
+                    self.mouse_capture_canvas.rect = ui.Rect(self.x, self.y, dimensions.width, dimensions.height)
+                self.mark_position_invalid = False
             return True
             
     def layout_content(self, canvas, paint):

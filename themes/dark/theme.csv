@@ -39,5 +39,5 @@ warning_colour,F75B00
 error_colour,AA0000
 spoken_voice_command_background_colour,2A6D37
 voice_command_background_colour,DDDDDD
-spoken_voice_command_text_colour,000000FF
+spoken_voice_command_text_colour,BBBBBB
 voice_command_text_colour,535353

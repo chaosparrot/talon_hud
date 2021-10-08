@@ -227,6 +227,7 @@ class BaseWidget(metaclass=ABCMeta):
                 self.drag_position = [event.gpos.x - self.limit_x, event.gpos.y - self.limit_y]
             elif event.event == "mouseup" and len(self.drag_position) > 0:
                 self.start_setup("")
+                self.drag_position = []
         if len(self.drag_position) > 0 and event.event == "mousemove":
             if self.setup_type != "position":
                 self.start_setup("position")
@@ -256,7 +257,7 @@ class BaseWidget(metaclass=ABCMeta):
         # Persist the user preferences when we end our setup
         if (self.setup_type != "" and not setup_type):
             self.drag_position = []
-            rect = self.canvas.get_rect()
+            rect = self.canvas.rect
             
             if (self.setup_type == "position"):
                 self.preferences.x = int(rect.x) if self.limit_x == self.x else int(rect.x - ( self.limit_x - self.x ))

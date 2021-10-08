@@ -82,7 +82,7 @@ class WalkthroughPoller:
         cron.after('1s', self.start_initial_walkthrough)
         
     def start_initial_walkthrough(self):
-        """Start the initial walkthrough"""    
+        """Start the initial walkthrough"""
         self.start_walkthrough(initial_walkthrough_title)
     
     def show_options(self):
@@ -141,7 +141,6 @@ class WalkthroughPoller:
         
     def transition_to_step(self, stepnumber):
         """Transition to the next step"""
-        print( "TRANSITION!", str(stepnumber) )
         self.current_stepnumber = stepnumber
         self.display_step_based_on_context(True)
         
@@ -260,7 +259,7 @@ class Actions:
     def hud_skip_walkthrough_step():
         """Skip the current walk through step"""
         global hud_walkthrough
-        cron.after('500ms', hud_walkthrough.next_step)
+        hud_walkthrough.next_step()
         
     def hud_skip_walkthrough_all():
         """Skip the current walk through step"""

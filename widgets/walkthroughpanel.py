@@ -11,6 +11,7 @@ icon_radius = 10
 class HeadUpWalkThroughPanel(LayoutWidget):
     preferences = HeadUpDisplayUserWidgetPreferences(type="walk_through", x=910, y=1000, width=100, height=20, limit_x=480, limit_y=700, limit_width=960, limit_height=124, enabled=False, sleep_enabled=True, alignment="center", expand_direction="up", font_size=24)
     mouse_enabled = True
+    step_scheduled = None
 
     # Top, right, bottom, left, same order as CSS padding
     padding = [10, 20, 10, 8]
@@ -62,8 +63,8 @@ class HeadUpWalkThroughPanel(LayoutWidget):
         if len(self.voice_commands_available) > 0 and "walkthrough_said_voice_commands" in new_content and \
             len(self.voice_commands_available) == len(new_content["walkthrough_said_voice_commands"]):
             if not "skip step" in self.voice_commands_available:
-                print( "SCHEDULING SKIP STEP!" )
-                cron.after('1500ms', actions.user.hud_skip_walkthrough_step)
+                cron.cancel(self.step_scheduled)
+                self.step_scheduled = cron.after('1500ms', actions.user.hud_skip_walkthrough_step)
 
         super().refresh(new_content)
 
@@ -342,7 +343,7 @@ class HeadUpWalkThroughPanel(LayoutWidget):
                 if index != 0:
                     y += self.line_padding
             
-            if "command_available" in text.styles:
+            if "command_available" in text.styles and text.text.strip() != "":
                 command_padding = self.line_padding / 2
                 
                 text_size = max(paint.textsize, text.height)
