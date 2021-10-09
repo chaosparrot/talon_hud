@@ -1,10 +1,10 @@
 Package enhancement
 ====
 
-Currently, there are two main ways to amplify your own packages, namely documentation and walkthroughs.
+Currently, there are two main ways to enhance your own packages with Talon HUD, namely documentation and walkthroughs.
 Both of them work by registering files to the Talon HUD if it is available, so it won't cause slowdowns or crashes for non-Talon HUD users.
 
-For an example on how to add stuff, you can look at the file load_talon_hud_docs.py in the docs folder.
+For an example on how to add stuff, you can look at the file [load_talon_hud_docs.py](load_talon_hud_docs.py) in the docs folder.
 It is recommended that you have a separate directory where you keep all the files related to your documentation or walkthroughs.
 
 For all of these options, you should have a look at the part about rich text in the [content publishing documentation](content/README.md) as it gives an outline of all the possible rich text tokens you can use.
@@ -20,7 +20,7 @@ These are the values that you can give to the `user.hud_add_documentation` actio
 - Description: A short description of what the documentation is about. This will be shown next to the title in the documentation panel.
 - Filename: An absolute path to the file containing the documentation.
 
-For an example, you can have a look at the hud_widget_documentation.txt file in the docs directory.
+For an example, you can have a look at the [hud_widget_documentation.txt](hud_widget_documentation.txt) file in the docs directory.
 
 # Walkthroughs
 

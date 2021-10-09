@@ -21,6 +21,7 @@ tag: user.talon_hud_available
 ^head up show {user.talon_hud_widget_names} on sleep$: user.set_widget_preference(talon_hud_widget_names, "sleep_enabled", 1)
 ^head up align {user.talon_hud_widget_names} right$: user.set_widget_preference(talon_hud_widget_names, "alignment", "right")
 ^head up align {user.talon_hud_widget_names} left$: user.set_widget_preference(talon_hud_widget_names, "alignment", "left")
+^head up align {user.talon_hud_widget_names} center$: user.set_widget_preference(talon_hud_widget_names, "alignment", "center")
 ^head up align {user.talon_hud_widget_names} top$: user.set_widget_preference(talon_hud_widget_names, "expand_direction", "down")
 ^head up align {user.talon_hud_widget_names} bottom$: user.set_widget_preference(talon_hud_widget_names, "expand_direction", "up")
 

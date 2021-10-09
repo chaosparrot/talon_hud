@@ -147,10 +147,11 @@ The following styling markers are available:
 - <! : Text in the colour orange, used for warning users
 - <!! : Text in the colour red, used for errors
 - <@ : Text in the colour blue, used to notify the user.
+- <cmd@ : Denotes the start of a voice command that can be said - Not all widgets have a specific style for this
 - /> : Closing marking - ends the latest style applied
 
 When writing rich text containing voice commands, make sure to emphasise the voice commands with one of these markers so they stand out from the rest of the text.  
-This makes it easier for the user to quickly pick out the voice commands from the text you have writen.  
+This makes it easier for the user to quickly pick out the voice commands from the text you have written.  
 There isn't a firm styling for voice commands yet, so for now just apply a bold marker at the minimum until we maybe decide on one.
 
 # Polling / continuously updating content

@@ -117,7 +117,7 @@ Visit the [package enhancement documentation](docs/README.md) for more informati
 Updating widgets with content
 ---
 
-If you want to add your own content to the widgets, visit the [CONTENT PUBLISHING DOCUMENTATION](content/README.md)
+If you want to add your own content to the widgets, visit the [content publishing documentation](content/README.md)
 
 Theming
 ---

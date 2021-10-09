@@ -10,7 +10,7 @@ def close_widget(widget):
     widget.disable(True)
     
 def minimize_toggle_widget(widget):
-    widget.minimized = not widget.minimized    
+    widget.minimized = not widget.minimized
     widget.drag_positions = []
     widget.start_setup("")    
     if widget.minimized:
