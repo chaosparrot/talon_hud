@@ -86,7 +86,7 @@ buttons = [button]
 actions.user.hud_publish_content("Text with content", "test", "Test content", True, buttons)
 ```
 Now when the content is published, and extra button can be found in the widgets right click menu. Like the other options in it, when it is shown, the text inside the button is used to activate it, in this case, print to console!
-Users can also get accusomed to the option, as it is also available as a quick option. Saying `test content print to console` will activate the button even though the context menu hasn't shown up yet.
+Users can also get accustomed to the option, as it is also available as a quick option. Saying `test content print to console` will activate the button even though the context menu hasn't shown up yet.
 
 # Offering choices and options
 

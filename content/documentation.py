@@ -38,18 +38,15 @@ class HeadUpDocumentation:
 
     def show_overview(self):
         documentation = "Say any of the bolded titles below to open the documentation\n\n"
-        for order in self.order:
-            documentation += "<*1 - " + order + "/>"
+        for index, order in enumerate(self.order):
+            documentation += "<* " + str(index + 1) + " - " + order + "/>"
             if order in self.descriptions:
                 documentation += ": " + self.descriptions[order]
             documentation += "\n"
         
         actions.user.hud_publish_content(documentation, "documentation", "Documentation panel", True, [], ["user.talon_hud_documentation_overview"])
 
-hud_directory = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 hud_documentation = HeadUpDocumentation()
-hud_documentation.add_file("Widget settings", "shows the general Talon HUD commands related to widgets",
-    str(hud_directory) + "/docs/hud_widget_documentation.txt")
 
 @mod.action_class
 class Actions:

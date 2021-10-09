@@ -1,6 +1,6 @@
 [
     {
-	    "content": "Welcome to the Talon HUD, a unified collection of widgets! This is a short walkthrough to the features it offers.\nSay <cmd@ skip step /> to continue to the next step. \nIf you do not want to continue this walkthrough, right click here and select <*Mark as done/>.",
+	    "content": "Welcome to the Talon HUD, a unified collection of widgets! This is a short walkthrough to the features it offers. Say <cmd@ skip step /> to continue to the next step. \nIf you do not want to continue this walkthrough, right click here and select <*Mark as done/>.",
 		"modes": ["command"],
 		"context_hint": "Please turn on command modes to continue the walkthrough"
 	},
@@ -51,7 +51,7 @@
 		"context_hint": "Please turn on command modes to continue the walkthrough"
 	},
 	{
-	    "content": "Sometimes, the content of a widget is bigger than it's given size. In that case, you can switch between pages by saying <widget name> next or <widget name back/>. In this case, this would be <cmd@ widget settings next /> and <cmd@ widget settings back />",
+	    "content": "Sometimes, the content of a widget is bigger than it's given size. In that case, you can switch between pages by saying <widget name> next or <widget name> back/>. In this case, this would be <cmd@ widget settings next /> and <cmd@ widget settings back />",
         "modes": ["command"],
 		"context_hint": "Please turn on command modes to continue the walkthrough"
 	},	

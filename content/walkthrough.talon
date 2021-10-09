@@ -7,7 +7,8 @@ skip step:
     sleep(1.5)
     user.hud_skip_walkthrough_step()
 skip everything: user.hud_skip_walkthrough_all()
-
+previous step: 
+    user.hud_previous_walkthrough_step()
 ^head up theme dark$:
     sleep(0.5)
 	user.switch_hud_theme('dark')

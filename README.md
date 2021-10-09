@@ -50,6 +50,12 @@ A context menu can be configured to open on any widget that has mouse clicks ena
 This widget contains a bunch of buttons that will interact with the widget that it has opened.  
 The context menu will attempt to stay on the screen where the right-click was made, and as such will change position accordingly.
 
+### 6. Walkthrough panel
+
+This widget is meant to guide users through a predefined workflow to familiarize them with it.
+You can use this to give an interactive experience for users to learn the ins and outs of various workflows.
+Included in the Talon HUD is a simple walkthrough for using the Talon HUD itself, but any package can make walkthroughs or workflows.
+
 Voice commands
 ---
 
@@ -100,6 +106,13 @@ Some widgets like the event log also allow you to change the text direction and 
 If you prefer having a more basic animation free set up, or want to switch back to an animated display, you can use the following commands  
 `head up basic <widget name>` disables animations on the chosen widget.  
 `head up fancy <widget name>` enables animations on the chosen widget.
+
+Using Talon HUD in your own packages
+---
+
+The HUD provides a bunch of hubs like documentation and walkthroughs that you can leverage in your own packages.
+That way, if a user has the Talon HUD together with your own package, you can provide documentation and other niceties without having to worry about making your own user interfaces.
+Visit the [package enhancement documentation](docs/README.md) for more information.
 
 Updating widgets with content
 ---

@@ -138,6 +138,20 @@ class WalkthroughPoller:
                 self.walkthrough_steps[self.current_walkthrough.title] = self.current_stepnumber
             else:
                 self.end_walkthrough()
+                
+    def previous_step(self):
+        """Navigate to the previous step in the walkthrough"""
+        if self.current_walkthrough is not None:
+
+            # Update the walkthrough CSV state
+            self.walkthrough_steps[self.current_walkthrough.title] = max(0, self.current_stepnumber - 1)
+            self.persist_walkthrough_steps(self.walkthrough_steps)
+            self.current_words = []
+            
+            if self.current_stepnumber - 1 >= 0:
+                self.transition_to_step(max(0, self.current_stepnumber - 1))
+                self.walkthrough_steps[self.current_walkthrough.title] = self.current_stepnumber
+
         
     def transition_to_step(self, stepnumber):
         """Transition to the next step"""
@@ -260,6 +274,11 @@ class Actions:
         """Skip the current walk through step"""
         global hud_walkthrough
         hud_walkthrough.next_step()
+        
+    def hud_previous_walkthrough_step():
+        """Skip the current walk through step"""
+        global hud_walkthrough
+        hud_walkthrough.previous_step()
         
     def hud_skip_walkthrough_all():
         """Skip the current walk through step"""
