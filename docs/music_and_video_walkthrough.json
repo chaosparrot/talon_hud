@@ -1,0 +1,62 @@
+[
+    {
+	    "content": "There are a bunch of controls built in for controlling volume. Let's start by muting our volume by saying <cmd@ media mute />.",
+		"modes": ["command"],
+		"context_hint": "Please turn on command mode to continue the walkthrough."
+	},
+    {
+	    "content": "You can always unmute your volume by repeating <cmd@ media mute />, as it toggles the mute button on and off.",
+		"modes": ["command"],
+		"context_hint": "Please turn on command mode to continue the walkthrough."
+	},
+    {
+	    "content": "Changing the volume up and down a notch can be done by saying <cmd@ volume up /> and <cmd@ volume down />.",
+		"modes": ["command"],
+		"context_hint": "Please turn on command mode to continue the walkthrough."
+	},	
+	{
+	    "content": "Of course, setting the volume to a specific number is possible as well, though not all systems support it. <cmd@ set volume twenty /> will set the volume to twenty percent.",
+		"modes": ["command"],
+		"context_hint": "Please turn on command mode to continue the walkthrough."
+	},
+	{
+	    "content": "If that didn't work, you can also just put a repeater behind the volume commands. <cmd@ volume up eleventh /> will make it go up eleven notches.",
+		"modes": ["command"],
+		"context_hint": "Please turn on command mode to continue the walkthrough."
+	},
+	{
+	    "content": "Let's open up a playlist, I've added a specific command for this walkthrough that opens a synthwave playlist on youtube. <cmd@ music and video playlist /> will open it up in your browser.",
+		"modes": ["command"],
+		"context_hint": "Please turn on command mode to continue the walkthrough."
+	},
+	{
+	    "content": "To stop the playback of the video, say <cmd@ media pause />. To resume the playback, <cmd@ media play /> should do the trick. Both are the same toggle, so saying either when the media is paused will resume the playback.",
+		"modes": ["command"],
+		"tags": ["browser"],
+		"context_hint": "Please open a browser application like Firefox, Google Chrome, Edge or Safari to start the walkthrough."
+	},
+	{
+	    "content": "To go to the next song in the playlist, say <cmd@ media play next />. To return back to the previous song, try saying <cmd@ media play previous />.",
+		"modes": ["command"],
+		"tags": ["browser"],
+		"context_hint": "Please open a browser application like Firefox, Google Chrome, Edge or Safari to start the walkthrough."
+	},
+	{
+	    "content": "Youtube has some additional hotkeys that can be used to change the playback as well. Pressing 0 by saying <cmd@ zero /> will return the playback all the way to the start of the video.",
+		"modes": ["command"],
+		"tags": ["browser"],
+		"context_hint": "Please open a browser application like Firefox, Google Chrome, Edge or Safari to start the walkthrough."
+	},
+	{
+	    "content": "Pressing 5 with <cmd@ five /> will set the playback in the middle of the video. Skipping forward ten seconds can be done with the L key ( <cmd@ look /> ), the J key ( <cmd@ jury /> ) will bring it back ten seconds.",
+		"modes": ["command"],
+		"tags": ["browser"],
+		"context_hint": "Please open a browser application like Firefox, Google Chrome, Edge or Safari to start the walkthrough."
+	},
+	{
+	    "content": "Lastly, you can change the look of the size of the video as well. F ( <cmd@ fine /> ) will toggle full screen on, the escape key ( <cmd@ escape /> ) should get you back to the regular size.",
+		"modes": ["command"],
+		"tags": ["browser"],
+		"context_hint": "Please open a browser application like Firefox, Google Chrome, Edge or Safari to start the walkthrough."
+	}
+]

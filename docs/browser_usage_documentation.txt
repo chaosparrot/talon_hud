@@ -1,0 +1,31 @@
+<*Going to websites/>
+
+There are a bunch of ways to navigate to a URL.
+<*go address/> selects the address bar, where you can start dictating a website to go to.
+<*go to <website>/> goes to a website in the current tab.
+<*open <website>/> opens a new tab with the given website.
+
+The list of websites you can go to with the <*go to/> and <*open/> commands can be managed in the websites.csv file in knausj_talon/settings.
+
+<*Tab navigation/>
+
+<*tab open/> opens a new browser tab.
+<*tab next/> opens the tab to the right of the current tab.
+<*tab last/> opens the tab to the left of the current tab.
+<*go tab one/> opens the first tab, and any small number will open that specific tab.
+<*tab close/> closes the current browser tab.
+<*tab reopen/> opens the previously closed tab.
+
+<*Bookmarks/>
+
+<*bookmark it/> bookmarks the current page.
+<*bookmark show/> opens all the available bookmarks. 
+In Google chrome, you can then use <*tab/> to move over to the list of the bookmarks, and then select a bookmark with <*go up, go down/> and <*enter/>.
+Your mileage may vary in other browsers with this.
+
+<*Searching using a search engine/>
+
+<*<search engine> hunt <text>/> will search for the given user text by opening a new tab and searching with the given search engine.
+<*<search engine> hunt this/> will use the current selection to do the search.
+
+The available search engines can be managed in the search_engines.csv file located in the knausj_talon/settings folder.

@@ -16,5 +16,23 @@ def talon_hud_ready():
         # Add a walkthrough to the Toolkit walkthrough options
         actions.user.hud_add_walkthrough('Head up display', 
             documentation_dir + '/hud_walkthrough.json')
+        
+        # Dictation
+        actions.user.hud_add_walkthrough('Dictating sentences and words', 
+            documentation_dir + '/dictation_walkthrough.json')
+        
+        # Browser documentation
+        actions.user.hud_add_documentation("Browser usage", 
+            "shows the commands and explanations related to web browser usage",
+            documentation_dir + "/browser_usage_documentation.txt")
+            
+        # Basic browser usage
+        actions.user.hud_add_walkthrough('Basic browser usage', 
+            documentation_dir + '/basic_browser_usage_walkthrough.json')
+            
+        # Media usage
+        actions.user.hud_add_walkthrough('Music and video controls', 
+            documentation_dir + '/music_and_video_walkthrough.json')
+            
 
 app.register('ready', talon_hud_ready)
