@@ -7,7 +7,6 @@
 	{
 	    "content": "The draft editor is an overlay which you can use to type or dictate text, before submitting it to another application. <cmd@ draft hide /> hides the window in case you do not want it.",
 		"modes": ["command"],
-		"tags": ["user.draft_window_showing"],
 		"context_hint": "Please turn on command mode to continue the walkthrough."
 	},
 	{
@@ -43,43 +42,55 @@
 		"context_hint": "Please select the draft editor by clicking on it."
 	},
 	{
-	    "content": "In case we ever make a mistake in dictating, we can do a bunch of things. Try saying <cmd@ wipe /> twice to get rid of the punctuation marks.",
+	    "content": "In case we ever make a mistake in dictating, we can do a bunch of things. <cmd@ undo that /> will undo the last command, which was placing the exclamation mark.",
 		"modes": ["command"],
 		"tags": ["user.draft_window_showing"],
 		"context_hint": "Please select the draft editor by clicking on it."
 	},
 	{
-	    "content": "Another way is to say <cmd@ scratch that />. That will press backspace for as long as the last said said phrase, in this case, really.",
+	    "content": "We can also call the backspace button directly. Try saying <cmd@ wipe /> to get rid of the question mark.",
+		"modes": ["command"],
+		"tags": ["user.draft_window_showing"],
+		"context_hint": "Please select the draft editor by clicking on it."
+	},		
+	{
+	    "content": "Another way is to say <cmd@ scratch that />. That will press backspace for as long as the last said phrase, in this case, the word really.",
 		"modes": ["command"],
 		"tags": ["user.draft_window_showing"],
 		"context_hint": "Please select the draft editor by clicking on it."
 	},
     {
-	    "content": "A way that is baked into the draft window is the replace functionality. <cmd@ replace cap with was /> will replace the word is with was. The cap word points to the letter underneath the word.",
+	    "content": "In the draft window, we can do all kinds of corrections as well. For example, <cmd@ clear cap /> will remove the word above the red letter c.",
+		"modes": ["command"],
+		"tags": ["user.draft_window_showing"],
+		"context_hint": "Please select the draft editor by clicking on it."
+	},	
+    {
+	    "content": "You can also replace the word directly. <cmd@ undo that /> will undo the clearing, and <cmd@ replace cap with was /> will replace the word is with was. ",
 		"modes": ["command"],
 		"tags": ["user.draft_window_showing"],
 		"context_hint": "Please select the draft editor by clicking on it."
 	},
     {
-	    "content": "Now our cursor is in the middle of our sentence, but we can also move it around. Lets turn this sentence into a quote. <cmd@ go line start /> will move to the start of the line.",
+	    "content": "There are other ways we can do corrections in the draft window, but we'll focus on moving the cursor to the start of the sentence now. <cmd@ go line start /> will do that for us.",
+		"modes": ["command"],
+		"tags": ["user.draft_window_showing"],
+		"context_hint": "Please select the draft editor by clicking on it."
+	},	
+	{
+	    "content": "<cmd@ double quote /> will place a \" mark here, you might have to say <*space/> as well if it doesn't appear. Saying <cmd@ go line end /> will go to the back of the sentence.",
 		"modes": ["command"],
 		"tags": ["user.draft_window_showing"],
 		"context_hint": "Please select the draft editor by clicking on it."
 	},
 	{
-	    "content": "<cmd@ dubquote /> will place a \" mark here, you might have to say <*space/> as well if it doesn't appear. Saying <cmd@ go line end /> will go to the back of the sentence.",
+	    "content": "Let's start combining some commands. <cmd@ double quote comma space /> should place \", where we are now.",
 		"modes": ["command"],
 		"tags": ["user.draft_window_showing"],
 		"context_hint": "Please select the draft editor by clicking on it."
 	},
 	{
-	    "content": "Let's start combining some commands. <cmd@ dubquote comma space /> should place \", where we are now.",
-		"modes": ["command"],
-		"tags": ["user.draft_window_showing"],
-		"context_hint": "Please select the draft editor by clicking on it."
-	},
-	{
-	    "content": "We can also combine the <*say/> command with punctionation marks. <cmd@ say said the frog over period /> will place a comma after our said words.",
+	    "content": "We can also combine the <*say/> command with punctuation marks. <cmd@ say said the frog over period /> will place a comma after our said words.",
 		"modes": ["command"],
 		"tags": ["user.draft_window_showing"],
 		"context_hint": "Please select the draft editor by clicking on it."
@@ -103,15 +114,20 @@
 		"context_hint": "Please select the draft editor by clicking on it."
 	},
 	{
-	    "content": "Time to try out some formatters. <cmd@ title frog /> will place Frog, <cmd@ clear word left /> to remove it, and <cmd@ allcaps frog /> will place FROG.",
+	    "content": "Finally, let's try out some formatters. <cmd@ title frog /> will result in Frog, <cmd@ clear word left /> to remove it, and <cmd@ allcaps frog /> will place FROG.",
 		"modes": ["command"],
 		"tags": ["user.draft_window_showing"],
 		"context_hint": "Please select the draft editor by clicking on it."
 	},
 	{
-	    "content": "Work in progress :)",
+	    "content": "If you are happy with the result, you can say <cmd@ draft submit /> to send the created text over to the next application.",
 		"modes": ["command"],
 		"tags": ["user.draft_window_showing"],
+		"context_hint": "Please select the draft editor by clicking on it."
+	},
+	{
+	    "content": "There are plenty of other things to learn about dictation, selections, copying and pasting, placing letters and so on that will be explained in future walkthroughs. <cmd@ skip step /> to end this one.",
+		"modes": ["command"],
 		"context_hint": "Please select the draft editor by clicking on it."
 	}
 ]
