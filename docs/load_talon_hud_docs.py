@@ -21,6 +21,16 @@ def talon_hud_ready():
         actions.user.hud_add_walkthrough("Basic sentence dictation", 
             documentation_dir + "/dictation_walkthrough.json")
         
+        # Text formatters
+        actions.user.hud_add_documentation("Text formatting", 
+            "gives a list with examples of commands that can change text with a different format.",
+            documentation_dir + "/text_formatters.txt")
+
+        # Talon draft usage
+        actions.user.hud_add_documentation("Talon draft window", 
+            "shows all the available commands used for the draft window, which can be used to dictate and edit text outside of the current program.",
+            documentation_dir + "/talon_draft_usage.txt")
+
         # Browser documentation
         actions.user.hud_add_documentation("Browser usage", 
             "shows the commands and explanations related to web browser usage",

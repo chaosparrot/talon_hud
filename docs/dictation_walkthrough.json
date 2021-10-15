@@ -126,7 +126,7 @@
 		"context_hint": "Please select the draft editor by clicking on it."
 	},
 	{
-	    "content": "There are plenty of other things to learn about dictation, selections, copying and pasting, placing letters and so on that will be explained in future walkthroughs. <cmd@ skip step /> to end this one.",
+	    "content": "A refresher of these commands concepts can be found in <cmd@ toolkit documentation /> in the <*talon draft window/> and <*text formatting/> sections.",
 		"modes": ["command"],
 		"context_hint": "Please select the draft editor by clicking on it."
 	}

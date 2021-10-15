@@ -201,7 +201,7 @@ class HeadUpChoicePanel(HeadUpTextPanel):
         
         
         # Layout for multiple confirm button
-        if len(layout_pages) == 1:
+        if len(layout_pages) == 1 and self.minimized == False:
             layout_pages[self.page_index]['rect'].height -= text_box_header_height * 2
         
         if confirm_button_height > 0:
@@ -218,7 +218,6 @@ class HeadUpChoicePanel(HeadUpTextPanel):
         else:
             self.confirm_button.callback = lambda x: None
             self.confirm_button.rect = ui.Rect(0, 0, 0, 0)
-            
         
         self.limit_height = current_height_limit
         return layout_pages
@@ -266,11 +265,11 @@ class HeadUpChoicePanel(HeadUpTextPanel):
                 base_button_x + self.padding[3] if not choice_icon else base_button_x + self.padding[3] + self.image_size, 
                 choice_layout['choice_y'] - self.padding[0] / 2, self.line_padding)
 
-    def draw_content_text(self, canvas, paint, layout) -> int:
-        """Draws the content and returns the height of the drawn content"""
+    def draw_content_text(self, canvas, paint, layout):
+        """Draws the text, choices and confirm button"""
         super().draw_content_text(canvas, paint, layout)
         if self.minimized:
-            return        
+            return
         self.draw_choices(canvas, paint, layout)
 
         # Draw multiple choice confirm button

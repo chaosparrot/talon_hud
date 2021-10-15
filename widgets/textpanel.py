@@ -363,7 +363,7 @@ class HeadUpTextPanel(LayoutWidget):
                 canvas.draw_image(image, icon_position.x - image.width / 2, icon_position.y - image.height / 2)
 
 
-    def draw_content_text(self, canvas, paint, dimensions) -> int:
+    def draw_content_text(self, canvas, paint, dimensions):
         """Draws the content and returns the height of the drawn content"""
         paint.textsize = self.font_size
         
