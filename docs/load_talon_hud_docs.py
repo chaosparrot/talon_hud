@@ -3,7 +3,9 @@ import os
 
 def talon_hud_ready():
     # Check if Talon HUD is available to the user
-    if "user.talon_hud_available" in scope.get("tag"):
+    TALON_HUD_RELEASE_WALKTHROUGH = 3
+    if "user.talon_hud_available" in scope.get("tag") and \
+        scope.get("user.talon_hud_version") != None and scope.get("user.talon_hud_version") >= TALON_HUD_RELEASE_WALKTHROUGH:
     
         # Get the absolute path to the documentation directory for your package
         documentation_dir = str(os.path.dirname(os.path.abspath(__file__)))
