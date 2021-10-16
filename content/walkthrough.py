@@ -17,7 +17,7 @@ class WalkthroughPoller:
     enabled = False
     scope_job = None
     walkthroughs = None
-    walkthrough_steps = None    
+    walkthrough_steps = None
     current_walkthrough = None
     current_stepnumber = -1
     current_words = []
@@ -25,6 +25,7 @@ class WalkthroughPoller:
     
     def __init__(self):
         self.walkthroughs = {}
+        self.walkthrough_files = {}
         self.walkthrough_steps = {}
         self.order = []
 
@@ -55,13 +56,14 @@ class WalkthroughPoller:
         for index,line in enumerate(lines):
             split_line = line.strip('\n').split(',')
             key = split_line[0]
-            value = split_line[1]
-            walkthrough_steps[key] = int(value)
+            current_step = split_line[1]
+            total_step = split_line[2]
+            walkthrough_steps[key] = {"current": int(current_step), "total": int(total_step)}
         self.walkthrough_steps = walkthrough_steps
         
         # For the initial loading, start the walkthrough if it hasn't been completed fully yet
         if initial_walkthrough_title not in self.walkthrough_steps or \
-            self.walkthrough_steps[initial_walkthrough_title] < len(self.walkthroughs[initial_walkthrough_title].steps):
+            self.walkthrough_steps[initial_walkthrough_title]['current'] < self.walkthrough_steps[initial_walkthrough_title]['total']:
             cron.after('1s', self.start_up_hud)
 
     def persist_walkthrough_steps(self, steps):
@@ -69,7 +71,7 @@ class WalkthroughPoller:
     
         walkthrough_items = []
         for key in steps.keys():
-            walkthrough_items.append(str(key) + "," + str(steps[key]))
+            walkthrough_items.append(str(key) + "," + str(steps[key]['current']) + "," + str(steps[key]['total']))
         
         if len(walkthrough_items) > 0:
             handle.write("\n".join(walkthrough_items))
@@ -91,7 +93,7 @@ class WalkthroughPoller:
             choice_texts = []
             for title in self.walkthroughs:
                 done = title in self.walkthrough_steps and \
-                    self.walkthrough_steps[title] >= len(self.walkthroughs[title].steps)
+                    self.walkthrough_steps[title]['current'] >= self.walkthrough_steps[title]['total']
                 choice_texts.append({"text": title, "selected": done})
             choices = actions.user.hud_create_choices(choice_texts, self.pick_walkthrough)
             actions.user.hud_publish_choices(choices, "Walkthrough options", 
@@ -100,6 +102,26 @@ class WalkthroughPoller:
     def pick_walkthrough(self, data):
         """Pick a walkthrough from the options menu"""
         self.start_walkthrough(data["text"])
+                
+    def add_walkthrough_file(self, title: str, filename: str):
+        """Add a file that can be loaded in later as a walkthrough"""
+        self.walkthrough_files[title] = filename
+        actions.user.hud_create_walkthrough(title, [])
+        
+    def load_walkthrough_file(self, title):
+        """Load the walkthrough file"""
+        filename = self.walkthrough_files[title]
+        walkthrough_defaults = {"content": "", "context_hint": "", "modes": [], "tags": [], "app": ""}
+        with open(filename) as json_file:
+            jsondata = json.load(json_file)
+            steps = []
+            if isinstance(jsondata, list):
+                for unfiltered_step in jsondata:
+                    step = { key: unfiltered_step[key] if key in unfiltered_step else walkthrough_defaults[key] for key in walkthrough_defaults.keys() }
+                    steps.append( actions.user.hud_create_walkthrough_step(**step) )
+            
+            if len(steps) > 0:
+                actions.user.hud_create_walkthrough(title, steps)
         
     def add_walkthrough(self, walkthrough: HudWalkThrough):
         """Add a walkthrough to the list of walkthroughs"""
@@ -109,16 +131,21 @@ class WalkthroughPoller:
      
     def start_walkthrough(self, walkthrough_title: str):
         """Start the given walkthrough if it exists"""
-        if walkthrough_title in self.walkthroughs:            
+        if walkthrough_title in self.walkthroughs:
             self.end_walkthrough(False)
             self.enable()
+            
+            # Preload the walkthrough from the file
+            if len(self.walkthroughs[walkthrough_title].steps) == 0 and walkthrough_title in self.walkthrough_files:
+                self.load_walkthrough_file(walkthrough_title)
+            
             self.current_walkthrough = self.walkthroughs[walkthrough_title]
             actions.user.enable_hud_id("walk_through")
             if walkthrough_title in self.walkthrough_steps:
             
                 # If we have started a walkthrough but haven't finished it - continue where we left off
-                if self.walkthrough_steps[walkthrough_title] < len(self.current_walkthrough.steps):
-                    self.current_stepnumber = self.walkthrough_steps[walkthrough_title] - 1                    
+                if walkthrough_title in self.walkthrough_steps and self.walkthrough_steps[walkthrough_title]['current'] < len(self.current_walkthrough.steps):
+                    self.current_stepnumber = self.walkthrough_steps[walkthrough_title]['current'] - 1                    
                 # Otherwise, just start over
                 else:
                     self.current_stepnumber = -1
@@ -129,13 +156,15 @@ class WalkthroughPoller:
         if self.current_walkthrough is not None:
 
             # Update the walkthrough CSV state
-            self.walkthrough_steps[self.current_walkthrough.title] = self.current_stepnumber + 1                        
+            if self.current_walkthrough.title not in self.walkthrough_steps:
+                self.walkthrough_steps[self.current_walkthrough.title] = {"current": 0, "total": len(self.current_walkthrough.steps)}
+            self.walkthrough_steps[self.current_walkthrough.title]['current'] = self.current_stepnumber + 1                        
             self.persist_walkthrough_steps(self.walkthrough_steps)
             self.current_words = []
             
             if self.current_stepnumber + 1 < len(self.current_walkthrough.steps):
                 self.transition_to_step(self.current_stepnumber + 1)
-                self.walkthrough_steps[self.current_walkthrough.title] = self.current_stepnumber
+                self.walkthrough_steps[self.current_walkthrough.title]['current'] = self.current_stepnumber
             else:
                 self.end_walkthrough()
                 
@@ -144,13 +173,13 @@ class WalkthroughPoller:
         if self.current_walkthrough is not None:
 
             # Update the walkthrough CSV state
-            self.walkthrough_steps[self.current_walkthrough.title] = max(0, self.current_stepnumber - 1)
+            self.walkthrough_steps[self.current_walkthrough.title]['current'] = max(0, self.current_stepnumber - 1)
             self.persist_walkthrough_steps(self.walkthrough_steps)
             self.current_words = []
             
             if self.current_stepnumber - 1 >= 0:
                 self.transition_to_step(max(0, self.current_stepnumber - 1))
-                self.walkthrough_steps[self.current_walkthrough.title] = self.current_stepnumber
+                self.walkthrough_steps[self.current_walkthrough.title]['current'] = self.current_stepnumber
 
         
     def transition_to_step(self, stepnumber):
@@ -163,7 +192,7 @@ class WalkthroughPoller:
         
         # Persist the walkthrough as done
         if hide:
-            self.walkthrough_steps[self.current_walkthrough.title] = len(self.current_walkthrough.steps)
+            self.walkthrough_steps[self.current_walkthrough.title]['current'] = len(self.current_walkthrough.steps)
             self.persist_walkthrough_steps(self.walkthrough_steps)
             actions.user.hud_set_walkthrough_voice_commands([])
             actions.user.hud_publish_content("No walk through started", "walk_through")
@@ -241,17 +270,7 @@ class Actions:
     def hud_add_walkthrough(title: str, filename: str):
         """Add a walk through through a file"""
         global hud_walkthrough 
-        walkthrough_defaults = {"content": "", "context_hint": "", "modes": [], "tags": [], "app": ""}
-        with open(filename) as json_file:
-            jsondata = json.load(json_file)
-            steps = []
-            if isinstance(jsondata, list):
-                for unfiltered_step in jsondata:
-                    step = { key: unfiltered_step[key] if key in unfiltered_step else walkthrough_defaults[key] for key in walkthrough_defaults.keys() }
-                    steps.append( actions.user.hud_create_walkthrough_step(**step) )
-            
-            if len(steps) > 0:
-                actions.user.hud_create_walkthrough(title, steps)
+        hud_walkthrough.add_walkthrough_file(title, filename)
 
     def hud_create_walkthrough_step(content: str, context_hint: str = '', tags: list[str] = None, modes: list[str] = None, app: str = ''):
         """Create a step for a walk through"""
