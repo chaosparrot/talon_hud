@@ -22,6 +22,11 @@ def talon_hud_ready():
             documentation_dir + "/dictation_walkthrough.json")
         
         # Text formatters
+        actions.user.hud_add_documentation("Letters and keys", 
+            "gives a list of all the individual keystrokes you can make.",
+            documentation_dir + "/individual_keys.txt")        
+        
+        # Text formatters
         actions.user.hud_add_documentation("Text formatting", 
             "gives a list with examples of commands that can change text with a different format.",
             documentation_dir + "/text_formatters.txt")
