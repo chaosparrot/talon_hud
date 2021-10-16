@@ -4,6 +4,7 @@ from abc import ABCMeta
 import numpy
 from user.talon_hud.base_widget import BaseWidget
 from user.talon_hud.utils import layout_rich_text, HudRichTextLine
+from random import randint
 
 class LayoutWidget(BaseWidget):
     """This widget has a layout pass and changes the mouse capture area based on the content
@@ -17,7 +18,7 @@ class LayoutWidget(BaseWidget):
     mouse_capture_canvas: canvas.Canvas
     layout = []
     page_index = 0
-    
+        
     def enable(self, persisted=False):
         if not self.enabled:
             if self.mouse_enabled:
@@ -47,9 +48,25 @@ class LayoutWidget(BaseWidget):
     def set_page_index(self, page_index: int):
         self.page_index = max(0, min(page_index, len(self.layout) - 1))
         if self.canvas:
+            self.start_setup("")        
             self.mark_layout_invalid = True
             self.canvas.resume()
         
+    def start_setup(self, setup_type):
+        self.mark_layout_invalid = True
+        
+        # Make sure the canvas is still the right size after canceling resizing
+        if setup_type == "cancel":
+            self.drag_position = []        
+            if (self.setup_type != ""):
+                self.load({}, False)
+                self.setup_type = ""
+                if self.canvas:
+                    self.canvas.rect = ui.Rect(self.limit_x, self.limit_y, self.limit_width, self.limit_height)
+                    self.canvas.resume()
+        else:
+            super().start_setup(setup_type)
+
     def setup_move(self, pos):
         self.mark_layout_invalid = True
         super().setup_move(pos)
@@ -109,7 +126,7 @@ class LayoutWidget(BaseWidget):
         self.mark_layout_invalid = False
         
         
-    def draw_rich_text(self, canvas, paint, rich_text, x, y, line_height, single_line=False):
+    def draw_rich_text(self, canvas, paint, rich_text, x, y, line_padding, single_line=False):
         # Draw text line by line
         text_colour = paint.color
         error_colour = self.theme.get_colour('error_colour', 'AA0000')
@@ -130,10 +147,31 @@ class LayoutWidget(BaseWidget):
                 paint.color = error_colour
             elif "notice" in text.styles:
                 paint.color = info_colour
-            
+                        
             current_line = current_line + 1 if text.x == 0 else current_line
             if single_line and current_line > 0:
                 return
             
-            text_y = y + line_height + current_line * line_height
-            canvas.draw_text(text.text, x + text.x, text_y )
+            if text.x == 0:
+                y += paint.textsize
+                if index != 0:
+                    y += line_padding
+            
+            
+            # Keep this debugging code in here in case we need to test sizes again
+            #paint_colour = paint.color
+            #paint.color = self.get_random_colour() + "DD"
+            #canvas.draw_rect( ui.Rect(x + text.x, y + text.y, text.width, paint.textsize) )            
+            #paint.color = paint_colour
+            canvas.draw_text(text.text, x + text.x, y )
+
+    def get_random_colour(self):    
+        red = randint(180, 255)
+        green = randint(180, 255)
+        blue = randint(180, 255)
+        
+        red_hex = '0' + format(red, 'x') if red <= 15 else format(red, 'x')
+        green_hex = '0' + format(green, 'x') if green <= 15 else format(green, 'x')
+        blue_hex = '0' + format(blue, 'x') if blue <= 15 else format(blue, 'x')
+        return red_hex + green_hex + blue_hex
+        

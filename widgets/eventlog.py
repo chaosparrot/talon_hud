@@ -143,20 +143,22 @@ class HeadUpEventLog(BaseWidget):
             current_y = self.y if self.expand_direction == "down" else self.y + self.height
             for index, visual_log in enumerate(self.visual_logs):
             
-                
-            
                 # Split up the text into lines if there are linebreaks
                 # And calculate their dimensions
-                # TODO calculate max text width against the width and see if we need to wrap the text to the next line
-                # TODO emphasis text using **Md bold markers**
-                lines = layout_rich_text(paint, visual_log['message'], self.limit_width, self.limit_height)
-                #lines = visual_log['message'].splitlines()
+                lines = layout_rich_text(paint, visual_log['message'], self.limit_width - text_padding * 2, self.limit_height)
                 total_text_width = 0
                 total_text_height = 0
+                current_line_width = 0
+                line_count = 0
                 for line in lines:
-                    total_text_width = max( total_text_width, line.width )
-                    total_text_height = total_text_height + line.height + vertical_text_padding
-                log_height = vertical_text_padding * (1 + len(lines)) + total_text_height
+                    if line.x == 0:
+                        line_count += 1
+                        current_line_width = line.width
+                        total_text_height += paint.textsize
+                    else:
+                        current_line_width += line.width
+                    total_text_width = max( total_text_width, current_line_width )
+                log_height = vertical_text_padding * ( 2 + line_count ) + total_text_height
             
                 if self.expand_direction == "down":                    
                     offset = 0 if index == 0 else log_margin + log_height
@@ -183,10 +185,17 @@ class HeadUpEventLog(BaseWidget):
                 
                 max_opacity = self.theme.get_opacity('event_log_opacity')
                 text_colour = self.theme.get_colour('event_log_text_colour', self.theme.get_colour('text_colour') )                
-                if visual_log['type'] != "event":
+                if visual_log['type'] not in ["event", "success", "error", "warning"]:
                     background_colour = default_background_colour
                 else:
-                    background_colour = self.theme.get_colour('info_colour', '30AD9E')
+                    if visual_log['type'] == "event":
+                        background_colour = self.theme.get_colour('info_colour', '30AD9E')
+                    elif visual_log['type'] == "error":
+                        background_colour = self.theme.get_colour('error_colour', 'AA0000')
+                    elif visual_log['type'] == "warning":
+                        background_colour = self.theme.get_colour('warning_colour', 'F75B00')
+                    elif visual_log['type'] == "success":
+                        background_colour = self.theme.get_colour('success_colour', '00CC00')
                     max_opacity = 255
                     text_colour = 'FFFFFF'
                 opacity_int = min(max_opacity, int(max_opacity * opacity))
@@ -201,9 +210,8 @@ class HeadUpEventLog(BaseWidget):
                 opacity_hex = hex(opacity_int)[-2:] if opacity_int > 15 else '0' + hex(opacity_int)[-1:]
                 paint.color = text_colour + opacity_hex
                 
-                line_height = total_text_height / len(lines)
-                for index, line in enumerate(lines):
-                    canvas.draw_text(line.text, text_x, current_y + line_height + index * vertical_text_padding + index * line_height )
+                line_height = paint.textsize + vertical_text_padding# total_text_height / len(lines)
+                self.draw_rich_text(canvas, paint, lines, text_x, current_y + vertical_text_padding * 2, line_height )
                 
             return continue_drawing
         else:
@@ -211,7 +219,7 @@ class HeadUpEventLog(BaseWidget):
         
     def draw_animation(self, canvas, animation_tick):
         if self.enabled:
-            return True
+            return len(self.visual_logs) > 0
         else:
             return self.draw(canvas)
 
@@ -220,3 +228,28 @@ class HeadUpEventLog(BaseWidget):
         rect = ui.Rect(origin_x, origin_y, width, height)
         rrect = skia.RoundRect.from_rect(rect, x=radius, y=radius)
         canvas.draw_rrect(rrect)
+        
+    def draw_rich_text(self, canvas, paint, rich_text, x, y, line_height):
+        text_colour = paint.color
+        count_tokens = len(rich_text)
+    
+        current_line = -1
+        text_height = 0
+        colour = paint.color
+        #paint.color = 'FF0000'
+        #canvas.draw_rect(ui.Rect(x, y, self.width, 1))
+        #paint.color = colour
+        y += line_height / 2
+        for index, text in enumerate(rich_text):
+            paint.font.embolden = "bold" in text.styles
+            paint.font.skew_x = -0.33 if "italic" in text.styles else 0
+            
+            current_line = current_line + 1 if text.x == 0 else current_line
+            if text.x == 0 and index != 0:
+                y += line_height
+                text_height = 0
+            #canvas.draw_rect(ui.Rect(x, y, self.width, 1))            
+            
+            text_y = y
+            text_height = max(text_height, text.height)
+            canvas.draw_text(text.text, x + text.x, text_y )

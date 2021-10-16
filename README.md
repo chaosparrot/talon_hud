@@ -21,7 +21,8 @@ This widget will display the current Talon mode ( Command, dictation or sleep ) 
 The buttons can also be clicked to activate the dwell action immediately.  
 
 You can customize the status bar in multiple ways
-- You can add the current natural languge by uncommenting line 67 from the display.py file
+- You can add the current natural language by uncommenting line 96 from the display.py file
+- You can add the microphone toggle by uncommenting line 100 from the display.py file
 - You can change the functionality of the icons by changing the activate_statusbar_icon action in the widgets/statusbar.py file all the way at the bottom.
 
 ### 2. Event log
@@ -48,6 +49,12 @@ By default there is only one choice panel available, this is to make sure you do
 A context menu can be configured to open on any widget that has mouse clicks enabled.  
 This widget contains a bunch of buttons that will interact with the widget that it has opened.  
 The context menu will attempt to stay on the screen where the right-click was made, and as such will change position accordingly.
+
+### 6. Walkthrough panel
+
+This widget is meant to guide users through a predefined workflow to familiarize them with it.
+You can use this to give an interactive experience for users to learn the ins and outs of various workflows.
+Included in the Talon HUD is a simple walkthrough for using the Talon HUD itself, but any package can make walkthroughs or workflows.
 
 Voice commands
 ---
@@ -100,10 +107,17 @@ If you prefer having a more basic animation free set up, or want to switch back 
 `head up basic <widget name>` disables animations on the chosen widget.  
 `head up fancy <widget name>` enables animations on the chosen widget.
 
+Using Talon HUD in your own packages
+---
+
+The HUD provides a bunch of hubs like documentation and walkthroughs that you can leverage in your own packages.
+That way, if a user has the Talon HUD together with your own package, you can provide documentation and other niceties without having to worry about making your own user interfaces.
+Visit the [package enhancement documentation](docs/README.md) for more information.
+
 Updating widgets with content
 ---
 
-If you want to add your own content to the widgets, visit the [CONTENT PUBLISHING DOCUMENTATION](content/README.md)
+If you want to add your own content to the widgets, visit the [content publishing documentation](content/README.md)
 
 Theming
 ---
@@ -149,10 +163,7 @@ These are ideas that I want to implement in no specific order and with no specif
 
 Known issues
 ---
-- Line breaks not being properly rendered if they do not contain additional characters
-- Lines are improperly spaced height wise when rendering rich text
-- Text panel footers on second page seem to have text go through the footer
-- Some click dragging issues with the documentation panel where it stays sticky
+- Multiple page walkthrough panel does not work properly with text indecis
 
 If any of these ideas seem cool for you to work on, give me a message on the talon slack so we can coordinate stuff.
 

@@ -93,28 +93,28 @@ class HeadUpContextMenu(LayoutWidget):
             screen = determine_screen_for_pos(Point2d(self.x, self.y))
             layout = self.layout_content(canvas, canvas.paint)
             dimensions = layout[self.page_index]['rect']
-            
-            should_go_left = dimensions.x + dimensions.width >= screen.x + screen.width
-            should_go_up = dimensions.y + dimensions.height >= screen.y + screen.height
-            can_go_middle_hor = dimensions.x + dimensions.width / 2 < screen.x + screen.width
-            can_go_middle_ver = dimensions.y + dimensions.height / 2 < screen.y + screen.height            
-            
-            if can_go_middle_hor:
-                self.limit_x = int(dimensions.x - dimensions.width / 2)
-            elif should_go_left:
-                self.limit_x = int(dimensions.x - dimensions.width)
-            self.x = self.limit_x    
+            if dimensions is not None and screen is not None:
+                should_go_left = dimensions.x + dimensions.width >= screen.x + screen.width
+                should_go_up = dimensions.y + dimensions.height >= screen.y + screen.height
+                can_go_middle_hor = dimensions.x + dimensions.width / 2 < screen.x + screen.width
+                can_go_middle_ver = dimensions.y + dimensions.height / 2 < screen.y + screen.height            
+                
+                if can_go_middle_hor:
+                    self.limit_x = int(dimensions.x - dimensions.width / 2)
+                elif should_go_left:
+                    self.limit_x = int(dimensions.x - dimensions.width)
+                self.x = self.limit_x    
 
-            if can_go_middle_ver:
-                self.limit_y = int(dimensions.y - dimensions.height / 2 if not can_go_middle_hor else self.limit_y)
-            if should_go_up:
-                self.limit_y = int(dimensions.y - dimensions.height)
-            self.y = self.limit_y
-            
-            if self.canvas:
-                self.canvas.move(self.x, self.y)
-                self.mouse_capture_canvas.rect = ui.Rect(self.x, self.y, dimensions.width, dimensions.height)
-            self.mark_position_invalid = False
+                if can_go_middle_ver:
+                    self.limit_y = int(dimensions.y - dimensions.height / 2 if not can_go_middle_hor else self.limit_y)
+                if should_go_up:
+                    self.limit_y = int(dimensions.y - dimensions.height)
+                self.y = self.limit_y
+                
+                if self.canvas:
+                    self.canvas.move(self.x, self.y)
+                    self.mouse_capture_canvas.rect = ui.Rect(self.x, self.y, dimensions.width, dimensions.height)
+                self.mark_position_invalid = False
             return True
             
     def layout_content(self, canvas, paint):
@@ -126,22 +126,27 @@ class HeadUpContextMenu(LayoutWidget):
         total_width = 0
         button_layout = []
         total_text_width = 0
-        total_button_height = 0
+        total_button_height = self.padding[0] + self.padding[2]
         for index, button in enumerate(self.buttons):
             icon_offset = 0
-            if button.image != None:
+            if button.image:
                 icon_offset = self.image_size + self.padding[3] * 3
             button_rich_text = layout_rich_text(paint, button.text, \
                 self.limit_width - icon_offset - self.padding[3] * 2 - self.padding[1] * 2, self.limit_height)                
             
             line_count = 0
-            button_text_height = 0
+            button_text_height = self.font_size
             for index, text in enumerate(button_rich_text):
                 line_count = line_count + 1 if text.x == 0 else line_count
                 current_line_length = current_line_length + text.width if text.x != 0 else text.width + icon_offset
                 total_text_width = max( total_text_width, current_line_length )
-                button_text_height = button_text_height + text.height + self.line_padding if text.x == 0 else button_text_height        
-            total_button_height += button_text_height + self.padding[0] * 2
+                button_text_height = button_text_height + self.font_size + self.line_padding if text.x == 0 and index != 0 else button_text_height
+            
+            if button.image != None:
+                total_button_height += max(self.image_size + self.padding[0] + self.padding[2], 
+                    button_text_height + self.padding[0] + self.padding[2])
+            else:
+                total_button_height += button_text_height + self.padding[0] + self.padding[2]
             
             button_layout.append({
                 'button': button,
@@ -149,9 +154,11 @@ class HeadUpContextMenu(LayoutWidget):
                 'line_count': line_count,
                 'text_height': button_text_height
             })
-    
+        
+        # Add the padding between the buttons
+        total_button_height += (len(button_layout) - 1 ) * self.padding[0]
         content_width = min(self.limit_width, max(self.width, total_text_width + self.padding[1] * 2 + self.padding[3] * 2))
-        content_height = min(self.limit_height, max(self.height, total_button_height + self.padding[0] * 2 + self.padding[2] * 2))
+        content_height = min(self.limit_height, max(self.height, total_button_height))
     
         return [{
             "rect": ui.Rect(self.x, self.y, content_width, content_height),
@@ -184,22 +191,29 @@ class HeadUpContextMenu(LayoutWidget):
             paint.color = self.theme.get_colour('button_hover_background', 'AAAAAA') if self.button_hovered == index \
                 else self.theme.get_colour('button_background', 'CCCCCC')
             button_height = self.padding[0] + button_layout['text_height'] + self.padding[2]
+            
+            button_icon = button_layout['button'].image
+            if button_icon:
+                button_height = max(self.image_size + self.padding[0] + self.padding[2], button_height)
             rect = ui.Rect(base_button_x, button_y, content_dimensions.width - self.padding[3] - self.padding[1], button_height)
             self.buttons[index].rect = rect
             canvas.draw_rrect( skia.RoundRect.from_rect(rect, x=10, y=10) )
             
+            button_text_y = button_y + self.padding[0] / 2
+            
             # Draw button icon on the left in the middle
-            button_icon = button_layout['button'].image
             if button_icon:
                 image = self.theme.get_image(button_icon)
                 canvas.draw_image(image, base_button_x + self.padding[3], button_y + button_height / 2 - image.height / 2)
+                if button_layout['text_height'] < self.image_size:
+                    button_text_y += ( self.image_size - button_layout['text_height'] ) / 2
             
             paint.color = self.theme.get_colour('button_hover_text_colour', '000000') if self.button_hovered == index \
                 else self.theme.get_colour('button_text_colour', '000000')
-            line_height = ( button_layout['text_height'] ) / button_layout['line_count']
+                
             self.draw_rich_text(canvas, paint, button_layout['rich_text'], 
                 base_button_x + self.padding[3] if not button_icon else icon_button_x + self.padding[3] / 2, 
-                button_y + self.padding[0] / 2, line_height)
+                button_text_y, self.line_padding)
             button_y += button_height + self.padding[0]
 
     def draw_background(self, canvas, paint, rect):

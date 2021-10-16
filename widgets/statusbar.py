@@ -132,7 +132,6 @@ class HeadUpStatusBar(BaseWidget):
         
         # Right click menu
         elif (event.event == "mouseup" and event.button == 1):
-        
             actions.user.show_context_menu(self.id, event.gpos.x, event.gpos.y, self.buttons)
         
         # Mouse dragging

@@ -1,0 +1,73 @@
+[
+    {
+	    "content": "Welcome to the Talon HUD, a unified collection of widgets! This is a short walkthrough to the features it offers. Say <cmd@ skip step /> to continue to the next step. \nIf you do not want to continue this walkthrough, right click here and select <*Mark as done/>.",
+		"modes": ["command"],
+		"context_hint": "Please turn on command modes to continue the walkthrough"
+	},
+    {
+	    "content": "Talon HUD is built up using multiple widgets which can be hidden and shown as desired. On the bottom right, whenever you say a command, the <*event log/> widget will show a message.\nTry saying <cmd@ event log hide /> to hide it, and <cmd@ event log show /> to make it appear again!",
+        "modes": ["command"],
+		"context_hint": "Please turn on command modes to continue the walkthrough"
+	},
+    {
+	    "content": "Just below the <*event log/>, you can see the second widget, the <*status bar/>. The <*status bar/> is a widget that offers a quick glance into what state Talon currently is in. Try saying <cmd@ talon sleep /> to see what happens!"
+	},
+    {
+	    "content": "As you can see, talon is now asleep, as indicated by the moon shape. <cmd@ talon wake /> should get you right back in your command modes!"
+	},
+    {
+	    "content": "We can change the appearance of the widgets like the <*status bar/> on the fly if we want to. <cmd@ Head up theme dark /> will turn on dark modes, which I like to use a lot, but if you want to change it back you can just say <cmd@ head up theme light /> again.",
+        "modes": ["command"],
+		"context_hint": "Please turn on command modes to continue the walkthrough"
+	},
+    {
+	    "content": "The <*status bar/>, like every widget, has options that can be shown by either right clicking, or saying the widget name and the word options to show them. In this case, this would be <cmd@ status bar options />",
+        "modes": ["command"],
+		"context_hint": "Please turn on command modes to continue the walkthrough"
+	},
+    {
+	    "content": "In this list, you can see a bunch of choices which you can click. In this case, we want to add the microphone toggle by saying <cmd@ add microphone />",
+        "modes": ["command"],
+		"context_hint": "Please turn on command modes to continue the walkthrough"
+	},
+	{
+	    "content": "You now have a one-click toggle for the microphone listening for Talon. You can remove this by right clicking the <*status bar/> and selecting remove microphone, but you can also say <cmd@ status bar remove microphone /> as every option in the option menu can be directly addressed using <widget name> <option>.",
+        "modes": ["command"],
+		"context_hint": "Please turn on command modes to continue the walkthrough"
+	},
+	{
+	    "content": "Let's explore the content a bit more bit more. Say <cmd@ toolkit options /> to open up the general hub of content available to the HUD.",
+        "modes": ["command"],
+		"context_hint": "Please turn on command modes to continue the walkthrough"
+	},
+	{
+	    "content": "The toolkit has things like walkthroughs, documentation and other nifty things available. Every option here that is a button can be said to active it, so <cmd@ documentation /> opens up the documentation hub.",
+        "modes": ["command"],
+		"context_hint": "Please turn on command modes to continue the walkthrough"
+	},
+	{
+	    "content": "As the Talon HUD has a bunch of settings you can change per widget, like toggling animations on and off, or changing the font size, this would be a long walkthrough if we went through all of it. So just know that saying <cmd@ widget settings /> in here will open up a quick refresher of all of it.",
+        "modes": ["command"],
+		"context_hint": "Please turn on command modes to continue the walkthrough"
+	},
+	{
+	    "content": "Sometimes, the content of a widget is bigger than it's given size. In that case, you can switch between pages by saying <widget name> next or <widget name> back/>. In this case, this would be <cmd@ widget settings next /> and <cmd@ widget settings back />",
+        "modes": ["command"],
+		"context_hint": "Please turn on command modes to continue the walkthrough"
+	},	
+    {
+	    "content": "Changing the widget position is as easy as saying <cmd@ head up drag widget settings /> and dragging your mouse around. <cmd@ head up confirm /> will place the widget where it is now.",
+        "modes": ["command"],
+		"context_hint": "Please turn on command modes to continue the walkthrough"
+	},
+    {
+	    "content": "You can also say <cmd@ head up text scale widget settings /> to change the size of the text while moving the mouse around. <cmd@ head up cancel /> will cancel the changes you are doing, so if something goes wrong, you can always reset the changes whenever you want!",
+        "modes": ["command"],
+		"context_hint": "Please turn on command modes to continue the walkthrough"
+	},
+    {
+	    "content": "That concludes the brief tour of the Talon HUD. To retry this walkthrough, or try another, you can always say <cmd@ toolkit walk throughs /> to open up the selection.<cmd@ walkthrough options hide /> will close it again.",
+        "modes": ["command"],
+		"context_hint": "Please turn on command modes to continue the walkthrough"
+	}
+]

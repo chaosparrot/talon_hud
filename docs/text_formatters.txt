@@ -1,0 +1,24 @@
+Text formatters are rules that can change the input style of text. When typing text, you often want to have words capitalized, lowercased or combined with symbols. This can be done using formatters.
+
+Below is a list of formatter commands on the left, and results on the right
+
+<*title testing formatters/> will result in Testing Formatters
+<*alldown testing formatters/> - testing formatters
+<*allcaps testing formatters/> - TESTING FORMATTERS
+<*smash testing formatters/> - testingformatters
+<*padded testing formatters/> - adds spaces around the text, so it would result in ( testing formatters )
+<*dubstring testing formatters/> - "testing formatters". Note that you might have to add a space after this to make the quote appear.
+<*string testing formatters/> - 'testing formatters'
+<*camel testing formatters/> - testingFormatters
+<*hammer testing formatters/> - TestingFormatters
+
+<*dotted testing formatters/> - testing.formatters
+<*slasher testing formatters/> - testing/formatters
+<*kebab testing formatters/> - testing-formatters
+<*snake testing formatters/> - testing_formatters
+<*packed testing formatters/> - testing::formatters
+<*dunder testing formatters/> - __testing__formatters
+
+You can also combine formatters as you like. So <*dotted allcaps testing formatters/> will result in TESTING.FORMATTERS.
+
+If you need to switch the formatting of the last used phrase, you can say <*nope that was <formatter>/> to change it to the given formatter.

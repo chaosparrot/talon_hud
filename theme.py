@@ -1,4 +1,4 @@
-from talon import skia
+from talon import skia, app
 import os
 from user.talon_hud.utils import hex_to_ints
 
@@ -36,6 +36,12 @@ class HeadUpDisplayTheme:
         if (image_name in self.image_dict):
             return self.image_dict[image_name]
         else:
+            # Load in images from other directories
+            if "/" in image_name or "\\" in image_name:
+                if os.path.isfile(image_name):
+                    image_name_len = len(image_name)
+                    self.image_dict[image_name] = skia.Image.from_file(image_name)                    
+                    return self.image_dict[image_name]
             return None
 
     def get_colour(self, colour, default_colour='000000'):

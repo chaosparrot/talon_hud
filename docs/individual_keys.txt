@@ -1,0 +1,68 @@
+This is the default Talon alphabet. If you are having trouble pronouncing these words, you can change them in the code/keys.py file.
+
+<*A/>ir    <*B/>at    <*C/>ap  <*D/>rum <*E/>ach       <*F/>ine
+<*G/>ust  <*H/>arp   s<*I/>t    <*J/>ury  <*K/>runch    <*L/>ook
+<*M/>ade <*N/>ear  <*O/>dd  <*P/>it    <*Q/>uench  <*R/>ed
+<*S/>un   <*T/>rap   <*U/>rge  <*V/>est <*W/>hale    ple<*X/>
+<*Y/>ank <*Z/>ip
+
+If you want to capitalize these letters, you can use the <*ship/> command. <*ship odd made gust/> will place OMG.
+
+<*Numbers/>
+To press a number, say the english for said number. <*one/> will put 1, etc. You can also say larger numbers like <*twenty two/> to place 22. 
+
+<*Punctuation/>
+[ ] - <*space/>
+[   ] - <*tab/>
+[ . ] - <*period/> or <*dot/>
+[ ? ] - <*question mark/>
+[ ! ] - <*bang/> or <*exclamation mark/>
+[ , ] - <*comma/>
+[ : ] - <*colon/>
+[ ; ] - <*semicolon/>
+[ ` ] - <*backtick/>
+[ ' ] - <*quote/>
+[ " ] - <*double quote/>
+[ _ ] - <*under score/>
+[ ( ] - <*left paren/> or <*paren/>
+[ ) ] - <*right paren/>
+[ { ] - <*left brace/> or <*brace/>
+[ } ] - <*right brace/>
+[ [ ] - <*left square/> or <*square/>
+[ ] ] - <*right square/>
+
+<*Symbols/>
+[ - ] - <*dash/> or <*minus/>
+[ + ] - <*plus/>
+[ / ] - <*slash/>
+[ \ ] - <*backslash/>
+[ < ] - <*left angle/> or <*less than/>
+[ > ] - <*right angle/> or <*greater than/>
+[ | ] - <*pipe/>
+[ * ] - <*star/>
+[ % ] - <*percent/>
+[ = ] - <*equals/>
+[ @ ] - <*at sign/>
+[ # ] - <*pound/> or <*hash/>
+[ ^ ] - <*caret/>
+[ ~ ] - <*tilde/>
+[ & ] - <*amper/>
+[ $ ] - <*dollar/>
+
+<*Special keys/>
+[Home] - <*home/>
+[End] - <*end/>
+[Insert] - <*insert/>
+[Delete] - <*forward delete/>
+[Backspace] - <*wipe/>
+[Page up] - <*pageup/>
+[Page down] - <*pagedown/>
+[Esc] - <*escape/>
+[Enter] - <*enter/>
+[Ctrl] - <*control/>
+[Shift] - <*shift/>
+[Alt] - <*alt/>
+[Windows] or [Command] - <*super/>
+[F1] - <*eff one/>
+[F2] - <*eff two/>
+... etc

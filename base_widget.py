@@ -74,7 +74,6 @@ class BaseWidget(metaclass=ABCMeta):
     
     # Set the topic that has claimed this widget
     def set_topic(self, topic:str):
-
     	self.topic = topic
     
     def set_theme(self, theme):
@@ -168,7 +167,7 @@ class BaseWidget(metaclass=ABCMeta):
 
     # Central drawing cycle attached to the canvas
     def draw_cycle(self, canvas):
-        continue_drawing = False 
+        continue_drawing = False
         
         if self.animation_tick != 0:
             # Send ticks to the animation method
@@ -227,8 +226,8 @@ class BaseWidget(metaclass=ABCMeta):
             if len(self.drag_position) == 0 and event.event == "mousedown":
                 self.drag_position = [event.gpos.x - self.limit_x, event.gpos.y - self.limit_y]
             elif event.event == "mouseup" and len(self.drag_position) > 0:
-                self.drag_position = []
                 self.start_setup("")
+                self.drag_position = []
         if len(self.drag_position) > 0 and event.event == "mousemove":
             if self.setup_type != "position":
                 self.start_setup("position")
@@ -257,7 +256,8 @@ class BaseWidget(metaclass=ABCMeta):
             return
         # Persist the user preferences when we end our setup
         if (self.setup_type != "" and not setup_type):
-            rect = self.canvas.get_rect()
+            self.drag_position = []
+            rect = self.canvas.rect
             
             if (self.setup_type == "position"):
                 self.preferences.x = int(rect.x) if self.limit_x == self.x else int(rect.x - ( self.limit_x - self.x ))
@@ -292,6 +292,7 @@ class BaseWidget(metaclass=ABCMeta):
             actions.user.persist_hud_preferences()
         # Cancel every change
         elif setup_type == "cancel":
+            self.drag_position = []        
             if (self.setup_type != ""):
                 self.load({}, False)
                 

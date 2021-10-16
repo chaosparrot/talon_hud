@@ -6,6 +6,7 @@ from typing import Callable, Any
 @dataclass
 class HudRichText:
     x: int
+    y: int
     width: int
     height: int
     styles: list[str]
@@ -51,3 +52,18 @@ class HudPanelContent:
     published_at: float
     show: bool
     choices: HudChoices = None
+    tags: list[str] = None
+
+@dataclass
+class HudWalkThroughStep:
+    content: str = ''
+    context_hint: str = ''
+    tags: list[str] = None
+    modes: list[str] = None
+    app: str = ''
+    voice_commands: list[str] = None
+
+@dataclass    
+class HudWalkThrough:
+    title: str
+    steps: list[HudWalkThroughStep]

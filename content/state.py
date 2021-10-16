@@ -1,9 +1,12 @@
 from talon import actions, cron, scope, Module, ui
+from talon_init import TALON_USER
 from talon.scripting import Dispatch
 from user.talon_hud.content.typing import HudPanelContent, HudButton, HudChoice, HudChoices
 import time
 from typing import Callable, Any
+import os
 
+hud_directory = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 max_log_length = 50
 mod = Module()
 
@@ -23,6 +26,7 @@ class HeadUpDisplayContent(Dispatch):
         "status_icons": [],
         "log": [],
         "abilities": [],
+        "walkthrough_voice_commands": [],
         "topics": {
             'debug': HudPanelContent('debug', '', 'Debug panel', [], 0, False),
         }
@@ -90,33 +94,6 @@ class HeadUpDisplayContent(Dispatch):
         
 hud_content = HeadUpDisplayContent()
 
-documentation = """
-By default, the widgets except for the status bar will hide when Talon goes in sleep mode, but you can keep them around, or hide them, with the following commands.  
-<*head up show <widget name> on sleep/> keeps the chosen widget enabled during sleep mode.  
-<*head up hide <widget name> on sleep/> hides the chosen widget when sleep mode is turned on.
-
-On top of being able to turn widgets on and off, you can configure their attributes to your liking.  
-Currently, you can change the size, position, alignment, animation and font size.  
-
-<*head up drag <widget name>/> starts dragging the widget.  
-<*head up resize <widget name>/> starts resizing the widgets width and height.  
-<*head up expand <widget name>/> changes the maximum size of the widget in case the content does not fit the regular width and height.  
-By default these two dimensions are the same so the widget does not grow when more content is added.  
-<*head up text scale <widget name>/> starts resizing the text in the widget.  
-<*head up drop/> confirms and saves the changes of your changed widgets.  
-<*head up cancel/> cancels the changes. Hiding a widget also discards of the current changes.
-
-Some widgets like the event log also allow you to change the text direction and alignment  
-<*head up align <widget name> left/> aligns the text and the widget to the left side of its bounds.  
-<*head up align <widget name> right/> aligns the text and the widget to the right side of its bounds.  
-<*head up align <widget name> top/> changes the direction in which content is placed upwards.  
-<*head up align <widget name> bottom/> changes the direction in which content is placed downwards.
-
-If you prefer having a more basic animation free set up, or want to switch back to an animated display, you can use the following commands  
-<*head up basic <widget name>/> disables animations on the chosen widget.  
-<*head up fancy <widget name>/> enables animations on the chosen widget.
-"""
-
 @mod.action_class
 class Actions:
 
@@ -135,6 +112,11 @@ class Actions:
             "clickable": False
         })
 
+    def hud_set_walkthrough_voice_commands(commands: list[str]):
+        """Set the voice commands uttered by the user during the walkthrough step"""
+        global hud_content
+        hud_content.update({"walkthrough_said_voice_commands": commands})
+
     def hud_remove_status_icon(id: str):
         """Remove an icon to the status bar"""
         global hud_content
@@ -142,18 +124,20 @@ class Actions:
             "id": id
         })
 
-    def add_hud_ability(id: str, image: str, colour: str, enabled: bool, activated: bool):
+    def hud_add_ability(id: str, image: str, colour: str, enabled: int, activated: int, image_offset_x: int = 0, image_offset_y: int = 0):
         """Add a hud ability or update it"""
         global hud_content
         hud_content.add_to_set("abilities", {
             "id": id,
             "image": image,
             "colour": colour,
-            "enabled": enabled,
-            "activated": 5 if activated else 0
+            "enabled": enabled > 0,
+            "activated": 5 if activated > 0 else 0,
+            "image_offset_x": image_offset_x,
+            "image_offset_y": image_offset_y
         })
 
-    def remove_hud_ability(id: str):
+    def hud_remove_ability(id: str):
         """Remove an ability"""
         global hud_content
         hud_content.remove_from_set("abilities", {
@@ -165,11 +149,13 @@ class Actions:
         global hud_content
         hud_content.dispatch("content_update", hud_content.content)
         
-    def hud_publish_content(content: str, topic: str = '', title:str = '', show:bool = True, buttons: list[HudButton] = None):
+    def hud_publish_content(content: str, topic: str = '', title:str = '', show:bool = True, buttons: list[HudButton] = None, tags: list[str] = None):
         """Publish a specific piece of content to a topic"""            
         if buttons == None:
             buttons = []
-        content = HudPanelContent(topic, title, [content], buttons, time.time(), show)
+        if tags == None:
+            tags = []
+        content = HudPanelContent(topic, title, [content], buttons, time.time(), show, tags = tags)
         
         global hud_content
         hud_content.publish(content)
@@ -196,14 +182,7 @@ class Actions:
         content = HudPanelContent("choice", title, [content], [], time.time(), True, choices)
         global hud_content
         hud_content.publish(content)
-        
-    def hud_get_documentation():
-        """Publish a specific piece of content to a topic"""
-        content = HudPanelContent("documentation", "Head up documentation", [documentation], [], time.time(), True)
-        
-        global hud_content
-        hud_content.publish(content)
-        
+                
     def show_test_choices():
         """Show a bunch of test buttons to choose from"""
         choices = actions.user.hud_create_choices([{"text": "Testing", "image": "next_icon"},{"text": "Another choice"},{"text": "Some other choice"},{"text": "Maybe pick this"},], print)

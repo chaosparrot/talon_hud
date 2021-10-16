@@ -5,7 +5,7 @@ You can publish all kinds of content to the various widgets of the HUD.
 For example:
 - Status bar icons to display a certain state
 - Log messages
-- Textual content with options to bold, slant or emphasise in a number of colours
+- Textual content with options to bold, slant or emphasize in a number of colours
 - Context menu options for various widgets
 
 Publishing content to head up display can be done using actions found in content/state.py.
@@ -21,7 +21,8 @@ from talon import actions
 actions.user.hud_add_log('command', 'This is a log message!')
 ```
 The following values can be added to hud_add_log
-- Type: What style we need to use to render the log. Currently supports 'event' for info styling, and 'command' for regular styling.
+- Type: What style we need to use to render the log. 
+  Currently supports 'command' for regular styling, 'success', 'warning' and 'error' for various validation messages, and 'event' for notices.
 - Message: The log message to display
 
 # Publishing icons to the status bar
@@ -37,9 +38,19 @@ actions.user.hud_remove_status_icon('my_status_icon')
 
 These are the values that you can give to hud_add_status_icon:
 - Identifier: This is a value that uniquely identifies your icon. You can use this to later remove the icon using hud_remove_status_icon
-- Image: This is a path to an image. By default, the path 'talon_hud/themes/CURRENT_USER_THEME/IMAGE.png' is assumed if no .png is added. Currently, there is no support of adding images outside of the themes yet.
+- Image: This is a path to an image. By default, the path 'talon_hud/themes/CURRENT_USER_THEME/IMAGE.png' is assumed if no .png is added. 
+However, you can use any path on the system to display an image. 
+If you are shipping a seperate repository, I recommend making the path relative to the directory where you are running your code from
+As that makes no assumptions how the user has built up their talon_user folder.
+Something like this:
+```
+from talon import actions
+import os
+my_file_dir = os.path.dirname(os.path.abspath(__file__))
+icon = my_file_dir + '/image.png'
+actions.user.hud_add_status_icon('my_status_icon', icon)
+```
 
-TODO - ADD SUPPORT FOR IMAGES OUTSIDE OF TALON_HUD DIRECTORY
 TODO - ADD ICONS THAT ARE FUNCTIONAL LIKE THE MODE ICON
 
 # Publishing to a text panel
@@ -57,6 +68,7 @@ These are the values that you can give to the hud_publish_content action
 - Title: This is the header title that will be shown in the text panel. This value will also be used to address the text panel. For example, if you set a title 'Command area', the user will be able to say 'Command area hide' to hide the text panel.
 - Show: This is a True or False value. If set to True, this will urge a widget to display and enable itself if it isn't shown yet. If the user has minimized the text panel, it will not be opened. Defaults to True.
 - Buttons: These are extra HudButton added to the context menu when the user right clicks the text panel, or like in the example above, says `command area options`.
+- Tags: Tags to be enabled while this content is visible on the screen. You can use this to add exploratory voice commands embedded in your text.
 
 # Adding right click buttons to a text panel
 
@@ -74,7 +86,7 @@ buttons = [button]
 actions.user.hud_publish_content("Text with content", "test", "Test content", True, buttons)
 ```
 Now when the content is published, and extra button can be found in the widgets right click menu. Like the other options in it, when it is shown, the text inside the button is used to activate it, in this case, print to console!
-Users can also get accusomed to the option, as it is also available as a quick option. Saying `test content print to console` will activate the button even though the context menu hasn't shown up yet.
+Users can also get accustomed to the option, as it is also available as a quick option. Saying `test content print to console` will activate the button even though the context menu hasn't shown up yet.
 
 # Offering choices and options
 
@@ -135,15 +147,16 @@ The following styling markers are available:
 - <! : Text in the colour orange, used for warning users
 - <!! : Text in the colour red, used for errors
 - <@ : Text in the colour blue, used to notify the user.
+- <cmd@ : Denotes the start of a voice command that can be said - Not all widgets have a specific style for this
 - /> : Closing marking - ends the latest style applied
 
 When writing rich text containing voice commands, make sure to emphasise the voice commands with one of these markers so they stand out from the rest of the text.  
-This makes it easier for the user to quickly pick out the voice commands from the text you have writen.  
+This makes it easier for the user to quickly pick out the voice commands from the text you have written.  
 There isn't a firm styling for voice commands yet, so for now just apply a bold marker at the minimum until we maybe decide on one.
 
 # Polling / continuously updating content
 
-For simple usecases, like popping up a single piece of text, just being able to publish content is enough. However, sometimes you want to listen continuously for changes, like changing scopes or updating the list of recent commands.  
+For simple use cases, like popping up a single piece of text, just being able to publish content is enough. However, sometimes you want to listen continuously for changes, like changing scopes or updating the list of recent commands.  
 You can do your own event handling if you like, but the HUD also supports a concept called Pollers, some examples can be found in the talon_hud/content folder.
 
 A poller is an object that registered to the Talon HUD, and will be enabled when the user requests it.  

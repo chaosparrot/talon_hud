@@ -1,0 +1,80 @@
+[
+    {
+	    "content": "Now that you've opened a browser, you can learn the basics. First up, navigating to a website! Say <cmd@ go address /> to select the address bar.",
+		"modes": ["command"],
+		"tags": ["browser"],		
+		"context_hint": "Please open a browser application like Firefox, Google Chrome, Edge or Safari to start the walkthrough."
+	},
+	{
+	    "content": "In here, you can type any website you want. Let's navigate to the talon voice website with <cmd@ smash talon voice over dot com /> and <cmd@ enter />. If you make a mistake, just say go address and retry.",
+		"modes": ["command"],
+		"tags": ["browser"],		
+		"context_hint": "Please open a browser application like Firefox, Google Chrome, Edge or Safari to resume the walkthrough."
+	},
+	{
+	    "content": "Of course, it would be annoying to type out every address by voice, luckily we can also go to specific websites with a voice command. <cmd@ go to youtube /> for example navigates over to youtube.",
+		"modes": ["command"],
+		"tags": ["browser"],		
+		"context_hint": "Please open a browser application like Firefox, Google Chrome, Edge or Safari to resume the walkthrough."
+	},
+	{
+	    "content": "Returning to the homepage of our browser is done with <cmd@ go home />. We can also navigate back to youtube by saying <cmd@ go back />, and forward again by saying <cmd@ go forward />.",
+		"modes": ["command"],
+		"tags": ["browser"],		
+		"context_hint": "Please open a browser application like Firefox, Google Chrome, Edge or Safari to resume the walkthrough."
+	},
+	{
+	    "content": "You can also open a new tab with the open command, <cmd@ open youtube /> opens a new youtube tab. We can see new recommendations with <cmd@ refresh it />, as it reloads the page to look for new ones.",
+		"modes": ["command"],
+		"tags": ["browser"],		
+		"context_hint": "Please open a browser application like Firefox, Google Chrome, Edge or Safari to resume the walkthrough."
+	},
+	{
+	    "content": "Let's start searching for stuff! Some websites are available for search commands, like google! Saying <cmd@ google hunt restaurants /> will open up a new tab searching for restaurants!",
+		"modes": ["command"],
+		"tags": ["browser"],		
+		"context_hint": "Please open a browser application like Firefox, Google Chrome, Edge or Safari to resume the walkthrough."
+	},
+	{
+	    "content": "There's also wikipedia searches available, so <cmd@ wiki hunt kingfisher /> will search for that neat blue bird that fishes from a branch.",
+		"modes": ["command"],
+		"tags": ["browser"],		
+		"context_hint": "Please open a browser application like Firefox, Google Chrome, Edge or Safari to resume the walkthrough."
+	},
+	{
+	    "content": "You should have a bunch of tabs open now, which we can navigate between. <cmd@ tab last /> will go to your previous tab, and <cmd@ tab next /> goes to the wikipedia page.",
+		"modes": ["command"],
+		"tags": ["browser"],		
+		"context_hint": "Please open a browser application like Firefox, Google Chrome, Edge or Safari to resume the walkthrough."
+	},
+	{
+	    "content": "You can also navigate to a specific tab by saying a tab number, for example, <cmd@ go tab one /> will go back to the youtube tab.",
+		"modes": ["command"],
+		"tags": ["browser"],		
+		"context_hint": "Please open a browser application like Firefox, Google Chrome, Edge or Safari to resume the walkthrough."
+	},
+	{
+	    "content": "Opening and closing new tabs can be done with <cmd@ tab open /> and <cmd@ tab close />. If you accidentally closed a tab, you can also say <cmd@ tab reopen /> to get it back! ",
+		"modes": ["command"],
+		"tags": ["browser"],		
+		"context_hint": "Please open a browser application like Firefox, Google Chrome, Edge or Safari to resume the walkthrough."
+	},
+	{
+	    "content": "If you're brave enough to do your private browsing with voice commands, you can say <cmd@ go private /> to open a new session. ",
+		"modes": ["command"],
+		"tags": ["browser"],		
+		"context_hint": "Please open a browser application like Firefox, Google Chrome, Edge or Safari to resume the walkthrough."
+	},
+	{
+	    "content": "In order to get back out of your private browsing session, you can simply say <cmd@ window close /> to close all the tabs at the same time.",
+		"modes": ["command"],
+		"tags": ["browser"],		
+		"context_hint": "Please open a browser application like Firefox, Google Chrome, Edge or Safari to resume the walkthrough."
+	},
+	{
+	    "content": "That concludes the basic usage walkthrough. If you ever need a refresher, you can go to <cmd@ toolkit documentation /> and then say <cmd@ browser usage /> for a full overview.",
+		"modes": ["command"],
+		"tags": ["browser"],		
+		"context_hint": "Please open a browser application like Firefox, Google Chrome, Edge or Safari to resume the walkthrough."
+	}
+]

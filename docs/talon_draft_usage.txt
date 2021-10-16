@@ -1,0 +1,34 @@
+Talon draft is an overlay which can be used to dictate and alter text before sending it to an application.
+It holds some features like easily moving the text cursor over to specific parts of a sentence, as well as replacement and a whole lot more.
+
+<*Displaying the draft window/>
+
+<*draft show/> shows the draft window.
+<*draft hide/> hides the draft window.
+<*draft show large/> shows a slightly larger draft window.
+<*draft show small/> shows the regular sized window.
+<*draft show <window position>/> shows the draft window at the given position. For example, <*draft show top/> shows it at the top.
+Possible options are top, bottom, left, right and middle.
+
+<*draft edit/> opens the draft window with the selected text.
+<*draft edit all/> selects all the text in the current text area before opening up the draft window with it.
+<*draft empty/> clears the draft window.
+<*draft submit/> sends the contents of the draft window to the next application.
+
+<*Text editing/>
+
+Most of the regular edit options are available in the draft window, like <*go word left/> and so on, but there are draft window specific edit commands that come in handy.
+In the draft window you see words with red letters underneath them. These letters are called anchors, and can be accessed with the Talon alphabet to be used in these commands.
+
+<*cursor <letter>/> will place the cursor in front of that word. For example, <*cursor air/> will place the text cursor in front of the first word.
+<*cursor after <letter>/> will place the cursor at the back of the anchored word.
+<*replace <letter> with <word>/> will replace the word at the cursor with the given <word>. <*replace air with ground/> will replace the first word with the word ground.
+<*select <letter>/> will select the anchored word.
+<*clear <letter>/> will clear the anchored word.
+<*<formatters> word <letter>/> will replace the word with the formatted word. So <*allcaps word air/> will replace the first word with a version which only uses capitalized letters.
+
+There are also commands that allow you to manipulate multiple words at the same time.
+
+<*select <letter> through <letter2>/> will select all the words from the first letter to the last. So <*select air through cap/> will select the first three words.
+<*clear <letter> through <letter2>/> will remove all the words from the first letter to the last.
+<*<formatters> <letter> through <letter2>/> will replace all the words from the first letter to the last with the given formatting.

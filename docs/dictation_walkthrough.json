@@ -1,0 +1,133 @@
+[
+    {
+	    "content": "There are multiple ways to dictate text in Talon. For this walkthrough, we will use the draft editor. This window can be opened by saying <cmd@ draft show />",
+		"modes": ["command"],
+		"context_hint": "Please turn on command mode to continue the walkthrough."
+	},
+	{
+	    "content": "The draft editor is an overlay which you can use to type or dictate text, before submitting it to another application. <cmd@ draft hide /> hides the window in case you do not want it.",
+		"modes": ["command"],
+		"context_hint": "Please turn on command mode to continue the walkthrough."
+	},
+	{
+	    "content": "Say <cmd@ draft show /> to open it again. In order to start dictating here, we can turn on dictation mode by saying <cmd@ dictation mode />."
+	},
+	{
+	    "content": "Now every word you say will be typed out. In order to return to regular commands, say <cmd@ command mode />.",
+		"tags": ["user.draft_window_showing"],
+		"context_hint": "Please select the draft editor by clicking on it."
+	},
+	{
+	    "content": "Let's clear our draft window first by saying <cmd@ draft empty />. Now we have a clean slate to try other things, like <cmd@ say the weather is nice today />",
+		"modes": ["command"],
+		"tags": ["user.draft_window_showing"],
+		"context_hint": "Please select the draft editor by clicking on it."
+	},
+	{
+	    "content": "The <*say/> command dictates all the words that come after it while staying in command mode. Saying <cmd@ period /> and <cmd@ enter /> will place a dot and enter a new line.",
+		"modes": ["command"],
+		"tags": ["user.draft_window_showing"],
+		"context_hint": "Please select the draft editor by clicking on it."
+	},
+	{
+	    "content": "There is also a word equivalent to the <*say/> command. Try saying <cmd@ word really /> to test it out.",
+		"modes": ["command"],
+		"tags": ["user.draft_window_showing"],
+		"context_hint": "Please select the draft editor by clicking on it."
+	},
+	{
+	    "content": "Some basic punctuation can come in handy for this type of thing as well. <cmd@ question mark /> and <cmd@ bang /> for example will place ?!",
+		"modes": ["command"],
+		"tags": ["user.draft_window_showing"],
+		"context_hint": "Please select the draft editor by clicking on it."
+	},
+	{
+	    "content": "In case we ever make a mistake in dictating, we can do a bunch of things. <cmd@ undo that /> will undo the last command, which was placing the exclamation mark.",
+		"modes": ["command"],
+		"tags": ["user.draft_window_showing"],
+		"context_hint": "Please select the draft editor by clicking on it."
+	},
+	{
+	    "content": "We can also call the backspace button directly. Try saying <cmd@ wipe /> to get rid of the question mark.",
+		"modes": ["command"],
+		"tags": ["user.draft_window_showing"],
+		"context_hint": "Please select the draft editor by clicking on it."
+	},		
+	{
+	    "content": "Another way is to say <cmd@ scratch that />. That will press backspace for as long as the last said phrase, in this case, the word really.",
+		"modes": ["command"],
+		"tags": ["user.draft_window_showing"],
+		"context_hint": "Please select the draft editor by clicking on it."
+	},
+    {
+	    "content": "In the draft window, we can do all kinds of corrections as well. For example, <cmd@ clear cap /> will remove the word above the red letter c.",
+		"modes": ["command"],
+		"tags": ["user.draft_window_showing"],
+		"context_hint": "Please select the draft editor by clicking on it."
+	},	
+    {
+	    "content": "You can also replace the word directly. <cmd@ undo that /> will undo the clearing, and <cmd@ replace cap with was /> will replace the word is with was. ",
+		"modes": ["command"],
+		"tags": ["user.draft_window_showing"],
+		"context_hint": "Please select the draft editor by clicking on it."
+	},
+    {
+	    "content": "There are other ways we can do corrections in the draft window, but we'll focus on moving the cursor to the start of the sentence now. <cmd@ go line start /> will do that for us.",
+		"modes": ["command"],
+		"tags": ["user.draft_window_showing"],
+		"context_hint": "Please select the draft editor by clicking on it."
+	},	
+	{
+	    "content": "<cmd@ double quote /> will place a \" mark here, you might have to say <*space/> as well if it doesn't appear. Saying <cmd@ go line end /> will go to the back of the sentence.",
+		"modes": ["command"],
+		"tags": ["user.draft_window_showing"],
+		"context_hint": "Please select the draft editor by clicking on it."
+	},
+	{
+	    "content": "Let's start combining some commands. <cmd@ double quote comma space /> should place \", where we are now.",
+		"modes": ["command"],
+		"tags": ["user.draft_window_showing"],
+		"context_hint": "Please select the draft editor by clicking on it."
+	},
+	{
+	    "content": "We can also combine the <*say/> command with punctuation marks. <cmd@ say said the frog over period /> will place a comma after our said words.",
+		"modes": ["command"],
+		"tags": ["user.draft_window_showing"],
+		"context_hint": "Please select the draft editor by clicking on it."
+	},
+	{
+	    "content": "<*over/> puts a stop to a lot of the phrase commands, so you can make one large sentence rather than waiting a bunch. <cmd@ slap /> will also place an enter, just like <*enter/> does.",
+		"modes": ["command"],
+		"tags": ["user.draft_window_showing"],
+		"context_hint": "Please select the draft editor by clicking on it."
+	},
+	{
+	    "content": "There are other ways to quote something as well using something called formatters. <cmd@ dubstring then why go to sleep /> will quote the sentence for you.",
+		"modes": ["command"],
+		"tags": ["user.draft_window_showing"],
+		"context_hint": "Please select the draft editor by clicking on it."
+	},
+	{
+	    "content": "There are all kinds of formatters available for text, like ones that capitalize the first letter. Let's replace the frog word next. <cmd@ select harp /> will select it for us.",
+		"modes": ["command"],
+		"tags": ["user.draft_window_showing"],
+		"context_hint": "Please select the draft editor by clicking on it."
+	},
+	{
+	    "content": "Finally, let's try out some formatters. <cmd@ title frog /> will result in Frog, <cmd@ clear word left /> to remove it, and <cmd@ allcaps frog /> will place FROG.",
+		"modes": ["command"],
+		"tags": ["user.draft_window_showing"],
+		"context_hint": "Please select the draft editor by clicking on it."
+	},
+	{
+	    "content": "If you are happy with the result, you can say <cmd@ draft submit /> to send the created text over to the next application.",
+		"modes": ["command"],
+		"tags": ["user.draft_window_showing"],
+		"context_hint": "Please select the draft editor by clicking on it."
+	},
+	{
+	    "content": "A refresher of these commands concepts can be found in <cmd@ toolkit documentation /> in the <*talon draft window/> and <*text formatting/> sections.",
+		"modes": ["command"],
+		"context_hint": "Please select the draft editor by clicking on it."
+	}
+]
