@@ -50,6 +50,12 @@ mod.tag("talon_hud_choices_visible", desc="Tag that shows there are choices avai
 
 ctx.tags = ['user.talon_hud_available']
 
+# A list of Talon HUD versions that can be used to check for in other packages
+TALON_HUD_RELEASE_030 = 3
+@mod.scope
+def scope():
+    return {"talon_hud_version": TALON_HUD_RELEASE_030}
+
 class HeadUpDisplay:
     enabled = False
     display_state = None
