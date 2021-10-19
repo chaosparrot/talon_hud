@@ -1,7 +1,9 @@
 import os
+from talon import ui
 
 semantic_directory = os.path.dirname(os.path.abspath(__file__))
-user_preferences_file_location =  semantic_directory + "/preferences/preferences.csv"
+user_preferences_file_dir =  semantic_directory + "/preferences/"
+user_preferences_file_location = user_preferences_file_dir + "preferences.csv"
 
 # Loads and persists all the data based on the users preferences
 # To keep the display state consistent across sessions
@@ -21,11 +23,24 @@ class HeadUpDisplayUserPreferences:
         self.load_preferences()
     
     def load_preferences(self):
-        if not os.path.exists(user_preferences_file_location):
-            self.persist_preferences(self.default_prefs)
+        user_preferences_screen_file_path = self.get_preferences_filepath()
+        
+        # Migration from old preferences file to new
+        if not os.path.exists(user_preferences_screen_file_path) and os.path.exists(user_preferences_file_location):
+            fh = open(user_preferences_file_location, 'r')
+            lines = fh.readlines()
+            fh.close()
+            
+            fh = open(user_preferences_screen_file_path, 'w')
+            fh.write("".join(lines))
+            fh.close()
+        elif not os.path.exists(user_preferences_screen_file_path):
+            # TODO CALIBRATE DEFAULTS NICELY BASED ON SCREEN SIZE / POSITIONS?
+        
+            self.persist_preferences(self.default_preferences)
 
-        fh = open(user_preferences_file_location, "r")
-        lines = fh.readlines()
+        fh = open(user_preferences_screen_file_path, "r")
+        lines = fh.readlines() 
         fh.close()
         
         # Copy over defaults first
@@ -44,7 +59,21 @@ class HeadUpDisplayUserPreferences:
                 preferences[key] = value
         
         self.prefs = preferences
-        
+    
+    # Get the preferences filename for the current monitor
+    def get_preferences_filepath(self):
+        screens = ui.screens()
+        preferences_title = "preferences"
+        for screen in screens:
+            preferences_postfix = []
+            preferences_postfix.append(str(int(screen.x)))
+            preferences_postfix.append(str(int(screen.y)))
+            preferences_postfix.append(str(int(screen.width)))
+            preferences_postfix.append(str(int(screen.height)))
+            preferences_title += "(" + "_".join(preferences_postfix) + ")"
+        preferences_title += ".csv"
+        return user_preferences_file_dir + preferences_title
+    
     # Persist the preferences as a CSV for reloading between Talon sessions later
     # But only when the new preferences have changed
     def persist_preferences(self, new_preferences):
@@ -55,7 +84,8 @@ class HeadUpDisplayUserPreferences:
             self.prefs[key] = value
     
         if (changed):
-            fh = open(user_preferences_file_location, "w")
+            user_preferences_screen_file_path = self.get_preferences_filepath()
+            fh = open(user_preferences_screen_file_path, "w")
     
             # Transform data before persisting
             for index, key in enumerate(self.prefs):

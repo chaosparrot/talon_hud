@@ -106,14 +106,14 @@ class HeadUpDisplay:
         
     def start(self):
         # Uncomment the line below to add the single click mic toggle by default
-        # actions.user.hud_add_single_click_mic_toggle()    
+        # actions.user.hud_add_single_click_mic_toggle()
     
         if (self.preferences.prefs['enabled']):
             self.enable()
             
             if actions.sound.active_microphone() == "None":
                 actions.user.hud_add_log("warning", "Microphone is set to 'None'!\n\nNo voice commands will be registered.")
-            
+    
     def enable(self, persisted=False):
         if not self.enabled:
             self.enabled = True
@@ -219,13 +219,24 @@ class HeadUpDisplay:
                 widget.set_theme(self.theme)
             
             self.preferences.persist_preferences({'theme_name': theme_name})
-        
+
     def start_setup_id(self, setup_type, id = "*"):
         for widget in self.widgets:
             if widget.enabled and ( id == "*" or widget.id == id ) and widget.setup_type != setup_type:
                 widget.start_setup(setup_type)
                 
         self.determine_active_setup_mouse()
+    
+    def reload_preferences(self):
+        """Reload user preferences ( in case a monitor switches or something )"""
+        self.preferences.load_preferences()
+    
+        for widget in self.widgets:
+            # First cancel any set up to make sure there won't be some weird collision going on with persistence
+            if widget.setup_type != "":
+                widget.start_setup("cancel")
+            widget.load(self.preferences.prefs, False)
+            widget.start_setup("reload")
     
     def register_poller(self, topic: str, poller: Poller, keep_alive: bool):
         self.remove_poller(topic)
@@ -624,3 +635,8 @@ class Actions:
         """Enables a poller and claims a widget"""    
         global hud
         hud.activate_poller(topic)
+
+    def hud_reload_preferences():
+        """Reload the HUD preferences"""
+        global hud
+        hud.reload_preferences()

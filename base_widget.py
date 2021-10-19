@@ -252,7 +252,7 @@ class BaseWidget(metaclass=ABCMeta):
         
     def start_setup(self, setup_type):
         """Starts a setup mode that is used for moving, resizing and other various changes that the user might setup"""    
-        if (setup_type not in self.allowed_setup_options and setup_type not in ["", "cancel"] ):
+        if (setup_type not in self.allowed_setup_options and setup_type not in ["", "cancel", "reload"] ):
             return
         # Persist the user preferences when we end our setup
         if (self.setup_type != "" and not setup_type):
@@ -302,6 +302,15 @@ class BaseWidget(metaclass=ABCMeta):
                 
                 self.setup_type = ""
                 self.canvas.resume()
+                
+        elif setup_type == "reload":
+            self.drag_position = []
+            if self.canvas:
+                rect = ui.Rect(self.x, self.y, self.width, self.height)                    
+                self.canvas.rect = rect
+                
+            self.setup_type = ""
+            self.canvas.resume()
         # Start the setup state
         elif self.setup_type != setup_type:
             self.setup_type = setup_type
