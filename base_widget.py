@@ -296,21 +296,19 @@ class BaseWidget(metaclass=ABCMeta):
             if (self.setup_type != ""):
                 self.load({}, False)
                 
+                self.setup_type = ""                
                 if self.canvas:
                     rect = ui.Rect(self.x, self.y, self.width, self.height)                    
                     self.canvas.rect = rect
-                
-                self.setup_type = ""
-                self.canvas.resume()
+                    self.canvas.resume()
                 
         elif setup_type == "reload":
             self.drag_position = []
+            self.setup_type = ""             
             if self.canvas:
                 rect = ui.Rect(self.x, self.y, self.width, self.height)                    
                 self.canvas.rect = rect
-                
-            self.setup_type = ""
-            self.canvas.resume()
+                self.canvas.resume()
         # Start the setup state
         elif self.setup_type != setup_type:
             self.setup_type = setup_type

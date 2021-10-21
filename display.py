@@ -128,11 +128,16 @@ class HeadUpDisplay:
             for topic, poller in self.pollers.items():
             	if topic in attached_topics:
                     poller.enable()
+
+            # Reload the preferences just in case a screen change happened in between the hidden state
+            if persisted:
+                self.reload_preferences()
             
             self.display_state.register('content_update', self.content_update)
             self.display_state.register('panel_update', self.panel_update)            
             self.display_state.register('log_update', self.log_update)
-            self.determine_active_setup_mouse()            
+            ui.register('screen_change', self.reload_preferences)            
+            self.determine_active_setup_mouse()
             if persisted:
                 self.preferences.persist_preferences({'enabled': True})
                 
@@ -152,6 +157,7 @@ class HeadUpDisplay:
             self.display_state.unregister('content_update', self.content_update)
             self.display_state.unregister('panel_update', self.panel_update)
             self.display_state.unregister('log_update', self.log_update)
+            ui.unregister('screen_change', self.reload_preferences)
             self.determine_active_setup_mouse()
             
             if persisted:
@@ -226,8 +232,8 @@ class HeadUpDisplay:
                 widget.start_setup(setup_type)
                 
         self.determine_active_setup_mouse()
-    
-    def reload_preferences(self):
+        
+    def reload_preferences(self, _= None):
         """Reload user preferences ( in case a monitor switches or something )"""
         self.preferences.load_preferences()
     
@@ -635,8 +641,3 @@ class Actions:
         """Enables a poller and claims a widget"""    
         global hud
         hud.activate_poller(topic)
-
-    def hud_reload_preferences():
-        """Reload the HUD preferences"""
-        global hud
-        hud.reload_preferences()

@@ -25,8 +25,6 @@ tag: user.talon_hud_available
 ^head up align {user.talon_hud_widget_names} top$: user.set_widget_preference(talon_hud_widget_names, "expand_direction", "down")
 ^head up align {user.talon_hud_widget_names} bottom$: user.set_widget_preference(talon_hud_widget_names, "expand_direction", "up")
 
-^head up reload preferences$: user.hud_reload_preferences()
-
 # Widget content commands
 ^{user.talon_hud_widget_names} (show|open)$: user.enable_hud_id(talon_hud_widget_names)
 ^{user.talon_hud_widget_names} (hide|close)$: user.disable_hud_id(talon_hud_widget_names)

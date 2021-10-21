@@ -68,8 +68,6 @@ class LayoutWidget(BaseWidget):
             self.drag_position = []  
             self.setup_type = ""
             if self.canvas:
-                # TODO FIX PROPER RELOADING LOGIC WHEN SWITCHING PREFERENCES!!!
-                self.mark_layout_invalid = False
                 self.canvas.rect = ui.Rect(self.limit_x, self.limit_y, self.limit_width, self.limit_height)
                 self.canvas.resume()
         else:

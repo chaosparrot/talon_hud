@@ -124,6 +124,8 @@ class HeadUpTextPanel(LayoutWidget):
         # https://www.w3.org/TR/WCAG21/#visual-presentation
         self.line_padding = int(self.font_size / 2) + 1 if self.font_size <= 17 else 5
         
+        print( "LAYOUTING " + self.id )
+        
         horizontal_alignment = "right" if self.limit_x < self.x else "left"
         vertical_alignment = "bottom" if self.limit_y < self.y else "top"
     
