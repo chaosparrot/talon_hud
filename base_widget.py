@@ -250,8 +250,11 @@ class BaseWidget(metaclass=ABCMeta):
         """Respond to theme load ins here"""    
         pass
         
-    def start_setup(self, setup_type):
+    def start_setup(self, setup_type, mouse_position = None):
         """Starts a setup mode that is used for moving, resizing and other various changes that the user might setup"""    
+        if (mouse_position is not None):
+            self.drag_position = [mouse_position[0] - self.limit_x, mouse_position[1] - self.limit_y]
+        
         if (setup_type not in self.allowed_setup_options and setup_type not in ["", "cancel", "reload"] ):
             return
         # Persist the user preferences when we end our setup

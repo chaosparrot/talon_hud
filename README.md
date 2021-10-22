@@ -155,14 +155,14 @@ These are ideas that I want to implement in no specific order and with no specif
 
 - An indicator widget that follows the cursor around to show a single state that is important to the current task at hand
 - An image panel with a header and a close icon which displays image content
-- Dynamically detecting themes and reloading when changed
--> Multiscreen setups and how to best work with those, maybe with multiple preference files per monitor
-- Multi-drag to drag every widget simultaniously
-- Splitting out topics from text boxes into seperate text boxes
+- Dynamically detecting themes
+-> Multi-screen setups and how to best work with those, maybe with multiple preference files per monitor
+- Splitting out topics from text boxes into separate text boxes
 - "Voice auto complete" content, which automatically opens documentation when a certain keyword is said, to help in the learning process.
 
 Known issues
 ---
+- Talon HUD enables too quickly
 - Multiple page walkthrough panel does not work properly with text indecis
 
 If any of these ideas seem cool for you to work on, give me a message on the talon slack so we can coordinate stuff.

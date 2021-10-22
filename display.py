@@ -226,10 +226,10 @@ class HeadUpDisplay:
             
             self.preferences.persist_preferences({'theme_name': theme_name})
 
-    def start_setup_id(self, setup_type, id = "*"):
+    def start_setup_id(self, id, setup_type, mouse_pos = None):
         for widget in self.widgets:
             if widget.enabled and ( id == "*" or widget.id == id ) and widget.setup_type != setup_type:
-                widget.start_setup(setup_type)
+                widget.start_setup(setup_type, mouse_pos)
                 
         self.determine_active_setup_mouse()
         
@@ -583,10 +583,22 @@ class Actions:
         global hud
         hud.switch_theme(theme_name)
         
-    def set_hud_setup_mode(setup_mode: str, id: str):
+    def set_hud_setup_mode(id: str, setup_mode: str):
         """Starts a setup mode which can change position"""
         global hud
         hud.start_setup_id(id, setup_mode)
+
+    def set_hud_setup_mode_multi(ids: list[str], setup_mode: str):
+        """Starts a setup mode which can change position for multiple widgets at the same time"""
+        global hud
+        
+        # In case we are dealing with drag, we can allow multiple widgets to be dragged at the same time
+        mouse_pos = None
+        if (len(ids) > 1 and setup_mode == "position"):
+            mouse_pos = ctrl.mouse_pos()
+        
+        for id in ids:
+            hud.start_setup_id(id, setup_mode, mouse_pos)
                 
     def show_context_menu(widget_id: str, pos_x: int, pos_y: int, buttons: list[HudButton]):
         """Show the context menu for a specific widget id"""

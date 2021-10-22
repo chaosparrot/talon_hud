@@ -52,7 +52,7 @@ class LayoutWidget(BaseWidget):
             self.mark_layout_invalid = True
             self.canvas.resume()
         
-    def start_setup(self, setup_type):
+    def start_setup(self, setup_type, mouse_position = None):
         self.mark_layout_invalid = True
         
         # Make sure the canvas is still the right size after canceling resizing
@@ -71,7 +71,7 @@ class LayoutWidget(BaseWidget):
                 self.canvas.rect = ui.Rect(self.limit_x, self.limit_y, self.limit_width, self.limit_height)
                 self.canvas.resume()
         else:
-            super().start_setup(setup_type)
+            super().start_setup(setup_type, mouse_position)
 
     def setup_move(self, pos):
         self.mark_layout_invalid = True

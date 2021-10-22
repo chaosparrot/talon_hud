@@ -14,7 +14,8 @@ tag: user.talon_hud_available
 ^head up resize {user.talon_hud_widget_names}$: user.set_hud_setup_mode(talon_hud_widget_names, "dimension")
 ^head up expand {user.talon_hud_widget_names}$: user.set_hud_setup_mode(talon_hud_widget_names, "limit")
 ^head up text scale {user.talon_hud_widget_names}$: user.set_hud_setup_mode(talon_hud_widget_names, "font_size")
-^head up drag {user.talon_hud_widget_names}$: user.set_hud_setup_mode(talon_hud_widget_names, "position")
+^head up drag {user.talon_hud_widget_names}+$: 
+    user.set_hud_setup_mode_multi(talon_hud_widget_names_list, "position")
 ^head up basic {user.talon_hud_widget_names}$: user.set_widget_preference(talon_hud_widget_names, "show_animations", 0)
 ^head up fancy {user.talon_hud_widget_names}$: user.set_widget_preference(talon_hud_widget_names, "show_animations", 1)
 ^head up hide {user.talon_hud_widget_names} on sleep$: user.set_widget_preference(talon_hud_widget_names, "sleep_enabled", 0)
