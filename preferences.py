@@ -20,28 +20,14 @@ class HeadUpDisplayUserPreferences:
     boolean_keys = ['enabled', 'show_animations']
     
     def __init__(self):
-        self.load_preferences()
+        self.load_preferences(user_preferences_file_location)
     
-    def load_preferences(self):
-        user_preferences_screen_file_path = self.get_preferences_filepath()
-        
-        # Migration from old preferences file to new
-        if not os.path.exists(user_preferences_screen_file_path) and os.path.exists(user_preferences_file_location):
-            fh = open(user_preferences_file_location, 'r')
-            lines = fh.readlines()
-            fh.close()
-            
-            fh = open(user_preferences_screen_file_path, 'w')
-            fh.write("".join(lines))
-            fh.close()
-        elif not os.path.exists(user_preferences_screen_file_path):
-            # TODO CALIBRATE DEFAULTS NICELY BASED ON SCREEN SIZE / POSITIONS?
-        
-            self.persist_preferences(self.default_preferences)
-
-        fh = open(user_preferences_screen_file_path, "r")
-        lines = fh.readlines() 
-        fh.close()
+    def load_preferences(self, file_path):
+        lines = []
+        if os.path.exists(file_path):
+           fh = open(file_path, "r")
+           lines = fh.readlines() 
+           fh.close()
         
         # Copy over defaults first
         preferences = {}
