@@ -68,9 +68,6 @@ class BaseWidget(metaclass=ABCMeta):
 
         if initialize:
             self.load_theme_values()        
-
-        if (initialize and self.preferences.enabled and ('enabled' in dict and dict['enabled'])):
-            self.enable()
     
     # Set the topic that has claimed this widget
     def set_topic(self, topic:str):

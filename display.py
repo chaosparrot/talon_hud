@@ -42,6 +42,7 @@ mod = Module()
 mod.list("talon_hud_widget_names", desc="List of available widgets by name linked to their identifier")
 mod.list("talon_hud_widget_options", desc="List of options available to the widgets")
 mod.list("talon_hud_choices", desc="Available choices shown on screen")
+mod.list("talon_hud_themes", desc="Available themes for the Talon HUD")
 mod.list("talon_hud_numerical_choices", desc="Available choices shown on screen numbered")
 mod.list("talon_hud_quick_choices", desc="List of widgets with their quick options")
 mod.tag("talon_hud_available", desc="Tag that shows the availability of the Talon HUD repository for other scripts")
@@ -462,7 +463,6 @@ class HeadUpDisplay:
                 else:
                     widget.click_button(int(choice_index))
                     self.update_context()
-                    
 
     # Updates the context based on the current HUD state
     def update_context(self):
@@ -474,6 +474,13 @@ class HeadUpDisplay:
         choices = {}
         quick_choices = {}
         numerical_choices = {}
+        themes = {}
+        
+        themes_directory = os.path.dirname(os.path.abspath(__file__)) + "/themes"
+        themes_list = os.listdir(themes_directory)
+        for theme in themes_list:
+            themes[string_to_speakable_string(theme)] = theme
+        
         for widget in self.widgets:
             current_widget_names = [string_to_speakable_string(widget.id)]        
             if isinstance(widget, HeadUpTextPanel):
@@ -524,6 +531,7 @@ class HeadUpDisplay:
         ctx.lists['user.talon_hud_widget_names'] = widget_names
         ctx.lists['user.talon_hud_choices'] = choices
         ctx.lists['user.talon_hud_quick_choices'] = quick_choices
+        ctx.lists['user.talon_hud_themes'] = themes
     
 
 preferences = HeadUpDisplayUserPreferences() 

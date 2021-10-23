@@ -2,8 +2,7 @@ tag: user.talon_hud_available
 -
 # General HUD commands
 ^head up (show|open)$: user.enable_hud()
-^head up theme dark$: user.switch_hud_theme("dark")
-^head up theme light$: user.switch_hud_theme("light")
+^head up theme {user.talon_hud_themes}$: user.switch_hud_theme(talon_hud_themes)
 ^head up (drop|stop|confirm)$: user.set_hud_setup_mode("*", "")
 ^head up cancel$: user.set_hud_setup_mode("*", "cancel")
 ^head up (hide|close)$: user.disable_hud()
