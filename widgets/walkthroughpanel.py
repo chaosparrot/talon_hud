@@ -9,7 +9,7 @@ from talon.skia import Paint
 icon_radius = 10
 
 class HeadUpWalkThroughPanel(LayoutWidget):
-    preferences = HeadUpDisplayUserWidgetPreferences(type="walk_through", x=910, y=1000, width=100, height=20, limit_x=480, limit_y=700, limit_width=960, limit_height=124, enabled=False, sleep_enabled=True, alignment="center", expand_direction="up", font_size=24)
+    preferences = HeadUpDisplayUserWidgetPreferences(type="walk_through", x=910, y=1000, width=100, height=20, limit_x=480, limit_y=826, limit_width=960, limit_height=148, enabled=False, sleep_enabled=True, alignment="center", expand_direction="up", font_size=24)
     mouse_enabled = True
     step_scheduled = None
 

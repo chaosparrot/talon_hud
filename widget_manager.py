@@ -156,12 +156,18 @@ class HeadUpWidgetManager:
                 widget_preferences.y = numpy.linalg.norm(screen_top - widget_top)
                 widget_preferences.limit_y = numpy.linalg.norm(screen_top - widget_limit_top)
             elif anchor_point[0] == "center":
+                widget_center = numpy.array([0, widget.y + widget.height / 2])
+                widget_limit_center = numpy.array([0, widget.limit_y + widget.limit_height / 2])                
                 screen_center = numpy.array([0, widget_screen.y + widget_screen.height / 2])
                 
+                direction = 1 if screen_center[1] < widget_center[1] else -1
+                limit_direction = 1 if screen_center[0] < widget_limit_center[0] else -1
                 widget_preferences.y = ( current_screens[0].y + current_screens[0].height / 2 ) + \
-                    numpy.linalg.norm(screen_center - widget_top)
+                    numpy.linalg.norm(screen_center - widget_center) * direction - \
+                    widget.height / 2
                 widget_preferences.limit_y = ( current_screens[0].y + current_screens[0].height / 2 ) + \
-                    numpy.linalg.norm(screen_center - widget_limit_top)
+                    numpy.linalg.norm(screen_center - widget_limit_center) * limit_direction - \
+                    widget.limit_height / 2
             else:
                 screen_bottom = numpy.array([0, widget_screen.y + widget_screen.height])
                 
@@ -178,13 +184,20 @@ class HeadUpWidgetManager:
                 
                 widget_preferences.x = current_screens[0].x + numpy.linalg.norm(screen_left - widget_left)
                 widget_preferences.limit_x = current_screens[0].x + numpy.linalg.norm(screen_left - widget_limit_left)
-            elif anchor_point[0] == "center":
+            elif anchor_point[1] == "center":
                 screen_center = numpy.array([widget_screen.x + widget_screen.width / 2,0])
                 
+                widget_center = numpy.array([widget.x + widget.width / 2, 0])
+                widget_limit_center = numpy.array([widget.limit_x + widget.limit_width / 2, 0])
+                
+                direction = 1 if screen_center[0] < widget_center[0] else -1
+                limit_direction = 1 if screen_center[0] < widget_limit_center[0] else -1                
                 widget_preferences.x = ( current_screens[0].x + current_screens[0].width / 2 ) + \
-                    numpy.linalg.norm(screen_center - widget_left)
+                    numpy.linalg.norm(screen_center - widget_center) * direction - \
+                    widget.width / 2
                 widget_preferences.limit_x = ( current_screens[0].x + current_screens[0].width / 2 ) + \
-                    numpy.linalg.norm(screen_center - widget_limit_left)
+                    numpy.linalg.norm(screen_center - widget_limit_center) * limit_direction - \
+                    widget.limit_width / 2
             else:
                 screen_right = numpy.array([widget_screen.x + widget_screen.width,0])
                 
