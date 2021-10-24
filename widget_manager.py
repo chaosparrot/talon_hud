@@ -1,4 +1,7 @@
 import os
+import numpy
+import copy
+from typing import Dict
 from talon import ui
 from user.talon_hud.preferences import HeadUpDisplayUserPreferences
 from user.talon_hud.base_widget import BaseWidget
@@ -89,25 +92,37 @@ class HeadUpWidgetManager:
         # Check if the screen dimensions have changed
         current_screen_rects = []
         dimensions_changed = force_reload
-        if dimensions_changed == False:
-            for index, screen in enumerate(ui.screens()):
-                current_screen_rects.append(ui.Rect(screen.x, screen.y, screen.width, screen.height))
-                if index < len(self.previous_screen_rects) and dimensions_changed == False:
-                    previous_screen_rect = self.previous_screen_rects[index]
-                    dimensions_changed = previous_screen_rect.x != screen.x or \
-                        previous_screen_rect.y != screen.y or \
-                        previous_screen_rect.width != screen.width or \
-                        previous_screen_rect.height != screen.height
-            dimensions_changed = dimensions_changed or len(current_screen_rects) != len(self.previous_screen_rects)
+        for index, screen in enumerate(ui.screens()):
+            current_screen_rects.append(ui.Rect(screen.x, screen.y, screen.width, screen.height))
+            if index < len(self.previous_screen_rects) and dimensions_changed == False:
+                previous_screen_rect = self.previous_screen_rects[index]
+                if previous_screen_rect.x != screen.x or \
+                    previous_screen_rect.y != screen.y or \
+                    previous_screen_rect.width != screen.width or \
+                    previous_screen_rect.height != screen.height:
+                    dimensions_changed = True
+        dimensions_changed = dimensions_changed or len(current_screen_rects) != len(self.previous_screen_rects)
         
         if dimensions_changed:
             screen_preferences_file = self.preferences.get_screen_preferences_filepath(current_screen_rects)
+            
+            # If the dimensions have changed, but no preferences file is available,
+            # Determine the positioning of the widgets dynamically compared to the last screen settings
             if not os.path.exists(screen_preferences_file):
-                # TODO DETERMINE DIFFERENCE BETWEEN FORMER SCREENS AND CURRENT SCREENS FOR WIDGETS
-                # TO MAKE SURE THE SETTINGS ARE SET WELL
-                self.preferences.persist_preferences(self.preferences.default_prefs, True)
+                self.preferences.load_preferences( screen_preferences_file )
+                
+                new_preferences = {}
+                for key in self.preferences.default_prefs.keys():
+                    new_preferences[key] = self.preferences.default_prefs[key]
+                
+                for widget in self.widgets:
+                    widget_prefs = self.get_widget_preference(widget, current_screen_rects)
+                    for key in widget_prefs.keys():
+                        new_preferences[key] = widget_prefs[key]
+                
+                self.preferences.persist_preferences( new_preferences )
             else:
-                self.preferences.load_preferences()
+                self.preferences.load_preferences( screen_preferences_file )
         
         # Apply the new preferences to the widgets directly
         for widget in self.widgets:
@@ -119,6 +134,111 @@ class HeadUpWidgetManager:
             
         # Set the screen info to be used for comparison in case the screen changes later
         self.previous_screen_rects = current_screen_rects
+    
+    def get_widget_preference(self, widget, current_screens) -> Dict:
+        widget_screen = None
+        for screen in self.previous_screen_rects:
+            if widget.x >= screen.x and widget.x <= screen.x + screen.width \
+                and widget.y >= screen.y and widget.y <= screen.y + screen.height:
+                widget_screen = screen
+                break
+        
+        widget_preferences = widget.preferences
+        if widget_screen:
+            anchor_point = self.determine_widget_anchor_point(widget, widget_screen)
+            
+            # Reposition Y coordinates based on difference between previous and current screen
+            widget_top = numpy.array([0, widget.y])
+            widget_limit_top = numpy.array([0, widget.limit_y])
+            if anchor_point[0] == "top":
+                screen_top = numpy.array([0, widget_screen.y])
+                
+                widget_preferences.y = numpy.linalg.norm(screen_top - widget_top)
+                widget_preferences.limit_y = numpy.linalg.norm(screen_top - widget_limit_top)
+            elif anchor_point[0] == "center":
+                screen_center = numpy.array([0, widget_screen.y + widget_screen.height / 2])
+                
+                widget_preferences.y = ( current_screens[0].y + current_screens[0].height / 2 ) + \
+                    numpy.linalg.norm(screen_center - widget_top)
+                widget_preferences.limit_y = ( current_screens[0].y + current_screens[0].height / 2 ) + \
+                    numpy.linalg.norm(screen_center - widget_limit_top)
+            else:
+                screen_bottom = numpy.array([0, widget_screen.y + widget_screen.height])
+                
+                widget_preferences.y = ( current_screens[0].y + current_screens[0].height ) - \
+                    numpy.linalg.norm(screen_bottom - widget_top)
+                widget_preferences.limit_y = ( current_screens[0].y + current_screens[0].height ) - \
+                    numpy.linalg.norm(screen_bottom - widget_limit_top)
+                        
+            # Reposition X coordinates based on difference between previous and current screen
+            widget_left = numpy.array([widget.x, 0])
+            widget_limit_left = numpy.array([widget.limit_x, 0])
+            if anchor_point[1] == "left":
+                screen_left = numpy.array([widget_screen.x, 0])
+                
+                widget_preferences.x = current_screens[0].x + numpy.linalg.norm(screen_left - widget_left)
+                widget_preferences.limit_x = current_screens[0].x + numpy.linalg.norm(screen_left - widget_limit_left)
+            elif anchor_point[0] == "center":
+                screen_center = numpy.array([widget_screen.x + widget_screen.width / 2,0])
+                
+                widget_preferences.x = ( current_screens[0].x + current_screens[0].width / 2 ) + \
+                    numpy.linalg.norm(screen_center - widget_left)
+                widget_preferences.limit_x = ( current_screens[0].x + current_screens[0].width / 2 ) + \
+                    numpy.linalg.norm(screen_center - widget_limit_left)
+            else:
+                screen_right = numpy.array([widget_screen.x + widget_screen.width,0])
+                
+                widget_preferences.x = ( current_screens[0].x + current_screens[0].width ) - \
+                    numpy.linalg.norm(screen_right - widget_left)
+                widget_preferences.limit_x = ( current_screens[0].x + current_screens[0].width ) - \
+                    numpy.linalg.norm(screen_right - widget_limit_left)
+                    
+            widget_preferences.y = int(widget_preferences.y)
+            widget_preferences.limit_y = int(widget_preferences.limit_y)
+            widget_preferences.x = int(widget_preferences.x)
+            widget_preferences.limit_x = int(widget_preferences.limit_x)
+
+        return widget_preferences.export(widget.id)
+    
+    def determine_widget_anchor_point(self, widget, widget_screen):
+        # Determine anchor position for repositioning widget on the screen
+        
+        anchor_point = ["top", "left"]
+        width_threshold = widget_screen.width / 2
+        height_threshold = widget_screen.height / 2
+        
+        widget_top_left = numpy.array([widget.limit_x, widget.limit_y])
+        widget_center = numpy.array([widget.limit_x + widget.limit_width / 2, 
+            widget.limit_y + widget.limit_height / 2])
+        widget_right = numpy.array([widget.limit_x + widget.limit_width, 
+            widget.limit_y])
+        widget_bottom = numpy.array([widget.limit_x, widget.limit_y + widget.limit_height])
+            
+        screen_top = numpy.array([widget_screen.x, widget_screen.y])
+        screen_vertical_center = numpy.array([widget_screen.x, widget_screen.y + widget_screen.height / 2])
+        screen_bottom = numpy.array([widget_screen.x, widget_screen.y + widget_screen.height])
+        screen_left = screen_top
+        screen_horizontal_center = numpy.array([widget_screen.x + widget_screen.width / 2, widget_screen.y])
+        screen_right = numpy.array([widget_screen.x + widget_screen.width, widget_screen.y])
+        
+        distance_left = numpy.linalg.norm(widget_top_left - screen_left)
+        distance_horizontal_center = numpy.linalg.norm(widget_center - screen_horizontal_center)
+        distance_right = numpy.linalg.norm(widget_right - screen_right)            
+        distance_top = numpy.linalg.norm(widget_top_left - screen_top)
+        distance_vertical_center = numpy.linalg.norm(widget_center - screen_vertical_center)
+        distance_bottom = numpy.linalg.norm(widget_bottom - screen_bottom)
+        
+        if distance_vertical_center < distance_bottom and distance_vertical_center < distance_top:
+            anchor_point[0] = "center"
+        elif distance_bottom < distance_top and distance_bottom < distance_vertical_center:
+            anchor_point[0] = "bottom"
+        
+        if distance_horizontal_center < distance_right and distance_horizontal_center < distance_left:
+            anchor_point[1] = "center"
+        elif distance_right < distance_left and distance_right < distance_horizontal_center:
+            anchor_point[1] = "right"
+        
+        return anchor_point            
     
     def get_default_widgets(self):
         """Load widgets to give an optional default user experience that allows all the options"""

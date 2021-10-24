@@ -158,6 +158,7 @@ These are ideas that I want to implement in no specific order and with no specif
 -> Multi-screen setups and how to best work with those, maybe with multiple preference files per monitor
 - Splitting out topics from text boxes into separate text boxes
 - "Voice auto complete" content, which automatically opens documentation when a certain keyword is said, to help in the learning process.
+- Better default image, dimension and font scaling based on physical dimensions of the screen
 
 Known issues
 ---

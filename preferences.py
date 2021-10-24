@@ -93,10 +93,10 @@ class HeadUpDisplayUserPreferences:
 
     # Save the given preferences file
     def save_preferences_file(self, filename):
-        fh = open(filename, "w")        
         is_monitor_preference = filename != user_preferences_file_location
 
         # Transform data before persisting
+        lines = []
         for index, key in enumerate(self.prefs):
             if ( is_monitor_preference and key.endswith(self.monitor_related_pref_endings) ) or \
                 ( not is_monitor_preference and not key.endswith(self.monitor_related_pref_endings) ):
@@ -112,7 +112,9 @@ class HeadUpDisplayUserPreferences:
                 # Only add new lines to non-final rows
                 if index + 1 != len(self.prefs):
                     line = line + '\n'
-                
-                fh.write(line)
-        fh.close() 
-        
+                    lines.append(line)
+
+        if len(lines) > 0:
+            fh = open(filename, "w")                
+            fh.write("".join(lines))
+            fh.close()        
