@@ -36,8 +36,12 @@ class HeadUpWidgetManager:
         self.previous_screen_rects = []
         self.preferences = preferences
         self.theme = theme
-        self.load_preferences()
+        self.initial_load_preferences()
         self.load_widgets()
+        
+        # Reload the preferences according to the monitor sizes if the given file does not exist
+        if not os.path.exists(self.preferences.get_screen_preferences_filepath(ui.screens())):
+            self.reload_preferences(True)
     
     def load_widgets(self):
         """Load the user defined widgets"""
@@ -52,7 +56,7 @@ class HeadUpWidgetManager:
         for screen in ui.screens():
             self.previous_screen_rects.append(ui.Rect(screen.x, screen.y, screen.width, screen.height))
     
-    def load_preferences(self):
+    def initial_load_preferences(self):
         user_preferences_screen_file_path = self.preferences.get_screen_preferences_filepath(ui.screens())
         
         # Migration from old preferences file to new split files
@@ -76,30 +80,36 @@ class HeadUpWidgetManager:
             os.remove(old_user_preferences_file_location)
         
         if not os.path.exists(user_preferences_file_location):
-            # TODO CALIBRATE DEFAULTS NICELY BASED ON SCREEN SIZE / POSITIONS?
             self.preferences.persist_preferences(self.preferences.default_prefs, True)
-        
+                
         self.preferences.load_preferences(user_preferences_screen_file_path)
     
-    def reload_preferences(self):
-        self.preferences.load_preferences()
+    def reload_preferences(self, force_reload=False):
         
         # Check if the screen dimensions have changed
         current_screen_rects = []
-        dimensions_changed = False
-        for index, screen in enumerate(ui.screens()):
-            current_screen_rects.append(ui.Rect(screen.x, screen.y, screen.width, screen.height))
-            if index < len(self.previous_screen_rects) and dimensions_changed == False:
-                previous_screen_rect = self.previous_screen_rects[index]
-                dimensions_changed = previous_screen_rect.x != screen.x or \
-                    previous_screen_rect.y != screen.y or \
-                    previous_screen_rect.width != screen.width or \
-                    previous_screen_rect.height != screen.height
-        dimensions_changed = dimensions_changed or len(current_screen_rects) != len(self.previous_screen_rects)
+        dimensions_changed = force_reload
+        if dimensions_changed == False:
+            for index, screen in enumerate(ui.screens()):
+                current_screen_rects.append(ui.Rect(screen.x, screen.y, screen.width, screen.height))
+                if index < len(self.previous_screen_rects) and dimensions_changed == False:
+                    previous_screen_rect = self.previous_screen_rects[index]
+                    dimensions_changed = previous_screen_rect.x != screen.x or \
+                        previous_screen_rect.y != screen.y or \
+                        previous_screen_rect.width != screen.width or \
+                        previous_screen_rect.height != screen.height
+            dimensions_changed = dimensions_changed or len(current_screen_rects) != len(self.previous_screen_rects)
         
-        # TODO DETERMINE DIFFERENCE BETWEEN FORMER SCREENS AND CURRENT SCREENS FOR WIDGETS
-        # TO MAKE SURE THE SETTINGS ARE SET WELL
+        if dimensions_changed:
+            screen_preferences_file = self.preferences.get_screen_preferences_filepath(current_screen_rects)
+            if not os.path.exists(screen_preferences_file):
+                # TODO DETERMINE DIFFERENCE BETWEEN FORMER SCREENS AND CURRENT SCREENS FOR WIDGETS
+                # TO MAKE SURE THE SETTINGS ARE SET WELL
+                self.preferences.persist_preferences(self.preferences.default_prefs, True)
+            else:
+                self.preferences.load_preferences()
         
+        # Apply the new preferences to the widgets directly
         for widget in self.widgets:
             # First cancel any set up to make sure there won't be some weird collision going on with persistence
             if widget.setup_type != "":

@@ -46,12 +46,13 @@ class HeadUpDisplayUserPreferences:
            fh = open(file_path, "r")
            lines.extend(fh.readlines())
            fh.close()
-           
-        if monitor_file_path is not None and os.path.exists(monitor_file_path):
+        
+        if monitor_file_path is not None:
            self.monitor_file_path = monitor_file_path
-           fh = open(monitor_file_path, "r")
-           lines.extend(fh.readlines())
-           fh.close()
+           if os.path.exists(monitor_file_path):
+               fh = open(monitor_file_path, "r")
+               lines.extend(fh.readlines())
+               fh.close()
         
         # Copy over defaults first
         preferences = {}
@@ -83,7 +84,7 @@ class HeadUpDisplayUserPreferences:
                 else:
                     preferences_changed = True
             self.prefs[key] = value
-    
+        
         if preferences_changed or force:
             self.save_preferences_file(user_preferences_file_location)
         

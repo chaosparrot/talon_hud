@@ -4,7 +4,7 @@ Unofficial Talon Head Up Display
 ![Overview image](/docs/intro.png)
 
 This set of user scripts is meant to help build an awesome visual head up display elements using the Talon Canvas apis.  
-It keeps your preferences saved in a CSV file, so that whenever you restart Talon, your HUD will be as you left it.  
+It keeps your preferences saved in CSV files, so that whenever you restart Talon, your HUD will be as you left it.  
 All the widgets are themeable, which means you can change the colours and images around as you see fit.
 
 Setup
