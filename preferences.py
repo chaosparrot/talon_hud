@@ -3,12 +3,13 @@ from talon import ui
 
 semantic_directory = os.path.dirname(os.path.abspath(__file__))
 user_preferences_file_dir =  semantic_directory + "/preferences/"
-user_preferences_file_location = user_preferences_file_dir + "preferences.csv"
+user_preferences_file_location = user_preferences_file_dir + "widget_settings.csv"
 
 # Loads and persists all the data based on the users preferences
 # To keep the display state consistent across sessions
 class HeadUpDisplayUserPreferences:
     
+    monitor_file_path = None
     default_prefs = {
         'show_animations': True,
         'enabled': False,
@@ -16,17 +17,40 @@ class HeadUpDisplayUserPreferences:
     }
     
     prefs = {}
+    monitor_related_pref_endings = ("_x", "_y", "_width", "_height",
+        "_limit_x", "_limit_y", "_limit_width", "_limit_height",
+        "_font_size", "_alignment", "_expand_direction")
     
     boolean_keys = ['enabled', 'show_animations']
     
     def __init__(self):
-        self.load_preferences(user_preferences_file_location)
+        self.load_preferences(self.get_screen_preferences_filepath(ui.screens()))
     
-    def load_preferences(self, file_path):
+    # Get the preferences filename for the current monitor dimensions
+    def get_screen_preferences_filepath(self, screens):
+        preferences_title = "monitor"
+        for screen in screens:
+            preferences_postfix = []
+            preferences_postfix.append(str(int(screen.x)))
+            preferences_postfix.append(str(int(screen.y)))
+            preferences_postfix.append(str(int(screen.width)))
+            preferences_postfix.append(str(int(screen.height)))
+            preferences_title += "(" + "_".join(preferences_postfix) + ")"
+        preferences_title += ".csv"
+        return user_preferences_file_dir + preferences_title
+    
+    def load_preferences(self, monitor_file_path=None):
+        file_path = user_preferences_file_location        
         lines = []
-        if os.path.exists(file_path):
+        if os.path.exists(user_preferences_file_location):
            fh = open(file_path, "r")
-           lines = fh.readlines() 
+           lines.extend(fh.readlines())
+           fh.close()
+           
+        if monitor_file_path is not None and os.path.exists(monitor_file_path):
+           self.monitor_file_path = monitor_file_path
+           fh = open(monitor_file_path, "r")
+           lines.extend(fh.readlines())
            fh.close()
         
         # Copy over defaults first
@@ -45,36 +69,36 @@ class HeadUpDisplayUserPreferences:
                 preferences[key] = value
         
         self.prefs = preferences
-    
-    # Get the preferences filename for the current monitor
-    def get_preferences_filepath(self):
-        screens = ui.screens()
-        preferences_title = "preferences"
-        for screen in screens:
-            preferences_postfix = []
-            preferences_postfix.append(str(int(screen.x)))
-            preferences_postfix.append(str(int(screen.y)))
-            preferences_postfix.append(str(int(screen.width)))
-            preferences_postfix.append(str(int(screen.height)))
-            preferences_title += "(" + "_".join(preferences_postfix) + ")"
-        preferences_title += ".csv"
-        return user_preferences_file_dir + preferences_title
-    
+        
     # Persist the preferences as a CSV for reloading between Talon sessions later
     # But only when the new preferences have changed
-    def persist_preferences(self, new_preferences):
-        changed = False
+    def persist_preferences(self, new_preferences, force=False):
+        preferences_changed = False
+        monitor_changed = False
+        
         for key, value in new_preferences.items():
             if (key not in self.prefs or value != self.prefs[key]):
-                changed = True
+                if key.endswith(self.monitor_related_pref_endings):
+                    monitor_changed = True
+                else:
+                    preferences_changed = True
             self.prefs[key] = value
     
-        if (changed):
-            user_preferences_screen_file_path = self.get_preferences_filepath()
-            fh = open(user_preferences_screen_file_path, "w")
-    
-            # Transform data before persisting
-            for index, key in enumerate(self.prefs):
+        if preferences_changed or force:
+            self.save_preferences_file(user_preferences_file_location)
+        
+        if (monitor_changed or force) and self.monitor_file_path is not None:
+            self.save_preferences_file(self.monitor_file_path)
+
+    # Save the given preferences file
+    def save_preferences_file(self, filename):
+        fh = open(filename, "w")        
+        is_monitor_preference = filename != user_preferences_file_location
+
+        # Transform data before persisting
+        for index, key in enumerate(self.prefs):
+            if ( is_monitor_preference and key.endswith(self.monitor_related_pref_endings) ) or \
+                ( not is_monitor_preference and not key.endswith(self.monitor_related_pref_endings) ):
                 value = self.prefs[key]
                 transformed_value = value
                 line = key + ','
@@ -89,4 +113,5 @@ class HeadUpDisplayUserPreferences:
                     line = line + '\n'
                 
                 fh.write(line)
-            fh.close() 
+        fh.close() 
+        

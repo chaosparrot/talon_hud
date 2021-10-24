@@ -14,7 +14,8 @@ from user.talon_hud.theme import HeadUpDisplayTheme
 
 semantic_directory = os.path.dirname(os.path.abspath(__file__))
 user_preferences_file_dir =  semantic_directory + "/preferences/"
-user_preferences_file_location = user_preferences_file_dir + "preferences.csv"
+old_user_preferences_file_location = user_preferences_file_dir + "preferences.csv"
+user_preferences_file_location = user_preferences_file_dir + "widget_settings.csv"
 
 class HeadUpWidgetManager:
     """Manages widgets and their positioning in relation to the available screens"""
@@ -31,7 +32,8 @@ class HeadUpWidgetManager:
     def __init__(self, preferences: HeadUpDisplayUserPreferences, theme: HeadUpDisplayTheme):
         self.default_screen_rect = ui.Rect(0, 0, 1920, 1080)
         self.default_screen_mm_size = [527.0, 296.0]
-       
+        
+        self.previous_screen_rects = []
         self.preferences = preferences
         self.theme = theme
         self.load_preferences()
@@ -51,20 +53,31 @@ class HeadUpWidgetManager:
             self.previous_screen_rects.append(ui.Rect(screen.x, screen.y, screen.width, screen.height))
     
     def load_preferences(self):
-        user_preferences_screen_file_path = self.preferences.get_preferences_filepath()
+        user_preferences_screen_file_path = self.preferences.get_screen_preferences_filepath(ui.screens())
         
-        # Migration from old preferences file to new
-        if not os.path.exists(user_preferences_screen_file_path) and os.path.exists(user_preferences_file_location):
-            fh = open(user_preferences_file_location, 'r')
+        # Migration from old preferences file to new split files
+        if not os.path.exists(user_preferences_file_location) and os.path.exists(old_user_preferences_file_location):
+            fh = open(old_user_preferences_file_location, 'r')
             lines = fh.readlines()
             fh.close()
             
-            fh = open(user_preferences_screen_file_path, 'w')
-            fh.write("".join(lines))
+            monitor_lines = list(filter(lambda line: [line for ext in self.preferences.monitor_related_pref_endings if(ext in line)], lines))
+            screen_file_path = user_preferences_screen_file_path
+            fh = open(screen_file_path, 'w')
+            fh.write("".join(monitor_lines))
             fh.close()
-        elif not os.path.exists(user_preferences_screen_file_path):
+            
+            setting_lines = list(filter(lambda line: line not in monitor_lines, lines))            
+            fh = open(user_preferences_file_location, 'w')
+            fh.write("".join(setting_lines))
+            fh.close()            
+            
+            # Remove the old preferences file
+            os.remove(old_user_preferences_file_location)
+        
+        if not os.path.exists(user_preferences_file_location):
             # TODO CALIBRATE DEFAULTS NICELY BASED ON SCREEN SIZE / POSITIONS?
-            self.preferences.persist_preferences(self.preferences.default_preferences)
+            self.preferences.persist_preferences(self.preferences.default_prefs, True)
         
         self.preferences.load_preferences(user_preferences_screen_file_path)
     
@@ -78,10 +91,10 @@ class HeadUpWidgetManager:
             current_screen_rects.append(ui.Rect(screen.x, screen.y, screen.width, screen.height))
             if index < len(self.previous_screen_rects) and dimensions_changed == False:
                 previous_screen_rect = self.previous_screen_rects[index]
-                dimensions_changed = previous_screen_rect.x != current_screen_rect.x or \
-                    previous_screen_rect.y != current_screen_rect.xy or \
-                    previous_screen_rect.width != current_screen_rect.width or \
-                    previous_screen_rect.height != current_screen_rect.height
+                dimensions_changed = previous_screen_rect.x != screen.x or \
+                    previous_screen_rect.y != screen.y or \
+                    previous_screen_rect.width != screen.width or \
+                    previous_screen_rect.height != screen.height
         dimensions_changed = dimensions_changed or len(current_screen_rects) != len(self.previous_screen_rects)
         
         # TODO DETERMINE DIFFERENCE BETWEEN FORMER SCREENS AND CURRENT SCREENS FOR WIDGETS
@@ -100,11 +113,13 @@ class HeadUpWidgetManager:
     def get_default_widgets(self):
         """Load widgets to give an optional default user experience that allows all the options"""
         
-        self.primary_screen_rect = ui.Rect(
-            self.default_screen_rect.x, 
-            self.default_screen_rect.y, 
-            self.default_screen_rect.width, 
-            self.default_screen_rect.height)
+        self.previous_screen_rects = [
+            ui.Rect(
+                self.default_screen_rect.x, 
+                self.default_screen_rect.y, 
+                self.default_screen_rect.width, 
+                self.default_screen_rect.height)
+            ]
         
         return [
             self.load_widget("status_bar", "status_bar"),
