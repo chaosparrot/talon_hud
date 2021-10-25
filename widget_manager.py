@@ -44,6 +44,13 @@ class HeadUpWidgetManager:
         
         # Reload the preferences according to the monitor sizes if the given file does not exist
         if not os.path.exists(self.preferences.get_screen_preferences_filepath(ui.screens())):
+            self.previous_screen_rects = [
+                ui.Rect(
+                    self.default_screen_rect.x, 
+                    self.default_screen_rect.y, 
+                    self.default_screen_rect.width, 
+                    self.default_screen_rect.height)
+                ]
             self.reload_preferences(True)
     
     def load_widgets(self):
@@ -63,6 +70,7 @@ class HeadUpWidgetManager:
         user_preferences_screen_file_path = self.preferences.get_screen_preferences_filepath(ui.screens())
         
         # Migration from old preferences file to new split files
+        # Remove in a few months to allow user to migrate?
         if not os.path.exists(user_preferences_file_location) and os.path.exists(old_user_preferences_file_location):
             fh = open(old_user_preferences_file_location, 'r')
             lines = fh.readlines()
@@ -87,8 +95,7 @@ class HeadUpWidgetManager:
                 
         self.preferences.load_preferences(user_preferences_screen_file_path)
     
-    def reload_preferences(self, force_reload=False):
-        
+    def reload_preferences(self, force_reload=False):        
         # Check if the screen dimensions have changed
         current_screen_rects = []
         dimensions_changed = force_reload
@@ -144,6 +151,7 @@ class HeadUpWidgetManager:
                 break
         
         widget_preferences = widget.preferences
+        
         if widget_screen:
             anchor_point = self.determine_widget_anchor_point(widget, widget_screen)
             
@@ -255,15 +263,6 @@ class HeadUpWidgetManager:
     
     def get_default_widgets(self):
         """Load widgets to give an optional default user experience that allows all the options"""
-        
-        self.previous_screen_rects = [
-            ui.Rect(
-                self.default_screen_rect.x, 
-                self.default_screen_rect.y, 
-                self.default_screen_rect.width, 
-                self.default_screen_rect.height)
-            ]
-        
         return [
             self.load_widget("status_bar", "status_bar"),
             self.load_widget("event_log", "event_log"),

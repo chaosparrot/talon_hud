@@ -3,6 +3,7 @@ from talon import ui
 
 semantic_directory = os.path.dirname(os.path.abspath(__file__))
 user_preferences_file_dir =  semantic_directory + "/preferences/"
+old_user_preferences_file_location = user_preferences_file_dir + "preferences.csv"
 user_preferences_file_location = user_preferences_file_dir + "widget_settings.csv"
 
 # Loads and persists all the data based on the users preferences
@@ -46,6 +47,13 @@ class HeadUpDisplayUserPreferences:
            fh = open(file_path, "r")
            lines.extend(fh.readlines())
            fh.close()
+           
+        # Migration from old preferences file - Remove in a few months to allow user to migrate?
+        elif os.path.exists(old_user_preferences_file_location):
+           fh = open(old_user_preferences_file_location, "r")
+           lines.extend(fh.readlines())
+           fh.close()
+
         
         if monitor_file_path is not None:
            self.monitor_file_path = monitor_file_path
