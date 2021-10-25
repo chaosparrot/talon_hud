@@ -4,7 +4,7 @@ Unofficial Talon Head Up Display
 ![Overview image](/docs/intro.png)
 
 This set of user scripts is meant to help build an awesome visual head up display elements using the Talon Canvas apis.  
-It keeps your preferences saved in a CSV file, so that whenever you restart Talon, your HUD will be as you left it.  
+It keeps your preferences saved in CSV files, so that whenever you restart Talon, your HUD will be as you left it.  
 All the widgets are themeable, which means you can change the colours and images around as you see fit.
 
 Setup
@@ -89,7 +89,7 @@ By default, the widgets except for the status bar will hide when Talon goes in s
 On top of being able to turn widgets on and off, you can configure their attributes to your liking.  
 Currently, you can change the size, position, alignment, animation and font size.  
 
-`head up drag <widget name>` starts dragging the widget.  
+`head up drag <widget name>` starts dragging the widget. You can also drag multiple widgets at the same time with `head up drag <widget names>`.
 `head up resize <widget name>` starts resizing the widgets width and height.  
 `head up expand <widget name>` changes the maximum size of the widget in case the content does not fit the regular width and height.  
 By default these two dimensions are the same so the widget does not grow when more content is added.  
@@ -106,6 +106,15 @@ Some widgets like the event log also allow you to change the text direction and 
 If you prefer having a more basic animation free set up, or want to switch back to an animated display, you can use the following commands  
 `head up basic <widget name>` disables animations on the chosen widget.  
 `head up fancy <widget name>` enables animations on the chosen widget.
+
+You can have different positions on different monitor configurations, this happens automatically when you add more monitors.
+
+Each widget position is saved in a monitor preferences file in your preferences folder.  
+Every time you attach a different monitor, or use a different screen size, a specific monitor preferences file will be used.
+If your monitor changes during use, Talon HUD will attempt to rebuild your configured widget positions on your main monitor.  
+But this isn't 100% foolproof, so you might have to drag and configure some widgets around.  
+
+All the non-position related settings are saved in the widget_settings.csv file in your preferences folder.
 
 Using Talon HUD in your own packages
 ---
@@ -155,15 +164,14 @@ These are ideas that I want to implement in no specific order and with no specif
 
 - An indicator widget that follows the cursor around to show a single state that is important to the current task at hand
 - An image panel with a header and a close icon which displays image content
-- Dynamically detecting themes and reloading when changed
-- Multiscreen setups and how to best work with those, maybe with multiple preference files per monitor
-- Multi-drag to drag every widget simultaniously
-- Splitting out topics from text boxes into seperate text boxes
-- Proper in-flow documentation that other packages can push content to
+- Splitting out topics from text boxes into separate text boxes
+- "Voice auto complete" content, which automatically opens documentation when a certain keyword is said, to help in the learning process.
+- Better default image, dimension and font scaling based on physical dimensions of the screen
 
 Known issues
 ---
 - Multiple page walkthrough panel does not work properly with text indecis
+- Walkthrough panel needs improving UX wise ( close button, skip button, read more button )
 
 If any of these ideas seem cool for you to work on, give me a message on the talon slack so we can coordinate stuff.
 

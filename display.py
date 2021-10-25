@@ -6,21 +6,18 @@ import numpy
 from typing import Any
 from user.talon_hud.preferences import HeadUpDisplayUserPreferences
 from user.talon_hud.theme import HeadUpDisplayTheme
+from user.talon_hud.widget_manager import HeadUpWidgetManager
 from user.talon_hud.content.state import hud_content
 from user.talon_hud.content.status_bar_poller import StatusBarPoller
 from user.talon_hud.content.history_poller import HistoryPoller
 from user.talon_hud.layout_widget import LayoutWidget
-from user.talon_hud.widgets.statusbar import HeadUpStatusBar
-from user.talon_hud.widgets.eventlog import HeadUpEventLog
-from user.talon_hud.widgets.abilitybar import HeadUpAbilityBar
 from user.talon_hud.widgets.textpanel import HeadUpTextPanel
 from user.talon_hud.widgets.choicepanel import HeadUpChoicePanel
-from user.talon_hud.widgets.documentationpanel import HeadUpDocumentationPanel
-from user.talon_hud.widgets.walkthroughpanel import HeadUpWalkThroughPanel
 from user.talon_hud.widgets.contextmenu import HeadUpContextMenu
 from user.talon_hud.content.typing import HudPanelContent, HudButton
 from user.talon_hud.content.poller import Poller
 from user.talon_hud.utils import string_to_speakable_string
+
 
 # Taken from knausj/code/numbers to make Talon HUD standalone
 # The numbers should realistically stay very low for choices, because you don't want choice overload for the user, up to 100
@@ -42,6 +39,7 @@ mod = Module()
 mod.list("talon_hud_widget_names", desc="List of available widgets by name linked to their identifier")
 mod.list("talon_hud_widget_options", desc="List of options available to the widgets")
 mod.list("talon_hud_choices", desc="Available choices shown on screen")
+mod.list("talon_hud_themes", desc="Available themes for the Talon HUD")
 mod.list("talon_hud_numerical_choices", desc="Available choices shown on screen numbered")
 mod.list("talon_hud_quick_choices", desc="List of widgets with their quick options")
 mod.tag("talon_hud_available", desc="Tag that shows the availability of the Talon HUD repository for other scripts")
@@ -51,10 +49,11 @@ mod.tag("talon_hud_choices_visible", desc="Tag that shows there are choices avai
 ctx.tags = ['user.talon_hud_available']
 
 # A list of Talon HUD versions that can be used to check for in other packages
-TALON_HUD_RELEASE_030 = 3
+TALON_HUD_RELEASE_030 = 3 # Walk through version
+TALON_HUD_RELEASE_040 = 4 # Multi-monitor version
 @mod.scope
 def scope():
-    return {"talon_hud_version": TALON_HUD_RELEASE_030}
+    return {"talon_hud_version": TALON_HUD_RELEASE_040}
 
 class HeadUpDisplay:
     enabled = False
@@ -78,21 +77,7 @@ class HeadUpDisplay:
         self.disable_poller_job = None
         self.theme = HeadUpDisplayTheme(self.preferences.prefs['theme_name'])
         self.show_animations = self.preferences.prefs['show_animations']
-        self.widgets = [
-            HeadUpStatusBar('status_bar', self.preferences.prefs, self.theme),
-            HeadUpEventLog('event_log', self.preferences.prefs, self.theme),
-            HeadUpTextPanel('Text panel', self.preferences.prefs, self.theme, {'topics': ['*']}),
-            HeadUpDocumentationPanel('Documentation', self.preferences.prefs, self.theme, {'topics': ['documentation']}),            
-            # Extra text boxes can be defined to be assigned to different topics
-            # HeadUpTextPanel('Text box two', self.preferences.prefs, self.theme, {'topics': ['your_topic_here'], 'current_topic': 'your_topic_here'}),
-            HeadUpChoicePanel('Choices', self.preferences.prefs, self.theme, {'topics': ['choice'], 'current_topic': 'choice'}),
-            
-            HeadUpAbilityBar('ability_bar', self.preferences.prefs, self.theme),
-            HeadUpWalkThroughPanel('walk_through', self.preferences.prefs, self.theme, {'topics': ['walk_through']}),
-
-            # Special widgets that have varying positions
-            HeadUpContextMenu('context_menu', self.preferences.prefs, self.theme),
-        ]
+        self.widget_manager = HeadUpWidgetManager(self.preferences, self.theme)
         
         # These pollers should always be active and available when reloading Talon HUD
         self.pollers = {
@@ -106,20 +91,20 @@ class HeadUpDisplay:
         
     def start(self):
         # Uncomment the line below to add the single click mic toggle by default
-        # actions.user.hud_add_single_click_mic_toggle()    
+        # actions.user.hud_add_single_click_mic_toggle()
     
         if (self.preferences.prefs['enabled']):
             self.enable()
             
             if actions.sound.active_microphone() == "None":
                 actions.user.hud_add_log("warning", "Microphone is set to 'None'!\n\nNo voice commands will be registered.")
-            
+    
     def enable(self, persisted=False):
         if not self.enabled:
             self.enabled = True
             
             attached_topics = list(self.keep_alive_pollers)
-            for widget in self.widgets:
+            for widget in self.widget_manager.widgets:
                 if widget.preferences.enabled and not widget.enabled:
                     widget.enable()
                     if widget.topic:
@@ -128,11 +113,16 @@ class HeadUpDisplay:
             for topic, poller in self.pollers.items():
             	if topic in attached_topics:
                     poller.enable()
+
+            # Reload the preferences just in case a screen change happened in between the hidden state
+            if persisted:
+                self.reload_preferences()
             
             self.display_state.register('content_update', self.content_update)
             self.display_state.register('panel_update', self.panel_update)            
             self.display_state.register('log_update', self.log_update)
-            self.determine_active_setup_mouse()            
+            ui.register('screen_change', self.reload_preferences)            
+            self.determine_active_setup_mouse()
             if persisted:
                 self.preferences.persist_preferences({'enabled': True})
                 
@@ -144,7 +134,7 @@ class HeadUpDisplay:
         if self.enabled:
             self.enabled = False
             
-            for widget in self.widgets:
+            for widget in self.widget_manager.widgets:
                 if widget.enabled:
                     widget.disable()
             
@@ -152,6 +142,7 @@ class HeadUpDisplay:
             self.display_state.unregister('content_update', self.content_update)
             self.display_state.unregister('panel_update', self.panel_update)
             self.display_state.unregister('log_update', self.log_update)
+            ui.unregister('screen_change', self.reload_preferences)
             self.determine_active_setup_mouse()
             
             if persisted:
@@ -161,7 +152,7 @@ class HeadUpDisplay:
     # Persist the preferences of all the widgets
     def persist_widgets_preferences(self):
         dict = {}
-        for widget in self.widgets:
+        for widget in self.widget_manager.widgets:
             if widget.preferences.mark_changed:
                 dict = {**dict, **widget.preferences.export(widget.id)}
                 widget.preferences.mark_changed = False
@@ -172,7 +163,7 @@ class HeadUpDisplay:
         if not self.enabled:
             self.enable()
     
-        for widget in self.widgets:
+        for widget in self.widget_manager.widgets:
             if not widget.enabled and widget.id == id:
                 widget.enable(True)
                 if widget.topic in self.pollers and not self.pollers[widget.topic].enabled:
@@ -183,7 +174,7 @@ class HeadUpDisplay:
                    self.update_context()
 
     def disable_id(self, id):
-        for widget in self.widgets:
+        for widget in self.widget_manager.widgets:
             if widget.enabled and widget.id == id:
                 widget.disable(True)
                 if widget.topic in self.pollers and widget.topic not in self.keep_alive_pollers:
@@ -195,19 +186,19 @@ class HeadUpDisplay:
         self.determine_active_setup_mouse()
         
     def subscribe_content_id(self, id, content_key):
-        for widget in self.widgets:
+        for widget in self.widget_manager.widgets:
             if widget.id == id:
                 if content_key not in widget.subscribed_content:
                     widget.subscribed_content.append(content_key)
                     
     def unsubscribe_content_id(self, id, content_key):
-        for widget in self.widgets:
+        for widget in self.widget_manager.widgets:
             if widget.id == id:
                 if content_key in widget.subscribed_content:
                     widget.subscribed_content.remove(content_key)
 
     def set_widget_preference(self, id, property, value, persisted=False):
-        for widget in self.widgets:
+        for widget in self.widget_manager.widgets:
             if widget.id == id:
                 widget.set_preference(property, value, persisted)
         self.determine_active_setup_mouse()
@@ -215,17 +206,21 @@ class HeadUpDisplay:
     def switch_theme(self, theme_name):
         if (self.theme.name != theme_name):
             self.theme = HeadUpDisplayTheme(theme_name)
-            for widget in self.widgets:
+            for widget in self.widget_manager.widgets:
                 widget.set_theme(self.theme)
             
             self.preferences.persist_preferences({'theme_name': theme_name})
-        
-    def start_setup_id(self, setup_type, id = "*"):
-        for widget in self.widgets:
+
+    def start_setup_id(self, id, setup_type, mouse_pos = None):
+        for widget in self.widget_manager.widgets:
             if widget.enabled and ( id == "*" or widget.id == id ) and widget.setup_type != setup_type:
-                widget.start_setup(setup_type)
+                widget.start_setup(setup_type, mouse_pos)
                 
         self.determine_active_setup_mouse()
+        
+    def reload_preferences(self, _= None):
+        """Reload user preferences ( in case a monitor switches or something )"""
+        self.widget_manager.reload_preferences()
     
     def register_poller(self, topic: str, poller: Poller, keep_alive: bool):
         self.remove_poller(topic)
@@ -237,7 +232,7 @@ class HeadUpDisplay:
             self.pollers[topic].enable()
         # Automatically enable the poller if it was active on restart        
         else:
-            for widget in self.widgets:
+            for widget in self.widget_manager.widgets:
                 if widget.topic == topic:
                     self.pollers[topic].enable()
                     break
@@ -253,7 +248,7 @@ class HeadUpDisplay:
         widget_to_claim = None
         using_fallback = True
         if topic not in self.keep_alive_pollers:
-            for widget in self.widgets:
+            for widget in self.widget_manager.widgets:
                 if topic in widget.subscribed_topics or ('*' in widget.subscribed_topics and using_fallback):
                     widget_to_claim = widget
                     if topic in widget.subscribed_topics:
@@ -274,7 +269,7 @@ class HeadUpDisplay:
     # This should only run when we have a state poller
     def disable_poller_check(self):
         enabled = False
-        for widget in self.widgets:
+        for widget in self.widget_manager.widgets:
             if not widget.cleared:
                 enabled = True
                 break
@@ -286,7 +281,7 @@ class HeadUpDisplay:
             self.disable_poller_job = None
         
     def content_update(self, data):
-        for widget in self.widgets:
+        for widget in self.widget_manager.widgets:
             update_dict = {}
             for key in data:
                 if key in widget.subscribed_content:
@@ -307,7 +302,7 @@ class HeadUpDisplay:
                 
     def log_update(self, logs):
         new_log = logs[-1]
-        for widget in self.widgets:
+        for widget in self.widget_manager.widgets:
             if new_log['type'] in widget.subscribed_logs or '*' in widget.subscribed_logs:
                 widget.append_log(new_log)
 
@@ -326,7 +321,7 @@ class HeadUpDisplay:
         # Then widgets that have a topic subscribed
         # And lastly the fallback widget
         if topic not in self.keep_alive_pollers:
-            for widget in self.widgets:
+            for widget in self.widget_manager.widgets:
                 if topic in widget.subscribed_topics or ('*' in widget.subscribed_topics and using_fallback):
                     if topic == widget.topic:
                         widget_to_claim = widget
@@ -353,7 +348,7 @@ class HeadUpDisplay:
     # This poller is needed for setup modes as not all canvases block the mouse
     def determine_active_setup_mouse(self):
         has_setup_modes = False
-        for widget in self.widgets:
+        for widget in self.widget_manager.widgets:
             if (widget.setup_type not in ["", "mouse_drag"]):
                 has_setup_modes = True
                 break
@@ -370,19 +365,19 @@ class HeadUpDisplay:
         
         if (self.prev_mouse_pos is None or numpy.linalg.norm(numpy.array(pos) - numpy.array(self.prev_mouse_pos)) > 1):
             self.prev_mouse_pos = pos
-            for widget in self.widgets:
+            for widget in self.widget_manager.widgets:
                 if widget.enabled and widget.setup_type != "":
                     widget.setup_move(self.prev_mouse_pos)
 
     # Increase the page number by one on the widget if it is enabled
     def increase_widget_page(self, widget_id: str):
-        for widget in self.widgets:
+        for widget in self.widget_manager.widgets:
             if widget.enabled and widget.id == widget_id and isinstance(widget, LayoutWidget):
                 widget.set_page_index(widget.page_index + 1)
 
     # Decrease the page number by one on the widget if it is enabled
     def decrease_widget_page(self, widget_id: str):
-        for widget in self.widgets:
+        for widget in self.widget_manager.widgets:
             if widget.enabled and widget.id == widget_id and isinstance(widget, LayoutWidget):
                 widget.set_page_index(widget.page_index - 1)
 
@@ -390,7 +385,7 @@ class HeadUpDisplay:
     def move_context_menu(self, widget_id: str, pos_x: int, pos_y: int, buttons: list[HudButton]):
         connected_widget = None
         context_menu_widget = None
-        for widget in self.widgets:
+        for widget in self.widget_manager.widgets:
             if widget.enabled and widget.id == widget_id:
                 connected_widget = widget
             elif widget.id == 'context_menu':      
@@ -404,7 +399,7 @@ class HeadUpDisplay:
     def connect_context_menu(self, widget_id):
         connected_widget = None
         context_menu_widget = None
-        for widget in self.widgets:
+        for widget in self.widget_manager.widgets:
             if widget.enabled and widget.id == widget_id:
                 connected_widget = widget
             elif widget.id == 'context_menu':      
@@ -425,7 +420,7 @@ class HeadUpDisplay:
     # Generally you want to do this when you click outside of the menu itself
     def hide_context_menu(self):
         context_menu_widget = None    
-        for widget in self.widgets:
+        for widget in self.widget_manager.widgets:
             if widget.id == 'context_menu' and widget.enabled:      
                 context_menu_widget = widget
                 break
@@ -437,7 +432,7 @@ class HeadUpDisplay:
     # Active a given choice for a given widget
     def activate_choice(self, choice_string):
         widget_id, choice_index = choice_string.split("|")
-        for widget in self.widgets:
+        for widget in self.widget_manager.widgets:
             if widget.id == widget_id:
                 if isinstance(widget, HeadUpChoicePanel):
                     widget.select_choice(int(choice_index))
@@ -445,7 +440,6 @@ class HeadUpDisplay:
                 else:
                     widget.click_button(int(choice_index))
                     self.update_context()
-                    
 
     # Updates the context based on the current HUD state
     def update_context(self):
@@ -457,7 +451,14 @@ class HeadUpDisplay:
         choices = {}
         quick_choices = {}
         numerical_choices = {}
-        for widget in self.widgets:
+        themes = {}
+        
+        themes_directory = os.path.dirname(os.path.abspath(__file__)) + "/themes"
+        themes_list = os.listdir(themes_directory)
+        for theme in themes_list:
+            themes[string_to_speakable_string(theme)] = theme
+        
+        for widget in self.widget_manager.widgets:
             current_widget_names = [string_to_speakable_string(widget.id)]        
             if isinstance(widget, HeadUpTextPanel):
                 content_title = string_to_speakable_string(widget.panel_content.title)
@@ -507,6 +508,7 @@ class HeadUpDisplay:
         ctx.lists['user.talon_hud_widget_names'] = widget_names
         ctx.lists['user.talon_hud_choices'] = choices
         ctx.lists['user.talon_hud_quick_choices'] = quick_choices
+        ctx.lists['user.talon_hud_themes'] = themes
     
 
 preferences = HeadUpDisplayUserPreferences() 
@@ -566,10 +568,22 @@ class Actions:
         global hud
         hud.switch_theme(theme_name)
         
-    def set_hud_setup_mode(setup_mode: str, id: str):
+    def set_hud_setup_mode(id: str, setup_mode: str):
         """Starts a setup mode which can change position"""
         global hud
         hud.start_setup_id(id, setup_mode)
+
+    def set_hud_setup_mode_multi(ids: list[str], setup_mode: str):
+        """Starts a setup mode which can change position for multiple widgets at the same time"""
+        global hud
+        
+        # In case we are dealing with drag, we can allow multiple widgets to be dragged at the same time
+        mouse_pos = None
+        if (len(ids) > 1 and setup_mode == "position"):
+            mouse_pos = ctrl.mouse_pos()
+        
+        for id in ids:
+            hud.start_setup_id(id, setup_mode, mouse_pos)
                 
     def show_context_menu(widget_id: str, pos_x: int, pos_y: int, buttons: list[HudButton]):
         """Show the context menu for a specific widget id"""

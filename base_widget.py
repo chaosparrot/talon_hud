@@ -68,9 +68,6 @@ class BaseWidget(metaclass=ABCMeta):
 
         if initialize:
             self.load_theme_values()        
-
-        if (initialize and self.preferences.enabled and ('enabled' in dict and dict['enabled'])):
-            self.enable()
     
     # Set the topic that has claimed this widget
     def set_topic(self, topic:str):
@@ -250,9 +247,12 @@ class BaseWidget(metaclass=ABCMeta):
         """Respond to theme load ins here"""    
         pass
         
-    def start_setup(self, setup_type):
+    def start_setup(self, setup_type, mouse_position = None):
         """Starts a setup mode that is used for moving, resizing and other various changes that the user might setup"""    
-        if (setup_type not in self.allowed_setup_options and setup_type not in ["", "cancel"] ):
+        if (mouse_position is not None):
+            self.drag_position = [mouse_position[0] - self.limit_x, mouse_position[1] - self.limit_y]
+        
+        if (setup_type not in self.allowed_setup_options and setup_type not in ["", "cancel", "reload"] ):
             return
         # Persist the user preferences when we end our setup
         if (self.setup_type != "" and not setup_type):
@@ -296,11 +296,18 @@ class BaseWidget(metaclass=ABCMeta):
             if (self.setup_type != ""):
                 self.load({}, False)
                 
+                self.setup_type = ""                
                 if self.canvas:
                     rect = ui.Rect(self.x, self.y, self.width, self.height)                    
                     self.canvas.rect = rect
+                    self.canvas.resume()
                 
-                self.setup_type = ""
+        elif setup_type == "reload":
+            self.drag_position = []
+            self.setup_type = ""             
+            if self.canvas:
+                rect = ui.Rect(self.x, self.y, self.width, self.height)                    
+                self.canvas.rect = rect
                 self.canvas.resume()
         # Start the setup state
         elif self.setup_type != setup_type:

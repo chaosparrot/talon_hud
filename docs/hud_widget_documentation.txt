@@ -15,7 +15,7 @@ Some widgets like the event log also allow you to change the text direction and 
 <*head up align <widget name> bottom/> changes the direction in which content is placed downwards.
 
 <*Position and size/>
-You can change the position of a widget by dragging it around with the mouse, or by saying <*head up drag <widget name>/>.
+You can change the position of one or more widgets by dragging them around with the mouse, or by saying <*head up drag <widget names>/>.
 <*head up drop/> confirms and saves the changes of your changed widget.
 
 You can also resize the widgets to your liking.
