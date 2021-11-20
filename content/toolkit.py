@@ -2,8 +2,17 @@ from talon import actions, cron, scope, speech_system, ui, app, Module
 from user.talon_hud.content.state import hud_content
 
 def pick_toolkit_option(data):
-    if data["text"] == "Talon scope":
+    if data["text"] == "Debugging":
+        actions.user.hud_toolkit_debug_options()
+        return True
+    elif data["text"] == "Scope":
         actions.user.hud_toolkit_scope()
+        return False
+    elif data["text"] == "Lists":
+        actions.user.hud_toolkit_lists()
+        return False
+    elif data["text"] == "History":
+        actions.user.hud_toolkit_history()
         return False
     elif data["text"] == "Microphone selection":
         actions.user.show_microphone_options()
@@ -25,8 +34,18 @@ class Actions:
         choices = actions.user.hud_create_choices([
             {"text": "Documentation"},
             {"text": "Walkthroughs"},            
-            {"text": "Talon scope"},
+            {"text": "Debugging"},
             {"text": "Microphone selection"},
-            {"text": "Cancel toolkit"}
+            {"text": "Dismiss"}
+        ], pick_toolkit_option)
+        actions.user.hud_publish_choices(choices, "Toolkit options", "Pick content from the HUD Toolkit below")
+        
+    def hud_toolkit_debug_options():
+        """Shows the content available in the debug menu of the HUD toolkit"""
+        choices = actions.user.hud_create_choices([
+            {"text": "Scope"},
+            {"text": "Lists"},
+            {"text": "Audio"},
+            {"text": "Dismiss"}
         ], pick_toolkit_option)
         actions.user.hud_publish_choices(choices, "Toolkit options", "Pick content from the HUD Toolkit below")

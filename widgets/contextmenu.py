@@ -27,7 +27,7 @@ class HeadUpContextMenu(LayoutWidget):
     button_hovered = -1
     default_buttons = [
         HudButton(None, 'Close panel', ui.Rect(0, 0, 0, 0), close_widget),
-        HudButton(None, 'Cancel options', ui.Rect(0, 0, 0, 0), noop)
+        HudButton(None, 'Dismiss', ui.Rect(0, 0, 0, 0), noop)
     ]
     buttons = []
 
