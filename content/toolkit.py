@@ -2,6 +2,7 @@ from talon import actions, cron, scope, speech_system, ui, app, Module
 from user.talon_hud.content.state import hud_content
 
 def pick_toolkit_option(data):
+    print( data )
     if data["text"] == "Debugging":
         actions.user.hud_toolkit_debug_options()
         return True
@@ -10,7 +11,7 @@ def pick_toolkit_option(data):
         return False
     elif data["text"] == "Lists":
         actions.user.hud_toolkit_lists()
-        return False
+        return True
     elif data["text"] == "History":
         actions.user.hud_toolkit_history()
         return False
