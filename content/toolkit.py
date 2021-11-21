@@ -8,6 +8,9 @@ def pick_toolkit_option(data):
         return True
     elif data["text"] == "Scope":
         actions.user.hud_toolkit_scope()
+        return False        
+    elif data["text"] == "Speech":
+        actions.user.hud_toolkit_speech()
         return False
     elif data["text"] == "Lists":
         actions.user.hud_toolkit_lists()
@@ -37,7 +40,7 @@ class Actions:
             {"text": "Walkthroughs"},            
             {"text": "Debugging"},
             {"text": "Microphone selection"},
-            {"text": "Dismiss"}
+            {"text": "Dismiss toolkit"}
         ], pick_toolkit_option)
         actions.user.hud_publish_choices(choices, "Toolkit options", "Pick content from the HUD Toolkit below")
         
@@ -46,7 +49,7 @@ class Actions:
         choices = actions.user.hud_create_choices([
             {"text": "Scope"},
             {"text": "Lists"},
-            {"text": "Audio"},
-            {"text": "Dismiss"}
+            {"text": "Speech"},
+            {"text": "Dismiss toolkit"}
         ], pick_toolkit_option)
-        actions.user.hud_publish_choices(choices, "Toolkit options", "Pick content from the HUD Toolkit below")
+        actions.user.hud_publish_choices(choices, "Toolkit debugging", "Pick content from the HUD Toolkit below")

@@ -25,6 +25,7 @@ class HeadUpDisplayContent(Dispatch):
         },
         "status_icons": [],
         "log": [],
+        "phrases": [],        
         "abilities": [],
         "walkthrough_voice_commands": [],
         "topics": {
@@ -86,6 +87,11 @@ class HeadUpDisplayContent(Dispatch):
         
         if updated:
             self.dispatch("content_update", self.content)
+
+    def append_to_phrases(self, phrase_data):
+        self.content['phrases'].append(phrase_data)
+        self.content['phrases'][-max_log_length:]
+        self.dispatch("content_update", self.content)
         
     def append_to_log(self, type, log_message):
         self.content['log'].append({'type': type, 'message': log_message, 'time': time.monotonic()})
@@ -144,6 +150,17 @@ class Actions:
             "id": id
         })
         
+    def hud_add_phrase(phrase: str, timestamp: float, time_ms: float, model: str, microphone: str):
+        """Add a phrase to the phrase log"""
+        global hud_content
+        hud_content.append_to_phrases({
+            "phrase": phrase,
+            "time_ms": time_ms,
+            "timestamp": timestamp,
+            "model": model,
+            "microphone": microphone
+        })
+    
     def hud_refresh_content():
         """Sends a refresh event to all the widgets where the content has changed"""
         global hud_content
