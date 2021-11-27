@@ -330,7 +330,7 @@ class Actions:
             else:
                 if previous_microphone == "None":
                     previous_microphone = "System Default"
-                actions.sound.set_microphone("System Default")
+                actions.sound.set_microphone(previous_microphone)
                 
         elif (id == "close"):
             actions.user.disable_hud()
