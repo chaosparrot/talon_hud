@@ -15,6 +15,9 @@ mod = Module()
 # NOTE - THIS USES A TALON API THAT IS SUBJECT TO CHANGE AND MIGHT BREAK IN FUTURE VERSIONS
 class HeadUpDisplayContent(Dispatch):
 
+    queued_log_splits = None
+    throttled_logs = None
+
     # Default content to be displayed
     content = {
         'mode': 'command',
@@ -96,7 +99,89 @@ class HeadUpDisplayContent(Dispatch):
     def append_to_log(self, type, log_message):
         self.content['log'].append({'type': type, 'message': log_message, 'time': time.monotonic()})
         self.content['log'][-max_log_length:]
-        self.dispatch("log_update", self.content['log'])
+        if self.queued_log_splits:
+            self.revise_log(True)
+        else:
+            self.dispatch("log_update", self.content['log'])
+
+    def show_throttled_logs(self, sleep_s: int = 0):
+        if sleep_s:
+            actions.sleep(sleep_s)
+        
+        if self.throttled_logs:
+            for log in self.throttled_logs:
+                self.content['log'].append(log)
+                self.content['log'][-max_log_length:]
+                if self.queued_log_splits:
+                    self.revise_log(True)
+                else:
+                    self.dispatch("log_update", self.content['log'])
+            self.throttled_logs = []
+
+    def revise_log(self, send_update = False):
+        revised_indecis = []        
+        for queue_index, queued_log in enumerate(self.queued_log_splits):
+            type = queued_log['type']
+            prefix = queued_log['prefix']
+            discard_remaining = queued_log['discard_remaining']
+            throttled = queued_log['throttled']
+            
+            log_amount = len(self.content['log'])
+            if log_amount > 0:
+                
+                # Get the last index of the type of log we are after
+                index = -1
+                log = None
+                for i in range(0, log_amount):
+                    if i == 0:
+                       i += 1
+                    
+                    if self.content['log'][-i]['type'] == type:
+                        index = i
+                        log = self.content['log'][-i]
+                        break
+                
+                if index != -1 and log['message'].startswith(prefix):
+                    revised_indecis.append( queue_index )
+                    remaining = log['message'][len(prefix):].lstrip()
+                    if remaining:
+                        self.content['log'][-index]['message'] = prefix.strip()
+                        if send_update:
+                            self.dispatch("log_update", self.content['log'])
+                        
+                        revised_logs = [self.content['log'][-index]]
+                        if not discard_remaining:
+                            remainder_log = {'type': type, 'message': remaining, 'time': log['time']}
+                            
+                            if not throttled:
+                                revised_logs.append(remainder_log)
+                                if index >= log_amount or index == 1:
+                                    self.content['log'].append(remainder_log)
+                                else:
+                                    self.content['log'].insert(-index, remainder_log)
+                            else:
+                                self.throttled_logs.append(remainder_log)
+                        
+                        if send_update == False:
+                            self.dispatch("log_revise", revised_logs)
+    
+        # Remove the queued splits from the log in reverse to preserve the order
+        revised_indecis.reverse()
+        for queue_index in revised_indecis:
+            self.queued_log_splits.pop(queue_index)
+    
+        if send_update:
+            self.dispatch("log_update", self.content['log'])                        
+    
+    
+    def edit_log_message(self, prefix, throttled = False, discard_remaining = False, type = "command"):
+        if self.queued_log_splits is None:
+            self.queued_log_splits = []
+        if self.throttled_logs == None:
+            self.throttled_logs = []
+        self.queued_log_splits.append({"type": type, "prefix": prefix, 
+            "discard_remaining": discard_remaining, "throttled": throttled})
+        self.revise_log()
         
 hud_content = HeadUpDisplayContent()
 
@@ -107,6 +192,16 @@ class Actions:
         """Adds a log to the HUD"""
         global hud_content
         hud_content.append_to_log(type, message)
+        
+    def hud_edit_log(prefix_split: str, throttle_remaining: int = 0, discard_remaining: int = 0, type: str = "command"):
+        """Edits a log message to be split up into multiple with optional discarding of the remainder"""
+        global hud_content
+        hud_content.edit_log_message(prefix_split, throttle_remaining > 0, discard_remaining > 0, type)
+        
+    def hud_show_throttled_logs(sleep_s: int = 0):
+        """Sends the throttled log messages to be visualized after the optional sleep timeout"""
+        global hud_content
+        hud_content.show_throttled_logs(sleep_s)
 
     def hud_add_status_icon(id: str, image: str):
         """Add an icon to the status bar"""

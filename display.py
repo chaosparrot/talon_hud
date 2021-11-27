@@ -121,6 +121,7 @@ class HeadUpDisplay:
             self.display_state.register('content_update', self.content_update)
             self.display_state.register('panel_update', self.panel_update)            
             self.display_state.register('log_update', self.log_update)
+            self.display_state.register('log_revise', self.log_revise)
             ui.register('screen_change', self.reload_preferences)            
             self.determine_active_setup_mouse()
             if persisted:
@@ -142,6 +143,7 @@ class HeadUpDisplay:
             self.display_state.unregister('content_update', self.content_update)
             self.display_state.unregister('panel_update', self.panel_update)
             self.display_state.unregister('log_update', self.log_update)
+            self.display_state.unregister('log_revise', self.log_revise)            
             ui.unregister('screen_change', self.reload_preferences)
             self.determine_active_setup_mouse()
             
@@ -305,6 +307,12 @@ class HeadUpDisplay:
         for widget in self.widget_manager.widgets:
             if new_log['type'] in widget.subscribed_logs or '*' in widget.subscribed_logs:
                 widget.append_log(new_log)
+                
+    def log_revise(self, logs):
+        for widget in self.widget_manager.widgets:
+            if logs[0]['type'] in widget.subscribed_logs or '*' in widget.subscribed_logs:
+                widget.revise_logs(logs)
+        
 
     def panel_update(self, panel_content: HudPanelContent):
         updated = False
