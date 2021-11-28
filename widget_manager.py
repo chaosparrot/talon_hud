@@ -13,6 +13,7 @@ from user.talon_hud.widgets.choicepanel import HeadUpChoicePanel
 from user.talon_hud.widgets.documentationpanel import HeadUpDocumentationPanel
 from user.talon_hud.widgets.walkthroughpanel import HeadUpWalkThroughPanel
 from user.talon_hud.widgets.contextmenu import HeadUpContextMenu
+from user.talon_hud.widgets.cursortracker import HeadUpCursorTracker
 from user.talon_hud.theme import HeadUpDisplayTheme
 
 semantic_directory = os.path.dirname(os.path.abspath(__file__))
@@ -276,7 +277,8 @@ class HeadUpWidgetManager:
             self.load_widget("walk_through", "walk_through_panel", {'topics': ['walk_through']}),
             
             # Special widgets that have varying positions            
-            self.load_widget("context_menu", "context_menu")
+            self.load_widget("context_menu", "context_menu"),
+            self.load_widget("cursor_tracker", "cursor_tracker")            
         ]
         
     def load_widget(self, id: str, type: str, subscriptions = None) -> BaseWidget:
@@ -289,6 +291,8 @@ class HeadUpWidgetManager:
             return self.load_event_log(id, self.preferences.prefs)
         elif type == "context_menu":
             return self.load_context_menu(id, self.preferences.prefs)
+        elif type == "cursor_tracker":
+            return self.load_cursor_tracker(id, self.preferences.prefs)
         
         # All widgets with specific subscriptions tied to them        
         elif type == "text_panel":
@@ -315,6 +319,10 @@ class HeadUpWidgetManager:
     def load_context_menu(self, id, preferences=None):
         """Load a context menu widget with the given preferences"""
         return HeadUpContextMenu(id, preferences, self.theme)
+        
+    def load_cursor_tracker(self, id, preferences=None):
+        """Load a cursor tracker widget with the given preferences"""
+        return HeadUpCursorTracker(id, preferences, self.theme)
 
     def load_text_panel(self, id, preferences=None, subscriptions=None):
         """Load a text panel widget with the given preferences"""

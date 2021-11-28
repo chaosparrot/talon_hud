@@ -162,7 +162,8 @@ Roadmap
 
 These are ideas that I want to implement in no specific order and with no specific timeline in mind.
 
-- An indicator widget that follows the cursor around to show a single state that is important to the current task at hand
+X An indicator widget that follows the cursor around to show a single state that is important to the current task at hand
+- An overlay widget that shows off different interesting regions of the screen
 - An image panel with a header and a close icon which displays image content
 - Splitting out topics from text boxes into separate text boxes
 - "Voice auto complete" content, which automatically opens documentation when a certain keyword is said, to help in the learning process.
