@@ -284,7 +284,7 @@ class HeadUpStatusBar(BaseWidget):
         radius = diameter / 2
         canvas.draw_circle( origin_x + radius, origin_y + radius, radius, paint)
         if (icon['image'] is not None and self.theme.get_image(icon['image']) is not None ):
-            image = self.theme.get_image(icon['image'])
+            image = self.theme.get_image(icon['image'], diameter, diameter)
             canvas.draw_image(image, origin_x + radius - image.width / 2, origin_y + radius - image.height / 2 )
                 
         self.icon_positions.append({'icon': icon, 'center_x': origin_x + radius, 'center_y': origin_y + radius, 'radius': radius})

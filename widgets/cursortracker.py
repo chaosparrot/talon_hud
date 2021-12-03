@@ -111,12 +111,12 @@ class HeadUpCursorTracker(BaseWidget):
     def draw(self, canvas) -> bool:
         paint = self.draw_setup_mode(canvas)
         if self.soft_enabled and self.active_icon:
-            self.draw_icon(canvas, self.x, self.y, paint, self.active_icon)
+            self.draw_icon(canvas, self.x, self.y, self.width, paint, self.active_icon)
         return False
         
     def draw_icon(self, canvas, origin_x, origin_y, diameter, paint, icon ):
         radius = diameter / 2
         canvas.draw_circle( origin_x + radius, origin_y + radius, radius, paint)
         if (icon['image'] is not None and self.theme.get_image(icon['image']) is not None ):
-            image = self.theme.get_image(icon['image'])
+            image = self.theme.get_image(icon['image'], diameter, diameter)
             canvas.draw_image(image, origin_x + radius - image.width / 2, origin_y + radius - image.height / 2 )                

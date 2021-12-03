@@ -32,17 +32,55 @@ class HeadUpDisplayTheme:
                 filename_len = len(filename)
                 self.image_dict[filename[:filename_len - 4]] = skia.Image.from_file(theme_dir + "/" + filename)                
 
-    def get_image(self, image_name):
-        if (image_name in self.image_dict):
-            return self.image_dict[image_name]
+    def get_image(self, image_name, width = None, height = None):
+        full_image_name = image_name
+        if width is not None:
+            full_image_name += "w" + str(width)
+        if height is not None:
+            full_image_name += "h" + str(height)
+    
+        # Use cached full image name
+        if (full_image_name in self.image_dict):
+            return self.image_dict[full_image_name]
+            
+        # Scale existing image in our cache
+        elif (image_name in self.image_dict and full_image_name not in self.image_dict):
+            image = self.image_dict[image_name]
+            self.image_dict[full_image_name] = self.resize_image(image, width, height)
+            return self.image_dict[full_image_name]
+            
+        # Load the image from the file system
         else:
             # Load in images from other directories
             if "/" in image_name or "\\" in image_name:
                 if os.path.isfile(image_name):
                     image_name_len = len(image_name)
-                    self.image_dict[image_name] = skia.Image.from_file(image_name)                    
-                    return self.image_dict[image_name]
+                    self.image_dict[image_name] = skia.Image.from_file(image_name)
+                    if full_image_name != image_name:
+                        return self.get_image(image_name, width, height)
+                    else:
+                        return self.image_dict[image_name]
             return None
+
+    def resize_image(self, image, width, height):
+        aspect_ratio = image.width / image.height
+        
+        # Resize only if the image width is larger than the given width
+        if width is None or image.width < width:
+            width = image.width
+            
+        # Resize only if the image height is larger than the given height
+        if height is None or image.height < height:
+            height = image.height
+        
+        # Preserve the aspect ratio of the image at all costs using the smallest dimension to work from
+        new_aspect_ratio = width / height
+        if new_aspect_ratio > aspect_ratio:
+            height = image.width * aspect_ratio
+        elif new_aspect_ratio < aspect_ratio:
+            width = image.height / aspect_ratio
+        
+        return image.reshape(int(width), int(height))
 
     def get_colour(self, colour, default_colour='000000'):
         if (colour in self.values):

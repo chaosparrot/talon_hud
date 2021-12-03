@@ -116,3 +116,4 @@ class Action:
         """Start displaying the phrase debugging tools"""
         actions.user.hud_add_poller("speech", SpeechPoller())
         actions.user.hud_activate_poller("speech")
+ 

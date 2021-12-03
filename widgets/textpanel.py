@@ -345,7 +345,7 @@ class HeadUpTextPanel(LayoutWidget):
         footer_height = dimensions["header_height"]
         dimensions = dimensions["rect"]
 
-        # Small divider between the content and the header
+        # Small divider between the content and the footer
         x = dimensions.x + self.padding[3]
         start_y = dimensions.y + dimensions.height - self.padding[0] - self.padding[2] / 2        
         for index, icon in enumerate(self.footer_icons):
