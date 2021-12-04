@@ -209,8 +209,11 @@ def linear_gradient(origin_x, origin_y, dest_x, dest_y, colours):
 
 def hit_test_button(button: HudButton, pos: Point2d):
     br = button.rect
-    return pos.x >= br.x and pos.x <= br.x + br.width \
-        and pos.y >= br.y and pos.y <= br.y + br.height
+    return self.hit_test_rect(br, pos)
+        
+def hit_test_rect(rect: ui.Rect, pos: Point2d):
+    return pos.x >= rect.x and pos.x <= rect.x + rect.width \
+        and pos.y >= rect.y and pos.y <= rect.y + rect.height
         
 def hit_test_icon(icon: HudIcon, pos: Point2d):
     pos = numpy.array(pos)

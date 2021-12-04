@@ -1,8 +1,12 @@
 from user.talon_hud.base_widget import BaseWidget
+from user.talon_hud.utils import hit_test_rect
+from user.talon_hud.content.typing import HudScreenRegion
+from user.talon_hud.widget_preferences import HeadUpDisplayUserWidgetPreferences
 from talon import skia, ui, Module, cron, actions, ctrl
+from talon.types.point import Point2d
 import time
 import numpy
-from user.talon_hud.widget_preferences import HeadUpDisplayUserWidgetPreferences
+
 
 class HeadUpCursorTracker(BaseWidget):
 
@@ -19,18 +23,10 @@ class HeadUpCursorTracker(BaseWidget):
     ]
     
     active_icon = None
-    cursor_icons = [{
-                'image': 'de_DE',
-                'rect': None
-            }]
+    cursor_icons = [HudScreenRegion("total", icon="de_DE"), HudScreenRegion("total", icon="ru_RU", rect=ui.Rect(800,0, 1000, 1000))]
     content = {
         'mode': 'command',
-        'cursor_icons': [
-            {
-                'image': 'de_DE',
-                'rect': None
-            }
-        ]
+        'cursor_icons': [HudScreenRegion("total", icon="de_DE")]
     }        
     
     def refresh(self, new_content):
@@ -46,7 +42,7 @@ class HeadUpCursorTracker(BaseWidget):
     def enable(self, persist=False):
         if not self.enabled:
             self.previous_pos = ctrl.mouse_pos()
-            self.determine_active_icon()
+            self.determine_active_icon(self.previous_pos)
             super().enable(persist)
             self.soft_enable()
     
@@ -98,15 +94,24 @@ class HeadUpCursorTracker(BaseWidget):
                 self.limit_y = pos[1] + 20
                 self.canvas.move(pos[0] + 20, pos[1] + 20)
                 
-                self.determine_active_icon()
+                self.determine_active_icon(pos)
                 self.canvas.freeze()        
     
-    def determine_active_icon(self):    
-        # TODO determine based on active region
-        if self.cursor_icons:
-            self.active_icon = self.cursor_icons[0]
-        else:
-            self.active_icon = None
+    # Determine the active icon based on the region the icon is in
+    # If multiple regions overlap, choose the smaller more specific one
+    def determine_active_icon(self, pos):
+        pos = Point2d(pos[0], pos[1])    
+        active_icon = None
+        size = None
+        for icon in self.cursor_icons:
+            if icon.rect is None and active_icon is None:
+                active_icon = icon
+            if icon.rect is not None and hit_test_rect(icon.rect, pos):            
+                if size is None or size > icon.rect.width * icon.rect.height:
+                    size = icon.rect.width * icon.rect.height
+                    active_icon = icon
+        
+        self.active_icon = active_icon
     
     def draw(self, canvas) -> bool:
         paint = self.draw_setup_mode(canvas)
@@ -117,6 +122,6 @@ class HeadUpCursorTracker(BaseWidget):
     def draw_icon(self, canvas, origin_x, origin_y, diameter, paint, icon ):
         radius = diameter / 2
         canvas.draw_circle( origin_x + radius, origin_y + radius, radius, paint)
-        if (icon['image'] is not None and self.theme.get_image(icon['image']) is not None ):
-            image = self.theme.get_image(icon['image'], diameter, diameter)
+        if (icon.icon is not None and self.theme.get_image(icon.icon) is not None ):
+            image = self.theme.get_image(icon.icon, diameter, diameter)
             canvas.draw_image(image, origin_x + radius - image.width / 2, origin_y + radius - image.height / 2 )                

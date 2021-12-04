@@ -53,6 +53,15 @@ class HudPanelContent:
     show: bool
     choices: HudChoices = None
     tags: list[str] = None
+    
+@dataclass
+class HudScreenRegion:
+    topic: str
+    title: str = None
+    icon: str = None
+    colour: str = None
+    rect: ui.Rect = None
+    hover_visibility: bool = False
 
 @dataclass
 class HudWalkThroughStep:

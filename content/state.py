@@ -1,9 +1,9 @@
 from talon import actions, cron, scope, Module, ui
 from talon_init import TALON_USER
 from talon.scripting import Dispatch
-from user.talon_hud.content.typing import HudPanelContent, HudButton, HudChoice, HudChoices
+from user.talon_hud.content.typing import HudPanelContent, HudButton, HudChoice, HudChoices, HudScreenRegion
 import time
-from typing import Callable, Any
+from typing import Callable, Any, Union
 import os
 
 hud_directory = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -33,7 +33,9 @@ class HeadUpDisplayContent(Dispatch):
         "walkthrough_voice_commands": [],
         "topics": {
             'debug': HudPanelContent('debug', '', 'Debug panel', [], 0, False),
-        }
+        },
+        "cursor_regions": [],
+        "screen_regions": []
     }
     
     # Publish content meant for text boxes and other panels
@@ -237,14 +239,14 @@ class Actions:
             "image_offset_x": image_offset_x,
             "image_offset_y": image_offset_y
         })
-
+        
     def hud_remove_ability(id: str):
         """Remove an ability"""
         global hud_content
         hud_content.remove_from_set("abilities", {
             "id": id
         })
-        
+                
     def hud_add_phrase(phrase: str, timestamp: float, time_ms: float, model: str, microphone: str):
         """Add a phrase to the phrase log"""
         global hud_content
@@ -275,6 +277,11 @@ class Actions:
     def hud_create_button(text: str, callback: Callable[[], None], image: str = ''):
         """Create a button used in the Talon HUD"""
         return HudButton(image, text, ui.Rect(0,0,0,0), callback)
+        
+    def hud_create_screen_region(topic: str, colour: str = None, icon: str = None, title: str = None, hover_visibility: Union[bool, int] = False, x: int = 0, y: int = 0, width: int = 0, height: int = 0):
+        """Create a HUD screen region, where by default it is active all over the available space and it is visible only on a hover"""
+        rect = ui.Rect(x, y, width, height) if width * height > 0 else None        
+        return HudScreenRegion(topic, title, icon, colour, rect, hover_visibility)
 
     def hud_create_choices(choices_list: list[Any], callback: Callable[[Any], None], multiple: bool = False) -> HudChoices:
         """Creates a list of choices with a single list of dictionaries"""
