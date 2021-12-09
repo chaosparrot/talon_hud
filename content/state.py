@@ -34,8 +34,9 @@ class HeadUpDisplayContent(Dispatch):
         "topics": {
             'debug': HudPanelContent('debug', '', 'Debug panel', [], 0, False),
         },
-        "cursor_regions": [],
-        "screen_regions": []
+        "screen_regions": {
+           "cursor": []
+        }
     }
     
     # Publish content meant for text boxes and other panels
@@ -263,7 +264,7 @@ class Actions:
         global hud_content
         hud_content.dispatch("content_update", hud_content.content)
         
-    def hud_publish_content(content: str, topic: str = '', title:str = '', show:bool = True, buttons: list[HudButton] = None, tags: list[str] = None):
+    def hud_publish_content(content: str, topic: str = '', title:str = '', show: Union[bool, int] = True, buttons: list[HudButton] = None, tags: list[str] = None):
         """Publish a specific piece of content to a topic"""            
         if buttons == None:
             buttons = []
@@ -280,10 +281,38 @@ class Actions:
         
     def hud_create_screen_region(topic: str, colour: str = None, icon: str = None, title: str = None, hover_visibility: Union[bool, int] = False, x: int = 0, y: int = 0, width: int = 0, height: int = 0):
         """Create a HUD screen region, where by default it is active all over the available space and it is visible only on a hover"""
-        rect = ui.Rect(x, y, width, height) if width * height > 0 else None        
+        rect = ui.Rect(x, y, width, height) if width * height > 0 else None
         return HudScreenRegion(topic, title, icon, colour, rect, hover_visibility)
 
-    def hud_create_choices(choices_list: list[Any], callback: Callable[[Any], None], multiple: bool = False) -> HudChoices:
+    def hud_publish_screen_regions(type: str, regions: list[HudChoices], clear: Union[bool, int] = False):
+        """Publish screen regions to widgets that can handle them, optionally clearing the type"""
+        global hud_content        
+        if len(regions) > 0:
+            if type not in hud_content.content["screen_regions"]:
+                hud_content.content["screen_regions"][type] = []        
+        
+            if clear:
+                for region in regions:
+                    actions.user.hud_clear_screen_regions(type, region.topic, False)
+            
+            hud_content.content["screen_regions"][type].extend(regions)
+            hud_content.dispatch("content_update", hud_content.content)
+        
+    def hud_clear_screen_regions(type: str, topic: str = None, update: Union[bool, int] = True):
+        """Clear the screen regions in the given type, optionally by topic"""
+        global hud_content
+        if type in hud_content.content["screen_regions"]:
+            if topic is not None:
+                regions = hud_content.content["screen_regions"][type]
+                if len(regions) > 0:                
+                    hud_content.content["screen_regions"][type] = [x for x in regions if x.topic != topic]
+            else:
+                hud_content.content["screen_regions"][type] = []
+                
+            if update:
+                hud_content.dispatch("content_update", hud_content.content)
+
+    def hud_create_choices(choices_list: list[Any], callback: Callable[[Any], None], multiple: Union[bool, int] = False) -> HudChoices:
         """Creates a list of choices with a single list of dictionaries"""
         choices = []
         for index, choice_data in enumerate(choices_list):
@@ -306,3 +335,11 @@ class Actions:
         """Show a bunch of test buttons to choose from"""
         choices = actions.user.hud_create_choices([{"text": "Testing", "image": "next_icon"},{"text": "Another choice"},{"text": "Some other choice"},{"text": "Maybe pick this"},], print)
         actions.user.hud_publish_choices(choices)
+        
+    def test_add_icon():
+        """asdf"""
+        actions.user.hud_publish_screen_regions('cursor', [actions.user.hud_create_screen_region('cursor', None, 'de_DE')], True)
+        
+    def test_remove_icon():
+        """asdf aaa"""
+        actions.user.hud_clear_screen_regions('cursor')

@@ -56,6 +56,17 @@ This widget is meant to guide users through a predefined workflow to familiarize
 You can use this to give an interactive experience for users to learn the ins and outs of various workflows.
 Included in the Talon HUD is a simple walkthrough for using the Talon HUD itself, but any package can make walkthroughs or workflows.
 
+### 7. Ability bar
+
+Much like the status bar, except it only allows you to show icons and can be displayed independently of the status bar.  
+By default, it does not have any visual indication, but I have used it in some of my personal scripts to show movement directions.  
+
+### 8. Cursor tracker
+
+This widget follows your given pointer around and can display an icon or a colour near it.  
+This can be used for example to show the status of a specific thing near your eyetracking gaze through your mouse cursor.  
+By default, there are no cursor indicators, they need to be programmed in using the content documentation.  
+
 Voice commands
 ---
 

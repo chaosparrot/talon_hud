@@ -212,3 +212,41 @@ If you add this in a talon file, you can test it for yourself when saying **test
 ```
 test example poller: user.example_poller()
 ```
+
+# Screen regions and cursor icons
+
+The HUD also allows you to add icons next to your pointer or on given areas of the screen using screen regions.
+Screen regions are regions in which position related content is displayed. 
+
+For example, you might want to add an icon next to your mouse if it is in a specific screen region. 
+Or you might want to show positional information in various blocks on the screen as if you are using a virtual keyboard.
+
+Let's say we want to add the command icon to follow our mouse to indicate that we are in command mode.
+For this, we can use two actions:
+
+```
+regions = [actions.user.hud_create_screen_region('cursor', None, 'command_icon')]
+actions.user.hud_publish_screen_regions('cursor', regions, True)
+```
+
+`hud_create_screen_region` allows you to create a special region. The arguments are:
+- topic: The topic of the region  
+- colour: The background colour of our screen region icon / text if any is set.  
+- icon: The icon to display, if any is set.  
+- title: The text to display, if any is set. For cursor tracking, no text is rendered.  
+- hover_visibility: Whether or not the region should be visible only if the pointer is in the region - Default keeps the region visible at all times.  
+- x: The X position of the region - Default 0  
+- y: The Y position of the region - Default 0  
+- width: The width of the region in pixels - Default 0  
+- height: The height of the region in pixels - Default 0  
+
+For cursor regions, if the region surface is not larger than 0, like in our example above, the cursor will be visible on every available display.
+
+Then, we can publish the region using `hud_publish_screen_regions`. This takes three arguments:  
+- type: The widget type to publish the region to - Choice between cursor and overlay
+- regions: The regions to publish
+- clear: Whether or not to clear previous regions of the given topics in the type - Defaults to not clearing
+
+To entirely clear the screen regions, you can use `actions.user.hud_clear_screen_regions('cursor')`. The arguments are:
+- type: The widget type to clear the regions from  
+- topic: The screen region topics to remove - If not set, clears everything for the widget type  

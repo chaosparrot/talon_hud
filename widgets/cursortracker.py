@@ -19,14 +19,17 @@ class HeadUpCursorTracker(BaseWidget):
 
     preferences = HeadUpDisplayUserWidgetPreferences(type="cursor_tracker", x=0, y=0, width=10, height=10, enabled=True, sleep_enabled=False)
     subscribed_content = [
-        "mode"
+        "mode",
+        "screen_regions"
     ]
     
     active_icon = None
-    cursor_icons = [HudScreenRegion("total", icon="de_DE"), HudScreenRegion("total", icon="ru_RU", rect=ui.Rect(800,0, 1000, 1000))]
+    cursor_icons = []
     content = {
         'mode': 'command',
-        'cursor_icons': [HudScreenRegion("total", icon="de_DE")]
+        "screen_regions": {
+           "cursor": []
+        }
     }        
     
     def refresh(self, new_content):
@@ -36,8 +39,8 @@ class HeadUpCursorTracker(BaseWidget):
             else:
                 self.soft_enable()
 
-        if "cursor_icons" in new_content:
-            self.update_icons(new_content['cursor_icons'])
+        if "screen_regions" in new_content and "cursor" in new_content["screen_regions"]:
+            self.update_icons(new_content["screen_regions"]["cursor"])
 
     def enable(self, persist=False):
         if not self.enabled:
@@ -64,20 +67,15 @@ class HeadUpCursorTracker(BaseWidget):
             self.mouse_poller = None
             self.canvas.resume()
             
-    def update_icons(self, cursor_icons = None):
+    def update_icons(self, cursor_icons: list[HudScreenRegion] = None):
         soft_enable = False    
         if cursor_icons != None:
-            new_icons = []
-            for cursor_icon in cursor_icons:
-                new_icons.append({'image': cursor_icon['image'], 
-                    'colour': cursor_icon['colour'] if 'colour' in cursor_icon else None, 
-                    'rect': cursor_icon['rect'] if 'rect' in cursor_icon else None})
-          
+            new_icons = cursor_icons          
             soft_enable = self.cursor_icons != new_icons and len(new_icons) > 0
             self.cursor_icons = new_icons
         
         if self.cursor_icons:
-            if soft_enable:
+            if not soft_enable:
                 self.soft_enable()
         else:
             self.soft_disable()

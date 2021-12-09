@@ -278,7 +278,7 @@ class HeadUpWidgetManager:
             
             # Special widgets that have varying positions            
             self.load_widget("context_menu", "context_menu"),
-            self.load_widget("cursor_tracker", "cursor_tracker")            
+            self.load_widget("cursor_tracker", "cursor_tracker")
         ]
         
     def load_widget(self, id: str, type: str, subscriptions = None) -> BaseWidget:
