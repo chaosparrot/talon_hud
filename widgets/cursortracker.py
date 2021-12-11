@@ -10,14 +10,16 @@ import numpy
 
 class HeadUpCursorTracker(BaseWidget):
 
-    allowed_setup_options = ["position", "dimension", "font_size"]
+    # In this widget the limit_* variables are used to determine the size and distance from the pointer
+
+    allowed_setup_options = ["position", "dimension"]
     mouse_enabled = False
     soft_enabled = False
     mouse_poller = None
-    prev_mouse_pos = None    
-    smooth_mode = False
+    prev_mouse_pos = None
+    smooth_mode = True
 
-    preferences = HeadUpDisplayUserWidgetPreferences(type="cursor_tracker", x=0, y=0, width=10, height=10, enabled=True, sleep_enabled=False)
+    preferences = HeadUpDisplayUserWidgetPreferences(type="cursor_tracker", x=15, y=15, width=15, height=15, enabled=True, sleep_enabled=False)
     subscribed_content = [
         "mode",
         "screen_regions"
@@ -86,14 +88,14 @@ class HeadUpCursorTracker(BaseWidget):
             distance_threshold = 0.5 if self.smooth_mode else 20
             if (self.prev_mouse_pos is None or numpy.linalg.norm(numpy.array(pos) - numpy.array(self.prev_mouse_pos)) > distance_threshold):
                 self.prev_mouse_pos = pos
-                self.x = pos[0] + 20
-                self.y = pos[1] + 20
-                self.limit_x = pos[0] + 20
-                self.limit_y = pos[1] + 20
-                self.canvas.move(pos[0] + 20, pos[1] + 20)
                 
-                self.determine_active_icon(pos)
-                self.canvas.freeze()        
+                if self.setup_type == "":
+                    self.x = pos[0] + self.limit_x
+                    self.y = pos[1] + self.limit_y
+                    self.canvas.move(self.x, self.y)
+                    
+                    self.determine_active_icon(pos)
+                    self.canvas.freeze()
     
     # Determine the active icon based on the region the icon is in
     # If multiple regions overlap, choose the smaller more specific one
@@ -119,7 +121,62 @@ class HeadUpCursorTracker(BaseWidget):
         
     def draw_icon(self, canvas, origin_x, origin_y, diameter, paint, icon ):
         radius = diameter / 2
-        canvas.draw_circle( origin_x + radius, origin_y + radius, radius, paint)
+        if icon.colour is not None:
+            paint.color = icon.colour
+            canvas.draw_circle( origin_x + radius, origin_y + radius, radius, paint)
+        
         if (icon.icon is not None and self.theme.get_image(icon.icon) is not None ):
             image = self.theme.get_image(icon.icon, diameter, diameter)
             canvas.draw_image(image, origin_x + radius - image.width / 2, origin_y + radius - image.height / 2 )                
+
+    def start_setup(self, setup_type, mouse_position = None):
+        """Starts a setup mode that is used for moving, resizing and other various changes that the user might setup"""    
+        if (mouse_position is not None):
+            self.drag_position = [mouse_position[0] - self.limit_x, mouse_position[1] - self.limit_y]
+        
+        if (setup_type not in self.allowed_setup_options and setup_type not in ["", "cancel", "reload"] ):
+            return
+            
+        pos = ctrl.mouse_pos()
+        
+        # Persist the user preferences when we end our setup
+        if (self.setup_type != "" and not setup_type):
+            self.drag_position = []
+            rect = self.canvas.rect
+            
+            if (self.setup_type == "position"):
+                self.preferences.limit_x =  int(rect.x) - pos[0]
+                self.preferences.limit_y = int(rect.y) - pos[1]
+                self.limit_x = self.preferences.limit_x
+                self.limit_y = self.preferences.limit_y
+                
+            elif (self.setup_type == "dimension"):
+                self.limit_x = self.preferences.limit_x
+                self.limit_y = self.preferences.limit_y                
+                self.width = int(rect.width)
+                self.height = int(rect.height)         
+                self.limit_width = int(rect.width)
+                self.limit_height = int(rect.height)
+                self.preferences.width = self.limit_width
+                self.preferences.height = self.limit_height
+                self.preferences.limit_width = self.limit_width
+                self.preferences.limit_height = self.limit_height
+            
+            self.setup_type = setup_type
+            self.preferences.mark_changed = True
+            self.canvas.resume()
+            actions.user.persist_hud_preferences()
+        # Cancel every change
+        else:
+            self.x = pos[0]
+            self.y = pos[1]
+            self.canvas.move(self.x, self.y)
+            self.canvas.resume()
+            super().start_setup(setup_type, mouse_position)
+                
+    def setup_move(self, pos):
+        """Responds to global mouse movements when a widget is in a setup mode"""
+        if (self.setup_type == "position"):
+            pass
+        elif (self.setup_type in ["dimension", "limit", "font_size"] ):
+            super().setup_move(pos)
