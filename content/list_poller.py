@@ -30,11 +30,12 @@ class ListPoller(Poller):
         content = ""
         if self.list in registry.lists:
             list_contents = registry.lists[self.list][0]
-                        
+            
+            list_description = registry.decls.lists[self.list].desc if self.list in registry.decls.lists else ""
             if len(list_contents) == 0:
-                content = "<*" + self.list + "/>\nTODO: Put list description here\n\nNo entries available!"
+                content = "<*" + self.list + "/>\n" + list_description + "\n\n"
             else:
-                content = "<*" + self.list + "(" + str(len(list_contents)) + ")/>\nTODO: Put list description here\n\n"                
+                content = "<*" + self.list + "(" + str(len(list_contents)) + ")/>\n" + list_description + "\n\n"                
             
                 # Bundle same values together so we have all the synonyms bundled
                 content_choices = {}
