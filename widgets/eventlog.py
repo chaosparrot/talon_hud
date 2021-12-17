@@ -35,9 +35,19 @@ class HeadUpEventLog(BaseWidget):
     ttl_delayed_seconds = 0.3
     ttl_duration_seconds = 9
     ttl_poller = None
+    
+    infinite_ttl = 1000000 # One million seconds is effectively eternal from a UX perspective, as it takes 12 days
+    
+    def load_theme_values(self):
+        # Set and reset TTL on theme change
+        previous_duration = self.ttl_duration_seconds
+        self.ttl_duration_seconds = self.theme.get_float_value('event_log_ttl_duration_seconds', 9)
+        self.ttl_duration_seconds = self.ttl_duration_seconds if self.ttl_duration_seconds != -1 else self.infinite_ttl
+        for visual_log in self.visual_logs:
+            visual_log['ttl'] = visual_log['ttl'] - previous_duration + self.ttl_duration_seconds
                 
     def append_log(self, log):
-        if self.soft_enabled and self.enabled and len(log['message']) > 0:
+        if self.soft_enabled and self.enabled and len(log['message']) > 0:        
             visual_log = {
                 "show_on": log["time"],
                 "ttl": log["time"] + self.ttl_duration_seconds, 
@@ -89,7 +99,7 @@ class HeadUpEventLog(BaseWidget):
             # Poll for TTL expiration at half the rate of the animation duration - It's not mission critical to make the logs disappear at exactly the right time
             if self.ttl_poller is None:
                 self.ttl_poller = cron.interval(str(int(self.ttl_animation_duration_seconds / 2 * 1000)) +'ms', self.poll_ttl_visuals)
-
+  
     # Clean out all the logs still visible on the screen
     def disable(self, persisted=False):
         if self.enabled:
@@ -122,7 +132,7 @@ class HeadUpEventLog(BaseWidget):
                     visual_log["animation_goal"] = -self.ttl_animation_max_duration
         # Just clear all the logs if not animated
         else:
-            self.visual_logs = []            
+            self.visual_logs = []
 
     def refresh(self, new_content):
         # We only want the logs to appear during command mode
@@ -170,12 +180,13 @@ class HeadUpEventLog(BaseWidget):
 
             default_background_colour = self.theme.get_colour('event_log_background', 'F5F5F5')
             background_colour = default_background_colour
-            log_margin = 10
-            text_padding = 8
-            vertical_text_padding = 4
+            log_margin = self.theme.get_int_value("event_log_between_margin", 10)
+            text_padding = self.theme.get_int_value("event_log_horizontal_padding", 8)
+            vertical_text_padding = self.theme.get_int_value("event_log_vertical_padding", 4)
             log_height = 30
             
             current_y = self.y if self.expand_direction == "down" else self.y + self.height
+            cut_off_index = 0
             for index, visual_log in enumerate(self.visual_logs):
                 if visual_log["show_on"] > time.monotonic():
                     continue_drawing = True
@@ -201,9 +212,20 @@ class HeadUpEventLog(BaseWidget):
                 if self.expand_direction == "down":                    
                     offset = 0 if index == 0 else log_margin + log_height
                     current_y = current_y + offset
+                    
+                    # Clear visual logs that should no longer be visible
+                    if current_y + log_height > self.limit_y + self.limit_height:
+                        self.visual_logs[cut_off_index]['ttl'] = time.monotonic()
+                        cut_off_index += 1
+                        continue
                 else:
                     offset = log_height if index == 0 else log_margin + log_height
                     current_y = current_y - offset
+                    
+                    # Clear the first visual logs that should no longer be visible
+                    if current_y < self.limit_y:
+                        visual_log['ttl'] = time.monotonic()
+                        continue
                 
                 text_width = total_text_width
                 element_width = text_padding * 2 + text_width

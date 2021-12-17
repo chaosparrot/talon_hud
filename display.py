@@ -45,8 +45,9 @@ mod.list("talon_hud_quick_choices", desc="List of widgets with their quick optio
 mod.tag("talon_hud_available", desc="Tag that shows the availability of the Talon HUD repository for other scripts")
 mod.tag("talon_hud_visible", desc="Tag that shows that the Talon HUD is visible")
 mod.tag("talon_hud_choices_visible", desc="Tag that shows there are choices available on screen that can be chosen")
-
+mod.setting("talon_hud_mode", type="string", desc="Which mode to set the HUD in - Useful for setting up a HUD for screenrecording or other tasks")
 ctx.tags = ['user.talon_hud_available']
+ctx.settings['user.talon_hud_mode'] = ""
 
 # A list of Talon HUD versions that can be used to check for in other packages
 TALON_HUD_RELEASE_030 = 3 # Walk through version
@@ -69,6 +70,7 @@ class HeadUpDisplay:
     
     prev_mouse_pos = None
     mouse_poller = None
+    current_talon_hud_mode = ""
     
     def __init__(self, display_state, preferences):
         self.display_state = display_state
@@ -122,7 +124,8 @@ class HeadUpDisplay:
             self.display_state.register('panel_update', self.panel_update)            
             self.display_state.register('log_update', self.log_update)
             self.display_state.register('log_revise', self.log_revise)
-            ui.register('screen_change', self.reload_preferences)            
+            ui.register('screen_change', self.reload_preferences)
+            settings.register("user.talon_hud_mode", self.hud_mode_change)
             self.determine_active_setup_mouse()
             if persisted:
                 self.preferences.persist_preferences({'enabled': True})
@@ -143,8 +146,9 @@ class HeadUpDisplay:
             self.display_state.unregister('content_update', self.content_update)
             self.display_state.unregister('panel_update', self.panel_update)
             self.display_state.unregister('log_update', self.log_update)
-            self.display_state.unregister('log_revise', self.log_revise)            
+            self.display_state.unregister('log_revise', self.log_revise)
             ui.unregister('screen_change', self.reload_preferences)
+            settings.unregister("user.talon_hud_mode", self.hud_mode_change)            
             self.determine_active_setup_mouse()
             
             if persisted:
@@ -205,11 +209,17 @@ class HeadUpDisplay:
                 widget.set_preference(property, value, persisted)
         self.determine_active_setup_mouse()
 
-    def switch_theme(self, theme_name):
+    def switch_theme(self, theme_name, disable_animation = False):
         if (self.theme.name != theme_name):
             self.theme = HeadUpDisplayTheme(theme_name)
             for widget in self.widget_manager.widgets:
-                widget.set_theme(self.theme)
+                if disable_animation:
+                    show_animations = widget.show_animations
+                    widget.show_animations = False
+                    widget.set_theme(self.theme)
+                    widget.show_animations = show_animations
+                else:
+                    widget.set_theme(self.theme)
             
             self.preferences.persist_preferences({'theme_name': theme_name})
 
@@ -517,7 +527,15 @@ class HeadUpDisplay:
         ctx.lists['user.talon_hud_choices'] = choices
         ctx.lists['user.talon_hud_quick_choices'] = quick_choices
         ctx.lists['user.talon_hud_themes'] = themes
-    
+
+    def hud_mode_change(self, hud_mode: str):
+        if self.current_talon_hud_mode != hud_mode:
+            self.current_talon_hud_mode = hud_mode
+            reload_theme = self.widget_manager.reload_preferences(True)
+            
+            # Switch the theme and make sure there is no lengthy animation between modes 
+            # as they can happen quite frequently
+            self.switch_theme(reload_theme, True)
 
 preferences = HeadUpDisplayUserPreferences() 
 hud = HeadUpDisplay(hud_content, preferences)

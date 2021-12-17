@@ -25,7 +25,7 @@ class StatusBarPoller(Poller):
                 'forced': self.current_lang_forced and self.determine_mode() != "dictation"
             }
         }
-        
+                
         hud_content.update(content)        
                 
     # Determine three main modes - Sleep, command and dictation

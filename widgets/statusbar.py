@@ -151,7 +151,6 @@ class HeadUpStatusBar(BaseWidget):
             super().enable(persist)
     
     def load_theme_values(self):
-        # TODO PROPER IMAGE SCALING OF THE LOADED TEMPLATE
         self.command_blink_colour = self.theme.get_colour_as_ints('command_blink_colour')
         self.sleep_blink_colour = self.theme.get_colour_as_ints('sleep_blink_colour')
         self.dictation_blink_colour = self.theme.get_colour_as_ints('dictation_blink_colour')

@@ -61,6 +61,7 @@ class HudScreenRegion:
     icon: str = None
     colour: str = None
     rect: ui.Rect = None
+    point: Point2d = None
     hover_visibility: bool = False
 
 @dataclass

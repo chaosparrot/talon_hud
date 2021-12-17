@@ -1,4 +1,5 @@
 from talon import actions, cron, scope, Module, ui
+from talon.types.point import Point2d
 from talon_init import TALON_USER
 from talon.scripting import Dispatch
 from user.talon_hud.content.typing import HudPanelContent, HudButton, HudChoice, HudChoices, HudScreenRegion
@@ -279,10 +280,11 @@ class Actions:
         """Create a button used in the Talon HUD"""
         return HudButton(image, text, ui.Rect(0,0,0,0), callback)
         
-    def hud_create_screen_region(topic: str, colour: str = None, icon: str = None, title: str = None, hover_visibility: Union[bool, int] = False, x: int = 0, y: int = 0, width: int = 0, height: int = 0):
+    def hud_create_screen_region(topic: str, colour: str = None, icon: str = None, title: str = None, hover_visibility: Union[bool, int] = False, x: int = 0, y: int = 0, width: int = 0, height: int = 0, relative_x: int = 0, relative_y: int = 0):
         """Create a HUD screen region, where by default it is active all over the available space and it is visible only on a hover"""
         rect = ui.Rect(x, y, width, height) if width * height > 0 else None
-        return HudScreenRegion(topic, title, icon, colour, rect, hover_visibility)
+        point = Point2d(x + relative_x, y + relative_y)
+        return HudScreenRegion(topic, title, icon, colour, rect, point, hover_visibility)
 
     def hud_publish_screen_regions(type: str, regions: list[HudChoices], clear: Union[bool, int] = False):
         """Publish screen regions to widgets that can handle them, optionally clearing the type"""

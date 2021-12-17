@@ -2,7 +2,7 @@ import os
 import numpy
 import copy
 from typing import Dict
-from talon import ui
+from talon import ui, settings
 from user.talon_hud.preferences import HeadUpDisplayUserPreferences
 from user.talon_hud.base_widget import BaseWidget
 from user.talon_hud.widgets.statusbar import HeadUpStatusBar
@@ -29,6 +29,7 @@ class HeadUpWidgetManager:
     default_screen_mm_size: list
     
     previous_screen_rects: list[ui.Rect]
+    previous_talon_hud_mode = ""
     theme: HeadUpDisplayTheme
     preferences: HeadUpDisplayUserPreferences
     widgets: list[BaseWidget]
@@ -37,6 +38,7 @@ class HeadUpWidgetManager:
         self.default_screen_rect = ui.Rect(0, 0, 1920, 1080)
         self.default_screen_mm_size = [527.0, 296.0]
         
+        self.previous_talon_hud_mode = ""
         self.previous_screen_rects = []
         self.preferences = preferences
         self.theme = theme
@@ -96,7 +98,7 @@ class HeadUpWidgetManager:
                 
         self.preferences.load_preferences(user_preferences_screen_file_path)
     
-    def reload_preferences(self, force_reload=False):        
+    def reload_preferences(self, force_reload=False) -> str:        
         # Check if the screen dimensions have changed
         current_screen_rects = []
         dimensions_changed = force_reload
@@ -110,6 +112,14 @@ class HeadUpWidgetManager:
                     previous_screen_rect.height != screen.height:
                     dimensions_changed = True
         dimensions_changed = dimensions_changed or len(current_screen_rects) != len(self.previous_screen_rects)
+
+        # Reload the main preferences in case the Talon HUD mode changed
+        new_theme = self.preferences.prefs['theme_name']
+        current_hud_mode = settings.get("user.talon_hud_mode")
+        if current_hud_mode != None and current_hud_mode != self.previous_talon_hud_mode:
+            self.preferences.load_preferences(self.preferences.get_main_preferences_filename())
+            self.previous_talon_hud_mode = current_hud_mode
+            new_theme = self.preferences.prefs['theme_name']
         
         if dimensions_changed:
             screen_preferences_file = self.preferences.get_screen_preferences_filepath(current_screen_rects)
@@ -131,17 +141,19 @@ class HeadUpWidgetManager:
                 self.preferences.persist_preferences( new_preferences )
             else:
                 self.preferences.load_preferences( screen_preferences_file )
+                
         
         # Apply the new preferences to the widgets directly
         for widget in self.widgets:
             # First cancel any set up to make sure there won't be some weird collision going on with persistence
             if widget.setup_type != "":
                 widget.start_setup("cancel")
-            widget.load(self.preferences.prefs, False)
+            widget.load(self.preferences.prefs, False, True)
             widget.start_setup("reload")
             
         # Set the screen info to be used for comparison in case the screen changes later
         self.previous_screen_rects = current_screen_rects
+        return new_theme
     
     def get_widget_preference(self, widget, current_screens) -> Dict:
         widget_screen = None

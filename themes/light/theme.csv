@@ -23,6 +23,10 @@ event_log_text_colour,888888
 event_log_opacity,0.9
 event_log_text_opacity,0.9
 event_log_focussed_opacity,1
+event_log_ttl_duration_seconds,9
+event_log_between_margin,10
+event_log_horizontal_padding,8
+event_log_vertical_padding,4
 ability_activation_colour,FFFFFFAA
 text_box_background,F5F5F5
 context_menu_background,F5F5F5

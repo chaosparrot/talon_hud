@@ -1,10 +1,11 @@
 import os
-from talon import ui
+from talon import ui, speech_system, settings
 
 semantic_directory = os.path.dirname(os.path.abspath(__file__))
 user_preferences_file_dir =  semantic_directory + "/preferences/"
 old_user_preferences_file_location = user_preferences_file_dir + "preferences.csv"
-user_preferences_file_location = user_preferences_file_dir + "widget_settings.csv"
+widget_settings_file_ending = "widget_settings.csv"
+user_preferences_file_location = user_preferences_file_dir + widget_settings_file_ending
 
 # Loads and persists all the data based on the users preferences
 # To keep the display state consistent across sessions
@@ -29,7 +30,9 @@ class HeadUpDisplayUserPreferences:
     
     # Get the preferences filename for the current monitor dimensions
     def get_screen_preferences_filepath(self, screens):
-        preferences_title = "monitor"
+        hud_mode = settings.get("user.talon_hud_mode")
+        talon_hud_mode = "" if hud_mode == None or hud_mode == "" else hud_mode + "_"    
+        preferences_title = talon_hud_mode + "monitor"
         for screen in screens:
             preferences_postfix = []
             preferences_postfix.append(str(int(screen.x)))
@@ -41,9 +44,9 @@ class HeadUpDisplayUserPreferences:
         return user_preferences_file_dir + preferences_title
     
     def load_preferences(self, monitor_file_path=None):
-        file_path = user_preferences_file_location        
+        file_path = self.get_main_preferences_filename()
         lines = []
-        if os.path.exists(user_preferences_file_location):
+        if os.path.exists(file_path):
            fh = open(file_path, "r")
            lines.extend(fh.readlines())
            fh.close()
@@ -53,8 +56,7 @@ class HeadUpDisplayUserPreferences:
            fh = open(old_user_preferences_file_location, "r")
            lines.extend(fh.readlines())
            fh.close()
-
-        
+                   
         if monitor_file_path is not None:
            self.monitor_file_path = monitor_file_path
            if os.path.exists(monitor_file_path):
@@ -94,14 +96,19 @@ class HeadUpDisplayUserPreferences:
             self.prefs[key] = value
         
         if preferences_changed or force:
-            self.save_preferences_file(user_preferences_file_location)
+            self.save_preferences_file(self.get_main_preferences_filename())
         
         if (monitor_changed or force) and self.monitor_file_path is not None:
             self.save_preferences_file(self.monitor_file_path)
 
+    def get_main_preferences_filename(self, without_hud_mode = False):
+        hud_mode = settings.get("user.talon_hud_mode")
+        talon_hud_mode = "" if without_hud_mode or hud_mode == None or hud_mode == "" else hud_mode + "_"    
+        return user_preferences_file_dir + talon_hud_mode + widget_settings_file_ending
+
     # Save the given preferences file
     def save_preferences_file(self, filename):
-        is_monitor_preference = filename != user_preferences_file_location
+        is_monitor_preference = filename != self.get_main_preferences_filename()
 
         # Transform data before persisting
         lines = []

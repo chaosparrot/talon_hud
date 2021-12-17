@@ -238,7 +238,9 @@ actions.user.hud_publish_screen_regions('cursor', regions, True)
 - x: The X position of the region - Default 0  
 - y: The Y position of the region - Default 0  
 - width: The width of the region in pixels - Default 0  
-- height: The height of the region in pixels - Default 0  
+- height: The height of the region in pixels - Default 0
+- relative_x: The relative x position to place the content from its origin point - Default 0
+- relative_y: The relative y position to place the content from its origin point - Default 0
 
 For cursor regions, if the region surface is not larger than 0, like in our example above, the cursor will be visible on every available display.
 

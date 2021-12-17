@@ -93,6 +93,18 @@ class HeadUpDisplayTheme:
             return int( float(self.values[opacity_name]) * 255 )
         else:
             return int(default_opacity * 255)
-        
+            
+    def get_float_value(self, name, default_value=1.0):
+        if (name in self.values):
+            return float(self.values[name])
+        else:
+            return default_value
+            
+    def get_int_value(self, name, default_value=1):
+        if (name in self.values):
+            return int(self.values[name])
+        else:
+            return default_value
+            
     def get_colour_as_ints(self, colour):
         return hex_to_ints(self.get_colour(colour))
