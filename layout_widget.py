@@ -20,7 +20,7 @@ class LayoutWidget(BaseWidget):
     page_index = 0
         
     def enable(self, persisted=False):
-        if not self.enabled:
+        if not self.enabled and self.panel_content.content[0]:
             if self.mouse_enabled:
                 self.mouse_capture_canvas = canvas.Canvas(min(self.x, self.limit_x), min(self.y, self.limit_y), max(self.width, self.limit_width), max(self.height, self.limit_height))            
                 self.mouse_capture_canvas.blocks_mouse = True
@@ -61,7 +61,6 @@ class LayoutWidget(BaseWidget):
     
     def refresh(self, new_content):
         self.mark_layout_invalid = True
-        self.page_index = 0
 
     def set_page_index(self, page_index: int):
         self.page_index = max(0, min(page_index, len(self.layout) - 1))
@@ -100,6 +99,7 @@ class LayoutWidget(BaseWidget):
             self.disable()
 
         if not self.enabled and panel_content.show:
+            self.panel_content = panel_content        
             self.enable(True)
         
         if self.enabled:

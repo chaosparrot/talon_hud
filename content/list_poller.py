@@ -63,11 +63,11 @@ mod = Module()
 class Actions:
 
     def hud_toolkit_lists():
-        """Show available filled lists to view for the Talon HUD"""
+        """Show available  lists to view for the Talon HUD"""
         lists = registry.lists
         choices = []
         for index, key in enumerate(lists):
-            if lists[key] and lists[key][0]:
+            if lists[key]:
                 choices.append({"text": key})
         
         choices = actions.user.hud_create_choices(choices, select_list)
