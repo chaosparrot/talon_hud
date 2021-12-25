@@ -35,6 +35,7 @@ class HeadUpContextMenu(LayoutWidget):
     content = {
         'mode': 'command'
     }
+    panel_content = None
     animation_max_duration = 0
         
     def on_mouse(self, event):

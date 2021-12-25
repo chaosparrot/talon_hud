@@ -62,7 +62,7 @@ class HudScreenRegion:
     colour: str = None
     rect: ui.Rect = None
     point: Point2d = None
-    hover_visibility: bool = False
+    hover_visibility: int = 0
 
 @dataclass
 class HudWalkThroughStep:

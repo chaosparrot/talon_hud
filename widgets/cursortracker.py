@@ -77,7 +77,7 @@ class HeadUpCursorTracker(BaseWidget):
             self.cursor_icons = new_icons
         
         if self.cursor_icons:
-            if not soft_enable:
+            if soft_enable:
                 self.soft_enable()
         else:
             self.soft_disable()

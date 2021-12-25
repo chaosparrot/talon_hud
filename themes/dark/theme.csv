@@ -45,3 +45,7 @@ spoken_voice_command_background_colour,2A6D37
 voice_command_background_colour,DDDDDD
 spoken_voice_command_text_colour,BBBBBB
 voice_command_text_colour,535353
+screen_overlay_text_colour,DDDDDD
+screen_overlay_background_colour,33333388
+screen_overlay_active_text_colour,DDDDDD
+screen_overlay_active_background_colour,333333

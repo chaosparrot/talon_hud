@@ -235,6 +235,7 @@ actions.user.hud_publish_screen_regions('cursor', regions, True)
 - icon: The icon to display, if any is set.  
 - title: The text to display, if any is set. For cursor tracking, no text is rendered.  
 - hover_visibility: Whether or not the region should be visible only if the pointer is in the region - Default keeps the region visible at all times.  
+  If set to -1, the region will become visible only if the mouse isn't directly over the visible content
 - x: The X position of the region - Default 0  
 - y: The Y position of the region - Default 0  
 - width: The width of the region in pixels - Default 0  

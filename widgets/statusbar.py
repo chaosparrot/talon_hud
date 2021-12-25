@@ -70,6 +70,7 @@ class HeadUpStatusBar(BaseWidget):
         buttons.append(HudButton("", "Content toolkit", ui.Rect(0,0,0,0), lambda widget: actions.user.hud_toolkit_options()))
         buttons.append(HudButton("microphone_on", "Add microphone", ui.Rect(0,0,0,0), lambda widget: actions.user.hud_add_single_click_mic_toggle()))
         buttons.append(HudButton("en_US", "Add language", ui.Rect(0,0,0,0), lambda widget: actions.user.hud_add_language_toggle()))
+        buttons.append(HudButton("", "Add focus indicator", ui.Rect(0,0,0,0), lambda widget: actions.user.hud_toolkit_focus()))
         
         if "active_microphone" in self.subscribed_content:
             buttons[1].text = "Remove microphone"

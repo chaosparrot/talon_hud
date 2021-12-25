@@ -348,7 +348,6 @@ class HeadUpDisplay:
                         widget_to_claim = widget
                         if topic in widget.subscribed_topics:
                             using_fallback = False
-        
 
         if widget_to_claim:
 			# When a new topic is published it can lay claim to a widget

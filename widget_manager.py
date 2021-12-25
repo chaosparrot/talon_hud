@@ -14,6 +14,7 @@ from user.talon_hud.widgets.documentationpanel import HeadUpDocumentationPanel
 from user.talon_hud.widgets.walkthroughpanel import HeadUpWalkThroughPanel
 from user.talon_hud.widgets.contextmenu import HeadUpContextMenu
 from user.talon_hud.widgets.cursortracker import HeadUpCursorTracker
+from user.talon_hud.widgets.screenoverlay import HeadUpScreenOverlay
 from user.talon_hud.theme import HeadUpDisplayTheme
 
 semantic_directory = os.path.dirname(os.path.abspath(__file__))
@@ -290,7 +291,8 @@ class HeadUpWidgetManager:
             
             # Special widgets that have varying positions            
             self.load_widget("context_menu", "context_menu"),
-            self.load_widget("cursor_tracker", "cursor_tracker")
+            self.load_widget("cursor_tracker", "cursor_tracker"),
+            self.load_widget("screen_overlay", "screen_overlay"),            
         ]
         
     def load_widget(self, id: str, type: str, subscriptions = None) -> BaseWidget:
@@ -305,6 +307,8 @@ class HeadUpWidgetManager:
             return self.load_context_menu(id, self.preferences.prefs)
         elif type == "cursor_tracker":
             return self.load_cursor_tracker(id, self.preferences.prefs)
+        elif type == "screen_overlay":
+            return self.load_screen_overlay(id, self.preferences.prefs)
         
         # All widgets with specific subscriptions tied to them        
         elif type == "text_panel":
@@ -335,6 +339,10 @@ class HeadUpWidgetManager:
     def load_cursor_tracker(self, id, preferences=None):
         """Load a cursor tracker widget with the given preferences"""
         return HeadUpCursorTracker(id, preferences, self.theme)
+        
+    def load_screen_overlay(self, id, preferences=None):
+        """Load a screen overlay widget with the given preferences"""
+        return HeadUpScreenOverlay(id, preferences, self.theme)
 
     def load_text_panel(self, id, preferences=None, subscriptions=None):
         """Load a text panel widget with the given preferences"""

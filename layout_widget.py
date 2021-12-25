@@ -18,9 +18,9 @@ class LayoutWidget(BaseWidget):
     mouse_capture_canvas: canvas.Canvas
     layout = []
     page_index = 0
-        
+    
     def enable(self, persisted=False):
-        if not self.enabled and self.panel_content.content[0]:
+        if not self.enabled and (not self.panel_content or self.panel_content.content[0]):
             if self.mouse_enabled:
                 self.mouse_capture_canvas = canvas.Canvas(min(self.x, self.limit_x), min(self.y, self.limit_y), max(self.width, self.limit_width), max(self.height, self.limit_height))            
                 self.mouse_capture_canvas.blocks_mouse = True
