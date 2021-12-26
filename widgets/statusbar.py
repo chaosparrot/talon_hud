@@ -6,6 +6,12 @@ from user.talon_hud.utils import linear_gradient
 from user.talon_hud.widget_preferences import HeadUpDisplayUserWidgetPreferences
 from user.talon_hud.content.typing import HudButton
 
+def add_focus_icon(widget):
+    if "focus_indicator" not in widget.subscribed_content:    
+        widget.subscribed_content.append("focus_indicator")
+    actions.user.hud_toolkit_focus()
+    
+
 class HeadUpStatusBar(BaseWidget):
 
     allowed_setup_options = ["position", "dimension", "font_size"]
@@ -69,8 +75,8 @@ class HeadUpStatusBar(BaseWidget):
         buttons = []
         buttons.append(HudButton("", "Content toolkit", ui.Rect(0,0,0,0), lambda widget: actions.user.hud_toolkit_options()))
         buttons.append(HudButton("microphone_on", "Add microphone", ui.Rect(0,0,0,0), lambda widget: actions.user.hud_add_single_click_mic_toggle()))
-        buttons.append(HudButton("en_US", "Add language", ui.Rect(0,0,0,0), lambda widget: actions.user.hud_add_language_toggle()))
-        buttons.append(HudButton("", "Add focus indicator", ui.Rect(0,0,0,0), lambda widget: actions.user.hud_toolkit_focus()))
+        buttons.append(HudButton("en_US", "Add language", ui.Rect(0,0,0,0), lambda widget: actions.user.hud_add_language_toggle()))        
+        buttons.append(HudButton("focus", "Add focus indicator", ui.Rect(0,0,0,0), lambda widget: actions.user.hud_add_focus_toggle()))
         
         if "active_microphone" in self.subscribed_content:
             buttons[1].text = "Remove microphone"
@@ -79,6 +85,10 @@ class HeadUpStatusBar(BaseWidget):
         if "language" in self.subscribed_content:
             buttons[2].text = "Remove language"
             buttons[2].callback = lambda widget: actions.user.hud_remove_language_toggle()
+
+        if "focus_indicator" in self.subscribed_content:
+            buttons[3].text = "Remove focus indicator"
+            buttons[1].callback = lambda widget: actions.user.hud_remove_focus_toggle()         
         
         self.buttons = buttons
     
@@ -94,8 +104,8 @@ class HeadUpStatusBar(BaseWidget):
         if "active_microphone" in self.subscribed_content and "active_microphone" in new_content and new_content["active_microphone"]:
             self.icons.append({
                 "id": "microphone",
-                "image": "microphone_off" if new_content["active_microphone"] == "None" else "microphone_on", # TODO MICROPHONE ON
-                "clickable": True               
+                "image": "microphone_off" if new_content["active_microphone"] == "None" else "microphone_on",
+                "clickable": True
             })
                 
         if "language" in self.subscribed_content:
@@ -106,6 +116,14 @@ class HeadUpStatusBar(BaseWidget):
                 "image": language,
                 "clickable": language != 'en_US'
             })
+            
+        if "focus_indicator" in self.subscribed_content:
+            self.icons.append({
+                "id": "focus_indicator",
+                "image": "focus",
+                "clickable": True
+            })
+
             
         status_icons = self.content["status_icons"] if "status_icons" not in new_content else new_content['status_icons']
         for status_icon in status_icons:
@@ -312,6 +330,18 @@ class Actions:
         """Removes the language icon from the status bar"""
         actions.user.hud_widget_unsubscribe_topic("status_bar", "language")
         actions.user.hud_refresh_content()
+        
+    def hud_add_focus_toggle():
+        """Add the focus indicator icon to the status bar"""
+        actions.user.hud_widget_subscribe_topic("status_bar", "focus_indicator")
+        actions.user.hud_add_focus_indicator()
+        actions.user.hud_refresh_content()        
+        
+    def hud_remove_focus_toggle():
+        """Removes the focus indicator icon from the status bar"""
+        actions.user.hud_widget_unsubscribe_topic("status_bar", "focus_indicator")
+        actions.user.hud_remove_focus_indicator()        
+        actions.user.hud_refresh_content()
     
     def activate_statusbar_icon(id: str):
         """Activate an icon on the status bar"""
@@ -331,6 +361,8 @@ class Actions:
                 if previous_microphone == "None":
                     previous_microphone = "System Default"
                 actions.sound.set_microphone(previous_microphone)
+        elif (id == "focus_indicator"):
+            actions.user.hud_remove_focus_toggle()
                 
         elif (id == "close"):
             actions.user.disable_hud()

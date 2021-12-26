@@ -49,3 +49,5 @@ screen_overlay_text_colour,DDDDDD00
 screen_overlay_background_colour,33333344
 screen_overlay_active_text_colour,000000FF
 screen_overlay_active_background_colour,333333
+screen_overlay_vertical_padding,4
+screen_overlay_horizontal_padding,4

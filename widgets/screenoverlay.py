@@ -25,7 +25,6 @@ class HeadUpScreenOverlay(BaseWidget):
     ]
     subscribed_topics = ['focus', 'overlay']    
     
-    determine_active_regions = []
     regions = []
     active_regions = []
     canvasses = []    
@@ -117,6 +116,7 @@ class HeadUpScreenOverlay(BaseWidget):
                 self.soft_enable()
             self.activate_mouse_tracking()
             self.create_canvasses(region_indices_used)
+            self.determine_active_regions(ctrl.mouse_pos())
         else:
             self.soft_disable()
 
@@ -144,16 +144,19 @@ class HeadUpScreenOverlay(BaseWidget):
         self.canvasses = []
         
     def align_region_canvas_rect(self, region):
-        y = region.rect.y    
-        if self.expand_direction == "up":
-            y = region.rect.y + region.rect.height - self.limit_height            
-        x = region.rect.x
-        if self.alignment == "right":
-            x = region.rect.x + region.rect.width - self.limit_width
-        elif self.alignment == "center":
-            x = region.rect.x + ( region.rect.width - self.limit_width ) / 2
-                        
-        return ui.Rect(x, y, self.limit_width, self.limit_height)
+        if region.rect:
+            y = region.rect.y    
+            if self.expand_direction == "up":
+                y = region.rect.y + region.rect.height - self.limit_height            
+            x = region.rect.x
+            if self.alignment == "right":
+                x = region.rect.x + region.rect.width - self.limit_width
+            elif self.alignment == "center":
+                x = region.rect.x + ( region.rect.width - self.limit_width ) / 2
+                            
+            return ui.Rect(x, y, self.limit_width, self.limit_height)
+        else:
+            return ui.Rect(x, y, 0, 0)
     
     def compare_regions(self, region_a, region_b):
         return region_a.topic == region_b.topic and region_a.colour == region_b.colour and (
@@ -191,7 +194,9 @@ class HeadUpScreenOverlay(BaseWidget):
                     active_regions.append(region)
                 # For hover visibility -1 , we want the region canvas to be translucent when hovered
                 # So it doesn't occlude content - But otherwise it should be visible
-                elif not (region.hover_visibility == -1 and hit_test_rect(ui.Rect(region.point.x, region.point.y, self.limit_width, self.limit_height), pos)):
+                elif region.hover_visibility == -1:
+                    rect = self.align_region_canvas_rect(region)
+                    if not hit_test_rect(rect, pos):
                         active_regions.append(region)
                         
         if self.active_regions != active_regions:
@@ -204,35 +209,66 @@ class HeadUpScreenOverlay(BaseWidget):
         paint.textsize = self.font_size        
         if self.soft_enabled:
             active = region in self.active_regions
-            canvas_rect = self.align_region_canvas_rect(region)
+
+            paint.color = region.colour if active else self.theme.get_colour('screen_overlay_background_colour', 'F5F5F588')            
             
-            x = canvas_rect.x
-            if self.alignment == "center":
-                x += ( canvas_rect.width - self.height ) / 2
-            elif self.alignment == "right":
-                x += canvas_rect.width - self.height
-            
-            icon_size = self.height if region.icon else 0
-            self.draw_icon(canvas, x, canvas_rect.y, self.height, paint, region, active)
-            if region.title:                
-                
+            vertical_padding = self.theme.get_int_value('screen_overlay_vertical_padding', 4)
+            horizontal_padding = self.theme.get_int_value('screen_overlay_horizontal_padding', 4)
+            icon_size = self.height if region.icon or region.colour and not region.title else 0
+            text_width = 0
+
+            # Do a small layout pass
+            canvas_rect = self.align_region_canvas_rect(region)            
+            content_text = []
+            if region.title:
                 content_text = layout_rich_text(paint, region.title, self.limit_width - icon_size, self.limit_height)
-                text_y = region.rect.y + ( icon_size - self.font_size ) / 2
-                text_x = x + icon_size if region.icon else x
-                background_width = min(self.limit_width - icon_size, content_text[0].width)
-                vertical_padding = 4
-                horizontal_padding = 4
-                background_rect = ui.Rect(x + icon_size - self.font_size / 2, text_y - vertical_padding, \
-                    background_width + horizontal_padding + self.font_size / 2, self.font_size + vertical_padding * 2)
+                for index, content in enumerate(content_text):
+                    if index != 0 and content.x == 0:
+                        break
+                    else:
+                        text_width += content.width
+            
+            icon_x = canvas_rect.x
+            if self.alignment == "center":
+                icon_x += ( canvas_rect.width - self.height - text_width ) / 2
+            elif self.alignment == "right":
+                icon_x += canvas_rect.width - self.height - text_width
+            text_y = region.rect.y + ( max(self.height, icon_size) - self.font_size ) / 2
+            text_x = icon_x + icon_size
+
+            # First draw the text background
+            if region.title:
+                background_width = min(self.limit_width - icon_size, text_width)
+                background_rect = ui.Rect(text_x - self.font_size / 2 - horizontal_padding, \
+                    text_y - vertical_padding, \
+                    background_width + horizontal_padding * 2 + self.font_size / 2,
+                    self.font_size + vertical_padding * 2)
+                
+                # We do not need to hide behind an icon, so no extra padding is needed
+                if not icon_size:
+                    background_rect.x += horizontal_padding
+                    background_rect.width -= horizontal_padding
+                    
                 rrect = skia.RoundRect.from_rect(background_rect, x=self.font_size / 2, y=self.font_size / 2)
                 canvas.draw_rrect(rrect)
-                paint.color = self.theme.get_colour('screen_overlay_text_colour', '00000044') if not active else self.theme.get_colour('screen_overlay_active_text_colour', '000000FF')
-                self.draw_rich_text(canvas, paint, content_text, text_x, text_y, 0, True)
+            
+            # Then draw the icon size
+            if icon_size:
+                self.draw_icon(canvas, icon_x, canvas_rect.y, icon_size, paint, region, active)
+            
+            # Finally draw the text on top
+            if region.title:
+                paint.color = self.theme.get_colour('screen_overlay_text_colour', '00000044') if not active else self.theme.get_colour('screen_overlay_active_text_colour', '000000FF')                                
+                self.draw_rich_text(canvas, paint, content_text, text_x, text_y + 1, True)
+                
+                # TODO PROPER THEMING / COLOUR PICKING?
+                paint.color = "FFFFFF00" if not active else "FFFFFF"
+                self.draw_rich_text(canvas, paint, content_text, text_x, text_y, True)            
+                
         
     def draw_icon(self, canvas, origin_x, origin_y, diameter, paint, region, active):
         radius = diameter / 2
         if region.colour is not None:
-            paint.color = region.colour if active else self.theme.get_colour('screen_overlay_background_colour', 'F5F5F588')
             canvas.draw_circle( origin_x + radius, origin_y + radius, radius, paint)
         
         if (region.icon is not None and self.theme.get_image(region.icon) is not None ):
