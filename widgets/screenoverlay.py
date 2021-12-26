@@ -1,5 +1,5 @@
 from user.talon_hud.base_widget import BaseWidget
-from user.talon_hud.utils import hit_test_rect
+from user.talon_hud.utils import layout_rich_text, hit_test_rect
 from user.talon_hud.content.typing import HudScreenRegion
 from user.talon_hud.widget_preferences import HeadUpDisplayUserWidgetPreferences
 from talon import skia, ui, Module, cron, actions, ctrl, canvas
@@ -18,7 +18,7 @@ class HeadUpScreenOverlay(BaseWidget):
     prev_mouse_pos = None
     smooth_mode = True
 
-    preferences = HeadUpDisplayUserWidgetPreferences(type="screen_overlay", x=0, y=0, width=200, height=30, enabled=True, sleep_enabled=False)
+    preferences = HeadUpDisplayUserWidgetPreferences(type="screen_overlay", x=0, y=0, width=300, height=30, font_size=12, enabled=True, alignment='center', expand_direction='down', sleep_enabled=False)
     subscribed_content = [
         "mode",
         "screen_regions"
@@ -89,8 +89,8 @@ class HeadUpScreenOverlay(BaseWidget):
                         region_indices_used.append(region_index)
                         canvas_reference['canvas'].unregister('draw', canvas_reference['callback'])
                         
-                        # TODO PROPER ALIGNMENT!
-                        canvas_reference['canvas'].move(region.point.x, region.point.y)
+                        canvas_rect = self.align_region_canvas_rect(region)
+                        canvas_reference['canvas'].move(canvas_rect.x, canvas_rect.y)
                         canvas_reference['callback'] = lambda canvas, self=self, region=region: self.draw_region(canvas, region)
                         canvas_reference['region'] = region
                         canvas_reference['canvas'].register('draw', canvas_reference['callback'])
@@ -126,15 +126,13 @@ class HeadUpScreenOverlay(BaseWidget):
     
         for index, region in enumerate(self.regions):
             if index not in region_indices_used:
-                # TODO PROPER ALIGNMENT
-                print( "REGENERATE CANVAS!" )
-                canvas_reference = {'canvas': canvas.Canvas(region.point.x, region.point.y, self.limit_width, self.limit_height)}
+                canvas_rect = self.align_region_canvas_rect(region)
+                canvas_reference = {'canvas': canvas.Canvas(canvas_rect.x, canvas_rect.y, canvas_rect.width, canvas_rect.height)}
                 canvas_reference['callback'] = lambda canvas, self=self, region=region: self.draw_region(canvas, region)
                 canvas_reference['region'] = region
                 canvas_reference['canvas'].register('draw', canvas_reference['callback'])
                 canvas_reference['canvas'].freeze()
-                self.canvasses.append(canvas_reference)    
-        
+                self.canvasses.append(canvas_reference)
             
     def clear_canvasses(self):
         for canvas_reference in self.canvasses:
@@ -144,6 +142,18 @@ class HeadUpScreenOverlay(BaseWidget):
                 canvas_reference['canvas'] = None
                 canvas_reference = None
         self.canvasses = []
+        
+    def align_region_canvas_rect(self, region):
+        y = region.rect.y    
+        if self.expand_direction == "up":
+            y = region.rect.y + region.rect.height - self.limit_height            
+        x = region.rect.x
+        if self.alignment == "right":
+            x = region.rect.x + region.rect.width - self.limit_width
+        elif self.alignment == "center":
+            x = region.rect.x + ( region.rect.width - self.limit_width ) / 2
+                        
+        return ui.Rect(x, y, self.limit_width, self.limit_height)
     
     def compare_regions(self, region_a, region_b):
         return region_a.topic == region_b.topic and region_a.colour == region_b.colour and (
@@ -189,12 +199,35 @@ class HeadUpScreenOverlay(BaseWidget):
             for canvas_reference in self.canvasses:
                 canvas_reference['canvas'].freeze()
             
-    
     def draw_region(self, canvas, region) -> bool:
         paint = self.draw_setup_mode(canvas)
+        paint.textsize = self.font_size        
         if self.soft_enabled:
             active = region in self.active_regions
-            self.draw_icon(canvas, region.point.x, region.point.y, self.height, paint, region, active)
+            canvas_rect = self.align_region_canvas_rect(region)
+            
+            x = canvas_rect.x
+            if self.alignment == "center":
+                x += ( canvas_rect.width - self.height ) / 2
+            elif self.alignment == "right":
+                x += canvas_rect.width - self.height
+            
+            icon_size = self.height if region.icon else 0
+            self.draw_icon(canvas, x, canvas_rect.y, self.height, paint, region, active)
+            if region.title:                
+                
+                content_text = layout_rich_text(paint, region.title, self.limit_width - icon_size, self.limit_height)
+                text_y = region.rect.y + ( icon_size - self.font_size ) / 2
+                text_x = x + icon_size if region.icon else x
+                background_width = min(self.limit_width - icon_size, content_text[0].width)
+                vertical_padding = 4
+                horizontal_padding = 4
+                background_rect = ui.Rect(x + icon_size - self.font_size / 2, text_y - vertical_padding, \
+                    background_width + horizontal_padding + self.font_size / 2, self.font_size + vertical_padding * 2)
+                rrect = skia.RoundRect.from_rect(background_rect, x=self.font_size / 2, y=self.font_size / 2)
+                canvas.draw_rrect(rrect)
+                paint.color = self.theme.get_colour('screen_overlay_text_colour', '00000044') if not active else self.theme.get_colour('screen_overlay_active_text_colour', '000000FF')
+                self.draw_rich_text(canvas, paint, content_text, text_x, text_y, 0, True)
         
     def draw_icon(self, canvas, origin_x, origin_y, diameter, paint, region, active):
         radius = diameter / 2
@@ -203,8 +236,42 @@ class HeadUpScreenOverlay(BaseWidget):
             canvas.draw_circle( origin_x + radius, origin_y + radius, radius, paint)
         
         if (region.icon is not None and self.theme.get_image(region.icon) is not None ):
-            image = self.theme.get_image(region.icon, diameter - 3, diameter - 3)
-            canvas.draw_image(image, origin_x + radius - image.width / 2, origin_y + radius - image.height / 2 )                
+            image = self.theme.get_image(region.icon, diameter - 4, diameter - 4)
+            canvas.draw_image(image, origin_x + radius - image.width / 2 + 1, origin_y + radius - image.height / 2 + 1 )                
+
+    def draw_rich_text(self, canvas, paint, rich_text, x, y, line_padding, single_line=False):
+        # Draw text line by line
+        text_colour = paint.color
+        error_colour = self.theme.get_colour('error_colour', 'AA0000')
+        warning_colour = self.theme.get_colour('warning_colour', 'F75B00')
+        success_colour = self.theme.get_colour('success_colour', '00CC00')
+        info_colour = self.theme.get_colour('info_colour', '30AD9E')
+    
+        current_line = -1
+        for index, text in enumerate(rich_text):
+            paint.font.embolden = "bold" in text.styles
+            paint.font.skew_x = -0.33 if "italic" in text.styles else 0
+            paint.color = text_colour
+            if "warning" in text.styles:
+                paint.color = warning_colour
+            elif "success" in text.styles:
+                paint.color = success_colour
+            elif "error" in text.styles:
+                paint.color = error_colour
+            elif "notice" in text.styles:
+                paint.color = info_colour
+                        
+            current_line = current_line + 1 if text.x == 0 else current_line
+            if single_line and current_line > 0:
+                return
+            
+            if text.x == 0:
+                y += paint.textsize
+                if index != 0:
+                    y += line_padding
+            
+            canvas.draw_text(text.text, x + text.x, y )
+
 
     def start_setup(self, setup_type, mouse_position = None):
         """Starts a setup mode that is used for moving, resizing and other various changes that the user might setup"""    

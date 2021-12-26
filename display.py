@@ -253,6 +253,10 @@ class HeadUpDisplay:
         if topic in self.pollers:
             self.pollers[topic].disable()
             del self.pollers[topic]
+            
+    def deactivate_poller(self, topic: str):
+        if topic in self.pollers:
+            self.pollers[topic].disable()
     
     def activate_poller(self, topic: str):
         # Find the widget we need to claim for this topic
@@ -663,3 +667,8 @@ class Actions:
         """Enables a poller and claims a widget"""    
         global hud
         hud.activate_poller(topic)
+        
+    def hud_deactivate_poller(topic: str):
+        """Disables a poller"""    
+        global hud
+        hud.deactivate_poller(topic)

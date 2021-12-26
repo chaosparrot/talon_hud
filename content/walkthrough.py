@@ -42,7 +42,7 @@ class WalkthroughPoller:
             self.scope_job = None
             speech_system.unregister("pre:phrase", self.check_step)        
             ctx.tags = []
-        self.enabled = False    
+        self.enabled = False
     
     def load_state(self):
         if not os.path.exists(walkthrough_file_location):

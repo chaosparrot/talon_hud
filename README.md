@@ -197,6 +197,7 @@ Roadmap
 These are ideas that I want to implement in no specific order and with no specific timeline in mind.
 
 X An overlay widget that shows off different interesting regions of the screen
+- Add recover state option for walkthrough to make it more robust
 - An image panel with a header and a close icon which displays image content
 - Splitting out topics from text boxes into separate text boxes
 - "Voice auto complete" content, which automatically opens documentation when a certain keyword is said, to help in the learning process.
@@ -205,7 +206,6 @@ X An overlay widget that shows off different interesting regions of the screen
 Known issues
 ---
 - Multiple page walkthrough panel does not work properly with text indecis
-- Walkthrough panel needs improving UX wise ( close button, skip button, read more button )
 
 If any of these ideas seem cool for you to work on, give me a message on the talon slack so we can coordinate stuff.
 
