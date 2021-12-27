@@ -148,24 +148,24 @@ In general, it is best to keep the images small for memory sake. But otherwise g
 There are some values that have special settings, like event_log_ttl_duration_seconds, which can be set to -1 to have the logs stay without disappearing.
 As there is not a lot of theming going around, it is best to ask me on the Talon slack if you have questions about them.
 
-Context aware Talon HUD modes
+Context aware Talon HUD environments
 ---
 
 You can change your HUD layout entirely using the context management of Talon.  
 Let's say you want to change the placement and enabled widgets when you enter a browser.  
-This is entirely achievable using the 'user.talon_hud_mode' setting.  
+This is entirely achievable using the 'user.talon_hud_environment' setting.  
 
 We implement this in the following talon_hud_browser.talon file example.  
-When you focus a browser after adding a talon file like this, it will automatically make a new set of preference files specifically for the 'browser_hud' Talon HUD mode.
+When you focus a browser after adding a talon file like this, it will automatically make a new set of preference files specifically for the 'browser_hud' Talon HUD environment.
 You can then change your HUD around as you see fit. When you switch out of your browser context, it will change the HUD back as you left it before opening the browser.
-And next time you open up the browser again, it will neatly place the widgets where they were left previously in the 'browser_hud' mode.
+And next time you open up the browser again, it will neatly place the widgets where they were left previously in the 'browser_hud' environment.
 
 ```
 tag: user.talon_hud_visible
 and tag: browser
 -
 settings():
-    user.talon_hud_mode = "browser_hud"
+    user.talon_hud_environment = "browser_hud"
 ```
 
 Development guidelines

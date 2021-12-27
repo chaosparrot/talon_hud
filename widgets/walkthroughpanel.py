@@ -39,7 +39,8 @@ class HeadUpWalkThroughPanel(LayoutWidget):
     # Options given to the context menu
     buttons = [
         HudButton("next_icon", "Skip this step", ui.Rect(0,0,0,0), lambda widget: actions.user.hud_skip_walkthrough_step()),
-        HudButton("check_icon", "Mark as done", ui.Rect(0,0,0,0), lambda widget: actions.user.hud_skip_walkthrough_all())
+        HudButton("check_icon", "Mark as done", ui.Rect(0,0,0,0), lambda widget: actions.user.hud_skip_walkthrough_all()),
+        HudButton("", "Restore current step", ui.Rect(0,0,0,0), lambda widget: actions.user.hud_restore_walkthrough_step())        
     ]
 
     subscribed_content = ["mode", "walkthrough_said_voice_commands"]

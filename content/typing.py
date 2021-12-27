@@ -78,6 +78,7 @@ class HudWalkThroughStep:
     modes: list[str] = None
     app: str = ''
     voice_commands: list[str] = None
+    restore_callback: Callable[[Any, Any], None] = None
 
 @dataclass    
 class HudWalkThrough:
