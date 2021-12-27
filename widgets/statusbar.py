@@ -88,7 +88,7 @@ class HeadUpStatusBar(BaseWidget):
 
         if "focus_indicator" in self.subscribed_content:
             buttons[3].text = "Remove focus indicator"
-            buttons[1].callback = lambda widget: actions.user.hud_remove_focus_toggle()         
+            buttons[3].callback = lambda widget: actions.user.hud_remove_focus_toggle()         
         
         self.buttons = buttons
     

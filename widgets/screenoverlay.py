@@ -25,15 +25,21 @@ class HeadUpScreenOverlay(BaseWidget):
     ]
     subscribed_topics = ['focus', 'overlay']    
     
-    regions = []
-    active_regions = []
-    canvasses = []    
+    regions = None
+    active_regions = None
+    canvases = None
     content = {
         'mode': 'command',
         "screen_regions": {
            "overlay": []
         }
     }
+    
+    def __init__(self, id, preferences_dict, theme, subscriptions = None):
+        super().__init__(id, preferences_dict, theme, subscriptions)
+        self.regions = []
+        self.active_regions = []
+        self.canvases = []
     
     def refresh(self, new_content):
         if ("mode" in new_content and new_content["mode"] != self.content['mode']):
@@ -48,7 +54,7 @@ class HeadUpScreenOverlay(BaseWidget):
             self.previous_pos = ctrl.mouse_pos()
             super().enable(persist)
             self.soft_enable()
-            self.create_canvasses()
+            self.create_canvases()
     
     def disable(self, persist=False):
         if self.enabled:
@@ -61,24 +67,26 @@ class HeadUpScreenOverlay(BaseWidget):
         self.activate_mouse_tracking()
 
     def soft_disable(self):
-        self.clear_canvasses()    
+        self.clear_canvases()
         if self.soft_enabled:
             self.soft_enabled = False
             cron.cancel(self.mouse_poller)
             self.mouse_poller = None
-            
+            self.regions = []
+            self.active_regions = []            
+
     def update_regions(self, regions: list[HudScreenRegion] = None):
+        self.active_regions = []    
         if not self.enabled:
             self.regions = regions
             return
         
-        self.active_regions = []
         soft_enable = False
         indices_to_clear = []
         region_indices_used = []
-        if regions != None:
+        if regions is not None:
             new_regions = regions
-            for index, canvas_reference in enumerate(self.canvasses):
+            for index, canvas_reference in enumerate(self.canvases):
                 region_found = False
                 for region_index, region in enumerate(new_regions):
                 
@@ -94,7 +102,7 @@ class HeadUpScreenOverlay(BaseWidget):
                         canvas_reference['region'] = region
                         canvas_reference['canvas'].register('draw', canvas_reference['callback'])
                         canvas_reference['canvas'].freeze()
-                        self.canvasses[index] = canvas_reference
+                        self.canvases[index] = canvas_reference
                 
                 if region_found == False:
                     indices_to_clear.append(index)
@@ -103,24 +111,24 @@ class HeadUpScreenOverlay(BaseWidget):
                     canvas_reference['canvas'] = None
                     canvas_reference = None
             
-            soft_enable = self.regions != new_regions and len(new_regions) > 0
+            soft_enable = ( self.regions != new_regions or not self.soft_enabled ) and len(new_regions) > 0
             self.regions = new_regions
         
-        # Clear the canvasses in reverse order to make sure the indices stay correct
+        # Clear the canvases in reverse order to make sure the indices stay correct
         indices_to_clear.reverse()
         for index in indices_to_clear:
-            self.canvasses.pop(index)
+            self.canvases.pop(index)
         
-        if self.regions:
+        if len(self.regions) > 0:
             if soft_enable:
                 self.soft_enable()
             self.activate_mouse_tracking()
-            self.create_canvasses(region_indices_used)
+            self.create_canvases(region_indices_used)
             self.determine_active_regions(ctrl.mouse_pos())
         else:
             self.soft_disable()
 
-    def create_canvasses(self, region_indices_used = None):
+    def create_canvases(self, region_indices_used = None):
         if not region_indices_used:
             region_indices_used = []
     
@@ -132,16 +140,16 @@ class HeadUpScreenOverlay(BaseWidget):
                 canvas_reference['region'] = region
                 canvas_reference['canvas'].register('draw', canvas_reference['callback'])
                 canvas_reference['canvas'].freeze()
-                self.canvasses.append(canvas_reference)
+                self.canvases.append(canvas_reference)
             
-    def clear_canvasses(self):
-        for canvas_reference in self.canvasses:
+    def clear_canvases(self):
+        for canvas_reference in self.canvases:
             if canvas_reference:
                 canvas_reference['canvas'].unregister('draw', canvas_reference['callback'])
                 canvas_reference['region'] = None
                 canvas_reference['canvas'] = None
                 canvas_reference = None
-        self.canvasses = []
+        self.canvases = []
         
     def align_region_canvas_rect(self, region):
         if region.rect:
@@ -180,7 +188,7 @@ class HeadUpScreenOverlay(BaseWidget):
             self.mouse_poller = cron.interval('30ms', self.poll_mouse_pos)
         elif not has_active_region:
             self.active_regions = self.regions
-            for canvas_reference in self.canvasses:
+            for canvas_reference in self.canvases:
                 canvas_reference['canvas'].freeze()
     
     def poll_mouse_pos(self):
@@ -213,7 +221,7 @@ class HeadUpScreenOverlay(BaseWidget):
                         
         if self.active_regions != active_regions:
             self.active_regions = active_regions
-            for canvas_reference in self.canvasses:
+            for canvas_reference in self.canvases:
                 canvas_reference['canvas'].freeze()
             
     def draw_region(self, canvas, region) -> bool:
