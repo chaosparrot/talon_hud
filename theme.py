@@ -72,6 +72,9 @@ class HeadUpDisplayTheme:
         # Resize only if the image height is larger than the given height
         if height is None or image.height < height:
             height = image.height
+            
+        width = max(width, 1)
+        height = max(height, 1)
         
         # Preserve the aspect ratio of the image at all costs using the smallest dimension to work from
         new_aspect_ratio = width / height

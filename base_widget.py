@@ -96,7 +96,7 @@ class BaseWidget(metaclass=ABCMeta):
         for key in content:
             self.content[key] = content[key]
         
-        if self.enabled:
+        if self.enabled and self.canvas:
             self.canvas.resume()
             
     def update_panel(self, panel_content) -> bool:
