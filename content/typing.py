@@ -53,6 +53,10 @@ class HudPanelContent:
     show: bool
     choices: HudChoices = None
     tags: list[str] = None
+
+HOVER_VISIBILITY_ON = 1 # Only show the items when the region is hovered by the mouse
+HOVER_VISIBILITY_OFF = 0 # Keep the screen region active regardless of mouse hover
+HOVER_VISIBILITY_TRANSPARENT = -1 # Keep the screen region active, but if the mouse hovers over the drawn items, turn them inactive
     
 @dataclass
 class HudScreenRegion:
@@ -62,7 +66,9 @@ class HudScreenRegion:
     colour: str = None
     rect: ui.Rect = None
     point: Point2d = None
-    hover_visibility: int = 0
+    hover_visibility: int = HOVER_VISIBILITY_OFF
+    text_colour: str = None
+    vertical_centered: bool = True
 
 @dataclass
 class HudWalkThroughStep:

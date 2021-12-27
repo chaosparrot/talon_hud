@@ -52,3 +52,7 @@ screen_overlay_active_text_colour,000000FF
 screen_overlay_active_background_colour,F5F5F5
 screen_overlay_vertical_padding,4
 screen_overlay_horizontal_padding,4
+screen_overlay_region_horizontal_margin,10
+screen_overlay_region_vertical_margin,2
+focus_indicator_background,DD4500
+focus_indicator_text_colour,FFFFFF

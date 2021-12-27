@@ -672,3 +672,8 @@ class Actions:
         """Disables a poller"""    
         global hud
         hud.deactivate_poller(topic)
+        
+    def hud_get_theme() -> HeadUpDisplayTheme:
+        """Get the current theme object from the HUD"""
+        global hud
+        return hud.theme

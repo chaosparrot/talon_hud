@@ -1,5 +1,5 @@
 from user.talon_hud.base_widget import BaseWidget
-from user.talon_hud.utils import layout_rich_text, hit_test_rect
+from user.talon_hud.utils import layout_rich_text, hit_test_rect, is_light_colour, hex_to_ints
 from user.talon_hud.content.typing import HudScreenRegion
 from user.talon_hud.widget_preferences import HeadUpDisplayUserWidgetPreferences
 from talon import skia, ui, Module, cron, actions, ctrl, canvas
@@ -145,14 +145,26 @@ class HeadUpScreenOverlay(BaseWidget):
         
     def align_region_canvas_rect(self, region):
         if region.rect:
+            horizontal_margin = self.theme.get_int_value('screen_overlay_region_horizontal_margin', 10)
+            vertical_margin = self.theme.get_int_value('screen_overlay_region_vertical_margin', 2)
+        
             y = region.rect.y    
             if self.expand_direction == "up":
-                y = region.rect.y + region.rect.height - self.limit_height            
+                y += region.rect.height - self.height - vertical_margin
+            else:
+                y += vertical_margin
+                
             x = region.rect.x
             if self.alignment == "right":
-                x = region.rect.x + region.rect.width - self.limit_width
+                x = region.rect.x + region.rect.width - self.limit_width - horizontal_margin
             elif self.alignment == "center":
                 x = region.rect.x + ( region.rect.width - self.limit_width ) / 2
+            else:
+                x += horizontal_margin
+            
+            if region.vertical_centered:
+                y = region.rect.y + (region.rect.height - self.height) / 2
+                
                             
             return ui.Rect(x, y, self.limit_width, self.limit_height)
         else:
@@ -230,10 +242,13 @@ class HeadUpScreenOverlay(BaseWidget):
             
             icon_x = canvas_rect.x
             if self.alignment == "center":
-                icon_x += ( canvas_rect.width - self.height - text_width ) / 2
+                icon_x += ( canvas_rect.width - icon_size - text_width ) / 2
             elif self.alignment == "right":
-                icon_x += canvas_rect.width - self.height - text_width
-            text_y = region.rect.y + ( max(self.height, icon_size) - self.font_size ) / 2
+                icon_x += canvas_rect.width - icon_size - text_width - horizontal_padding
+            else:
+                icon_x += horizontal_padding
+            text_y = canvas_rect.y + ( max(self.height, icon_size) - self.font_size ) / 2
+            
             text_x = icon_x + icon_size
 
             # First draw the text background
@@ -258,11 +273,21 @@ class HeadUpScreenOverlay(BaseWidget):
             
             # Finally draw the text on top
             if region.title:
-                paint.color = self.theme.get_colour('screen_overlay_text_colour', '00000044') if not active else self.theme.get_colour('screen_overlay_active_text_colour', '000000FF')                                
+                text_colour = region.text_colour if active else self.theme.get_colour('screen_overlay_text_colour', '00000044')
+                if not text_colour:
+                    text_colour = self.theme.get_colour('screen_overlay_text_colour', '00000044') if not active else self.theme.get_colour('screen_overlay_active_text_colour', '000000FF')                    
+                
+                # Draw the background colour of the text
+                text_colour_ints = hex_to_ints(text_colour)
+                text_background_colour = '000000' if is_light_colour(text_colour_ints[0], text_colour_ints[1], text_colour_ints[2]) else 'FFFFFF'
+                if len(text_colour_ints) > 3:
+                    opacity_hex = format(text_colour_ints[3], 'x')
+                    opacity_hex = opacity_hex if len(opacity_hex) > 1 else "0" + opacity_hex
+                    text_background_colour += opacity_hex
+                paint.color = text_background_colour                
                 self.draw_rich_text(canvas, paint, content_text, text_x, text_y + 1, True)
                 
-                # TODO PROPER THEMING / COLOUR PICKING?
-                paint.color = "FFFFFF00" if not active else "FFFFFF"
+                paint.color = text_colour
                 self.draw_rich_text(canvas, paint, content_text, text_x, text_y, True)            
                 
         

@@ -219,3 +219,8 @@ def hit_test_icon(icon: HudIcon, pos: Point2d):
     pos = numpy.array(pos)
     icon_pos = numpy.array(icon.pos)
     return numpy.linalg.norm(pos - icon_pos) < icon.radius
+    
+def is_light_colour(red: int, green: int, blue: int) -> bool:
+    luminance = (.299 * red) + (.587 * green) + (.114 * blue)
+    return luminance > 40
+

@@ -24,7 +24,13 @@ class FocusPoller(Poller):
             active_window = ui.active_window()
             if active_window:
                 app = ui.active_app()
-                regions = [actions.user.hud_create_screen_region('focus', 'DD4500', '', '<*' + app.name, -1, active_window.rect.x, active_window.rect.y, active_window.rect.width, active_window.rect.height )]
+                theme = actions.user.hud_get_theme()
+                focus_colour = theme.get_colour('focus_indicator_background', 'DD4500')
+                focus_text_colour = theme.get_colour('focus_indicator_text_colour', 'FFFFFF')
+                
+                regions = [actions.user.hud_create_screen_region('focus', focus_colour, '', '<*' + app.name, -1, active_window.rect.x, active_window.rect.y, active_window.rect.width, active_window.rect.height )]
+                regions[0].text_colour = focus_text_colour
+                regions[0].vertical_centered = False                
                 actions.user.hud_publish_screen_regions('overlay', regions, True)
 
     def move_focus_indicator(self, window):
