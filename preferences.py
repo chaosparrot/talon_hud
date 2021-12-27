@@ -103,7 +103,7 @@ class HeadUpDisplayUserPreferences:
 
     def get_main_preferences_filename(self, without_hud_environment = False):
         hud_environment = settings.get("user.talon_hud_environment")
-        talon_hud_environment = "" if without_hud_environment or hud_environment == None or hud_environment == "" else hud_environment + "_"    
+        talon_hud_environment = "" if without_hud_environment or hud_environment == None or hud_environment == "" else hud_environment + "_"
         return user_preferences_file_dir + talon_hud_environment + widget_settings_file_ending
 
     # Save the given preferences file

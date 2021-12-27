@@ -30,7 +30,7 @@ class HeadUpWidgetManager:
     default_screen_mm_size: list
     
     previous_screen_rects: list[ui.Rect]
-    previous_talon_hud_mode = ""
+    previous_talon_hud_environment = ""
     theme: HeadUpDisplayTheme
     preferences: HeadUpDisplayUserPreferences
     widgets: list[BaseWidget]
@@ -39,7 +39,7 @@ class HeadUpWidgetManager:
         self.default_screen_rect = ui.Rect(0, 0, 1920, 1080)
         self.default_screen_mm_size = [527.0, 296.0]
         
-        self.previous_talon_hud_mode = ""
+        self.previous_talon_hud_environment = ""
         self.previous_screen_rects = []
         self.preferences = preferences
         self.theme = theme
@@ -116,10 +116,10 @@ class HeadUpWidgetManager:
 
         # Reload the main preferences in case the Talon HUD mode changed
         new_theme = self.preferences.prefs['theme_name']
-        current_hud_mode = settings.get("user.talon_hud_mode")
-        if current_hud_mode != None and current_hud_mode != self.previous_talon_hud_mode:
+        current_hud_environment = settings.get("user.talon_hud_environment")
+        if current_hud_environment != None and current_hud_environment != self.previous_talon_hud_environment:
             self.preferences.load_preferences(self.preferences.get_main_preferences_filename())
-            self.previous_talon_hud_mode = current_hud_mode
+            self.previous_talon_hud_environment = current_hud_environment
             new_theme = self.preferences.prefs['theme_name']
         
         if dimensions_changed:

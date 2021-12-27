@@ -67,6 +67,11 @@ This widget follows your given pointer around and can display an icon or a colou
 This can be used for example to show the status of a specific thing near your eyetracking gaze through your mouse cursor.  
 By default, there are no cursor indicators, they need to be programmed in using the content documentation.  
 
+### 9. Screen overlay
+
+This widget can annotate regions of the screen with text, icons and colours.
+You can use it to show different regions for virtual keyboard usage combined with noises for example.
+
 Voice commands
 ---
 
@@ -197,7 +202,6 @@ Roadmap
 These are ideas that I want to implement in no specific order and with no specific timeline in mind.
 
 X An overlay widget that shows off different interesting regions of the screen
-- Add recover state option for walkthrough to make it more robust
 - An image panel with a header and a close icon which displays image content
 - Splitting out or merging topics from widgets into separate widgets
 - Better default image, dimension and font scaling based on physical dimensions of the screen
