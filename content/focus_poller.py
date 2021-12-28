@@ -13,12 +13,13 @@ class FocusPoller(Poller):
             self.update_focus_indicator()
             ui.register('win_focus', self.update_focus_indicator)
             ui.register('win_resize', self.update_focus_indicator)
-            ui.register('win_move', self.move_focus_indicator)            
+            ui.register('win_move', self.move_focus_indicator)
     
     def disable(self):
         self.enabled = False
         ui.unregister('win_focus', self.update_focus_indicator)
         ui.unregister('win_resize', self.update_focus_indicator)
+        ui.unregister('win_move', self.move_focus_indicator)        
         actions.user.hud_publish_screen_regions('overlay', [], True)
         cron.cancel(self.move_indicator_job)
         

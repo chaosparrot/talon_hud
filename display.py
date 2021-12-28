@@ -46,6 +46,7 @@ mod.tag("talon_hud_available", desc="Tag that shows the availability of the Talo
 mod.tag("talon_hud_visible", desc="Tag that shows that the Talon HUD is visible")
 mod.tag("talon_hud_choices_visible", desc="Tag that shows there are choices available on screen that can be chosen")
 mod.setting("talon_hud_environment", type="string", desc="Which environment to set the HUD in - Useful for setting up a HUD for screen recording or other tasks")
+
 ctx.tags = ['user.talon_hud_available']
 ctx.settings['user.talon_hud_environment'] = ""
 
@@ -55,7 +56,7 @@ TALON_HUD_RELEASE_040 = 4 # Multi-monitor version
 TALON_HUD_RELEASE_050 = 5 # Debugging / screen overlay release
 @mod.scope
 def scope():
-    return {"talon_hud_version": TALON_HUD_RELEASE_040}
+    return {"talon_hud_version": TALON_HUD_RELEASE_050}
 
 class HeadUpDisplay:
     enabled = False
