@@ -49,7 +49,7 @@ class BaseWidget(metaclass=ABCMeta):
             self.subscribed_logs = subscriptions['logs'] if 'logs' in subscriptions else self.subscribed_logs
             
     # Load the widgets preferences
-    def load(self, dict, initialize = True):
+    def load(self, dict, initialize = True, update_enabled = False):
         self.preferences.load(self.id, dict)
         self.sleep_enabled = self.preferences.sleep_enabled
         self.show_animations = self.preferences.show_animations
@@ -65,6 +65,11 @@ class BaseWidget(metaclass=ABCMeta):
         self.alignment = self.preferences.alignment
         self.expand_direction = self.preferences.expand_direction
         self.minimized = self.preferences.minimized
+        
+        # For re-enabling or disabling widgets after a reload ( mostly for talon hud environment changes )
+        if update_enabled:
+            if self.enabled != self.preferences.enabled:
+                self.enable() if self.preferences.enabled else self.disable()
 
         if initialize:
             self.load_theme_values()        
@@ -91,7 +96,7 @@ class BaseWidget(metaclass=ABCMeta):
         for key in content:
             self.content[key] = content[key]
         
-        if self.enabled:
+        if self.enabled and self.canvas:
             self.canvas.resume()
             
     def update_panel(self, panel_content) -> bool:
@@ -111,13 +116,12 @@ class BaseWidget(metaclass=ABCMeta):
         if not self.enabled:
             self.enabled = True
             self.canvas = canvas.Canvas(min(self.x, self.limit_x), min(self.y, self.limit_y), max(self.width, self.limit_width), max(self.height, self.limit_height))
-            self.canvas.register('draw', self.draw_cycle)
-            self.animation_tick = self.animation_max_duration if self.show_animations else 0
-            self.canvas.resume()
-            
             if self.mouse_enabled:
                 self.canvas.blocks_mouse = True
                 self.canvas.register('mouse', self.on_mouse)
+            self.canvas.register('draw', self.draw_cycle)
+            self.animation_tick = self.animation_max_duration if self.show_animations else 0
+            self.canvas.resume()
             
             if persisted:
                 self.preferences.enabled = True
@@ -128,7 +132,6 @@ class BaseWidget(metaclass=ABCMeta):
     def disable(self, persisted=False):
         if self.enabled:
             if self.mouse_enabled:
-                self.canvas.blocks_mouse = False
                 self.canvas.unregister('mouse', self.on_mouse)
         
             self.enabled = False
@@ -305,10 +308,11 @@ class BaseWidget(metaclass=ABCMeta):
         elif setup_type == "reload":
             self.drag_position = []
             self.setup_type = ""             
-            if self.canvas:
+            if self.canvas:            
                 rect = ui.Rect(self.x, self.y, self.width, self.height)                    
                 self.canvas.rect = rect
                 self.canvas.resume()
+                
         # Start the setup state
         elif self.setup_type != setup_type:
             self.setup_type = setup_type

@@ -1,12 +1,14 @@
 from talon import skia, ui, Module, cron, actions, clip
 from user.talon_hud.layout_widget import LayoutWidget
 from user.talon_hud.widget_preferences import HeadUpDisplayUserWidgetPreferences
-from user.talon_hud.utils import layout_rich_text, remove_tokens_from_rich_text, linear_gradient, retrieve_available_voice_commands, hex_to_ints, string_to_speakable_string
+from user.talon_hud.utils import layout_rich_text, remove_tokens_from_rich_text, linear_gradient, retrieve_available_voice_commands, hex_to_ints, string_to_speakable_string, hit_test_icon
 from user.talon_hud.content.typing import HudRichTextLine, HudPanelContent, HudButton, HudIcon
 from talon.types.point import Point2d
 from talon.skia import Paint
 
-icon_radius = 10
+icon_radius = 9
+def close_widget(widget):
+    widget.disable(True)
 
 class HeadUpWalkThroughPanel(LayoutWidget):
     preferences = HeadUpDisplayUserWidgetPreferences(type="walk_through", x=910, y=1000, width=100, height=20, limit_x=480, limit_y=826, limit_width=960, limit_height=148, enabled=False, sleep_enabled=True, alignment="center", expand_direction="up", font_size=24)
@@ -25,6 +27,11 @@ class HeadUpWalkThroughPanel(LayoutWidget):
     animated_word_state = 0
     animated_words = []
     commands_positions = {}
+    
+    icon_hovered = -1
+    icons = [
+        HudIcon("close", "", Point2d(0,0), icon_radius, close_widget)
+    ]
 
     # Previous dimensions to transition from
     previous_content_dimensions = None    
@@ -32,7 +39,8 @@ class HeadUpWalkThroughPanel(LayoutWidget):
     # Options given to the context menu
     buttons = [
         HudButton("next_icon", "Skip this step", ui.Rect(0,0,0,0), lambda widget: actions.user.hud_skip_walkthrough_step()),
-        HudButton("check_icon", "Mark as done", ui.Rect(0,0,0,0), lambda widget: actions.user.hud_skip_walkthrough_all())
+        HudButton("check_icon", "Mark as done", ui.Rect(0,0,0,0), lambda widget: actions.user.hud_skip_walkthrough_all()),
+        HudButton("", "Restore current step", ui.Rect(0,0,0,0), lambda widget: actions.user.hud_restore_walkthrough_step())        
     ]
 
     subscribed_content = ["mode", "walkthrough_said_voice_commands"]
@@ -40,12 +48,17 @@ class HeadUpWalkThroughPanel(LayoutWidget):
         'mode': 'command',
         'walkthrough_said_voice_commands': []
     }
+    
+    subscribed_topics = ['walk_through']
+    topic = 'walk_through'
+    
     panel_content = HudPanelContent('walk_through', '', [''], [], 0, False)
     voice_commands_available = []
     
     def disable(self, persisted=False):
        self.previous_content_dimensions = None
        self.transition_animation_state = 0
+       actions.user.hud_deactivate_poller('walk_through')       
        super().disable(persisted)
 
     def refresh(self, new_content):
@@ -79,11 +92,30 @@ class HeadUpWalkThroughPanel(LayoutWidget):
         return super().update_panel(panel_content)
     
     def on_mouse(self, event):
-        if event.button == 1 and event.event == "mouseup":            
-            actions.user.show_context_menu(self.id, event.gpos.x, event.gpos.y, self.buttons)
-        elif event.button == 0 and event.event == "mouseup":
+        icon_hovered = -1
+        for index, icon in enumerate(self.icons):
+            if hit_test_icon(icon, event.gpos):
+                icon_hovered = index
+
+        if event.event == "mouseup" and event.button == 0:
+            clicked_icon = None
+            if icon_hovered != -1:
+                clicked_icon = self.icons[icon_hovered]
+                
+            if clicked_icon != None:
+                self.icon_hovered = -1
+                clicked_icon.callback(self)
             actions.user.hide_context_menu()
-        super().on_mouse(event)
+        elif event.button == 1 and event.event == "mouseup":            
+            actions.user.show_context_menu(self.id, event.gpos.x, event.gpos.y, self.buttons)
+        
+        if icon_hovered != self.icon_hovered:
+            self.icon_hovered = icon_hovered
+            self.canvas.resume()
+        
+        # Allow dragging and dropping with the mouse
+        if icon_hovered == -1:
+            super().on_mouse(event)
 
     def set_preference(self, preference, value, persisted=False):
         self.mark_layout_invalid = True
@@ -111,7 +143,8 @@ class HeadUpWalkThroughPanel(LayoutWidget):
         layout_width = max(self.width - self.padding[1] * 2 - self.padding[3] * 2, 
             self.limit_width - self.padding[1] * 2 - self.padding[3] * 2)
 
-        content_text = [] if self.minimized else layout_rich_text(paint, self.panel_content.content[0], layout_width, self.limit_height)
+        icon_padding = icon_radius
+        content_text = [] if self.minimized else layout_rich_text(paint, self.panel_content.content[0], layout_width - icon_padding, self.limit_height)
         
         # Start segmenting the available voice commands by indexes
         self.voice_commands_available = []
@@ -173,7 +206,7 @@ class HeadUpWalkThroughPanel(LayoutWidget):
                         x = self.limit_x + ( self.limit_width - width ) / 2
                     y = self.limit_y if vertical_alignment == "top" else self.limit_y + self.limit_height - height
                     layout_pages.append({
-                        "rect": ui.Rect(x, y, width, height), 
+                        "rect": ui.Rect(x, y, width + icon_padding, height), 
                         "line_count": max(1, line_count - 1),
                         "content_text": current_page_text,
                         "content_height": current_content_height
@@ -204,7 +237,7 @@ class HeadUpWalkThroughPanel(LayoutWidget):
                 y = self.limit_y if vertical_alignment == "top" else self.limit_y + self.limit_height - height
                 
                 layout_pages.append({
-                    "rect": ui.Rect(x, y, width, height), 
+                    "rect": ui.Rect(x, y, width + icon_padding, height), 
                     "line_count": max(1, line_count + 2 ),
                     "content_text": current_page_text,
                     "content_height": content_height
@@ -244,12 +277,14 @@ class HeadUpWalkThroughPanel(LayoutWidget):
         
             self.draw_background(canvas, paint, background_rect)
         else:
-            self.animated_word_state = max(0, self.animated_word_state - 1)        
+            self.animated_word_state = max(0, self.animated_word_state - 1)
             self.draw_background(canvas, paint, dimensions["rect"])
-        
+                    
             paint.color = self.theme.get_colour('text_colour')
             self.draw_voice_command_backgrounds(canvas, paint, dimensions, self.animated_word_state)
             self.draw_content_text(canvas, paint, dimensions)
+            self.draw_header_buttons(canvas, paint, dimensions)
+            
         
         return self.transition_animation_state > 0 or self.animated_word_state > 0
 
@@ -433,3 +468,17 @@ class HeadUpWalkThroughPanel(LayoutWidget):
                     y += line_padding
             
             canvas.draw_text(text.text, x + text.x, y )
+
+    def draw_header_buttons(self, canvas, paint, dimensions):
+        dimensions = dimensions["rect"]    
+        # Header button tray 
+        x = dimensions.x
+        for index, icon in enumerate(self.icons):
+            icon_position = Point2d(x + dimensions.width - (icon_radius * 1.5 + ( index * icon_radius * 2.2 )),
+                dimensions.y + icon_radius + self.padding[0] / 2)
+            self.icons[index].pos = icon_position
+            paint.style = paint.Style.FILL
+            if icon.id == "close":
+                close_colour = self.theme.get_colour('close_icon_hover_colour') if self.icon_hovered == index else self.theme.get_colour('close_icon_accent_colour')            
+                paint.shader = linear_gradient(icon_position.x, dimensions.y, icon_position.x, icon_position.y + icon_radius, (self.theme.get_colour('close_icon_colour'), close_colour))
+                canvas.draw_circle(icon_position.x, icon_position.y, icon_radius, paint)

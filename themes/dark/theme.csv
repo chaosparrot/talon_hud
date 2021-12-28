@@ -23,6 +23,10 @@ event_log_text_colour,DDDDDD
 event_log_opacity,0.9
 event_log_text_opacity,0.9
 event_log_focussed_opacity,1
+event_log_ttl_duration_seconds,9
+event_log_between_margin,10
+event_log_horizontal_padding,8
+event_log_vertical_padding,4
 ability_activation_colour,000000AA
 text_box_background,333333
 text_box_line,888888
@@ -41,3 +45,14 @@ spoken_voice_command_background_colour,2A6D37
 voice_command_background_colour,DDDDDD
 spoken_voice_command_text_colour,BBBBBB
 voice_command_text_colour,535353
+screen_overlay_text_colour,DDDDDD00
+screen_overlay_background_colour,33333344
+screen_overlay_active_text_colour,000000FF
+screen_overlay_active_background_colour,333333
+screen_overlay_vertical_padding,4
+screen_overlay_horizontal_padding,4
+screen_overlay_icon_padding,4
+screen_overlay_region_horizontal_margin,10
+screen_overlay_region_vertical_margin,2
+focus_indicator_background,DD4500
+focus_indicator_text_colour,FFFFFF

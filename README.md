@@ -56,6 +56,22 @@ This widget is meant to guide users through a predefined workflow to familiarize
 You can use this to give an interactive experience for users to learn the ins and outs of various workflows.
 Included in the Talon HUD is a simple walkthrough for using the Talon HUD itself, but any package can make walkthroughs or workflows.
 
+### 7. Ability bar
+
+Much like the status bar, except it only allows you to show icons and can be displayed independently of the status bar.  
+By default, it does not have any visual indication, but I have used it in some of my personal scripts to show movement directions.  
+
+### 8. Cursor tracker
+
+This widget follows your given pointer around and can display an icon or a colour near it.  
+This can be used for example to show the status of a specific thing near your eyetracking gaze through your mouse cursor.  
+By default, there are no cursor indicators, they need to be programmed in using the content documentation.  
+
+### 9. Screen overlay
+
+This widget can annotate regions of the screen with text, icons and colours.
+You can use it to show different regions for virtual keyboard usage combined with noises for example.
+
 Voice commands
 ---
 
@@ -134,6 +150,29 @@ Theming
 If you want to add your own theme, simply copy and paste an existing theme folder over, give it a new name, define it in the commands.talon file and start changing values in the themes.csv file of your copied over directory.  
 In general, it is best to keep the images small for memory sake. But otherwise go nuts.
 
+There are some values that have special settings, like event_log_ttl_duration_seconds, which can be set to -1 to have the logs stay without disappearing.
+As there is not a lot of theming going around, it is best to ask me on the Talon slack if you have questions about them.
+
+Context aware Talon HUD environments
+---
+
+You can change your HUD layout entirely using the context management of Talon.  
+Let's say you want to change the placement and enabled widgets when you enter a browser.  
+This is entirely achievable using the 'user.talon_hud_environment' setting.  
+
+We implement this in the following talon_hud_browser.talon file example.  
+When you focus a browser after adding a talon file like this, it will automatically make a new set of preference files specifically for the 'browser_hud' Talon HUD environment.
+You can then change your HUD around as you see fit. When you switch out of your browser context, it will change the HUD back as you left it before opening the browser.
+And next time you open up the browser again, it will neatly place the widgets where they were left previously in the 'browser_hud' environment.
+
+```
+tag: user.talon_hud_visible
+and tag: browser
+-
+settings():
+    user.talon_hud_environment = "browser_hud"
+```
+
 Development guidelines
 ----
 
@@ -162,16 +201,14 @@ Roadmap
 
 These are ideas that I want to implement in no specific order and with no specific timeline in mind.
 
-- An indicator widget that follows the cursor around to show a single state that is important to the current task at hand
 - An image panel with a header and a close icon which displays image content
-- Splitting out topics from text boxes into separate text boxes
-- "Voice auto complete" content, which automatically opens documentation when a certain keyword is said, to help in the learning process.
+- Improved theming experience and more styling options
+- Splitting out or merging topics from widgets into separate widgets
 - Better default image, dimension and font scaling based on physical dimensions of the screen
 
 Known issues
 ---
-- Multiple page walkthrough panel does not work properly with text indecis
-- Walkthrough panel needs improving UX wise ( close button, skip button, read more button )
+- Multiple page walkthrough panel does not work properly with text indices
 
 If any of these ideas seem cool for you to work on, give me a message on the talon slack so we can coordinate stuff.
 

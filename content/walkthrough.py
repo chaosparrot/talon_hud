@@ -42,7 +42,7 @@ class WalkthroughPoller:
             self.scope_job = None
             speech_system.unregister("pre:phrase", self.check_step)        
             ctx.tags = []
-        self.enabled = False    
+        self.enabled = False
     
     def load_state(self):
         if not os.path.exists(walkthrough_file_location):
@@ -118,7 +118,8 @@ class WalkthroughPoller:
             if isinstance(jsondata, list):
                 for unfiltered_step in jsondata:
                     step = { key: unfiltered_step[key] if key in unfiltered_step else walkthrough_defaults[key] for key in walkthrough_defaults.keys() }
-                    steps.append( actions.user.hud_create_walkthrough_step(**step) )
+                    walkthrough_step = actions.user.hud_create_walkthrough_step(**step)
+                    steps.append( walkthrough_step )
             
             if len(steps) > 0:
                 actions.user.hud_create_walkthrough(title, steps)
@@ -165,6 +166,10 @@ class WalkthroughPoller:
             if self.current_stepnumber + 1 < len(self.current_walkthrough.steps):
                 self.transition_to_step(self.current_stepnumber + 1)
                 self.walkthrough_steps[self.current_walkthrough.title]['current'] = self.current_stepnumber
+                
+                # If the first step has a restore callback, call that straight away to set the user up
+                if self.current_stepnumber == 0 and self.current_walkthrough.steps[0].restore_callback is not None:
+                    self.current_walkthrough.steps[self.current_stepnumber].restore_callback(self.current_stepnumber)
             else:
                 self.end_walkthrough()
                 
@@ -186,6 +191,19 @@ class WalkthroughPoller:
         """Transition to the next step"""
         self.current_stepnumber = stepnumber
         self.display_step_based_on_context(True)
+        
+    def restore_walkthrough_step(self):
+        """Restore the state of the current walkthrough step"""
+        if self.current_walkthrough is not None:
+            if self.current_walkthrough.steps[self.current_stepnumber].restore_callback is not None:
+                self.current_walkthrough.steps[self.current_stepnumber].restore_callback(self.current_stepnumber)
+            else:
+                warning_text = 'This walkthrough step does not have a restore option.'
+                if self.current_stepnumber > 0:
+                    warning_text += '\nMoving to the previous step.'
+                    self.previous_step()
+                
+                actions.user.hud_add_log('warning',  warning_text)
         
     def end_walkthrough(self, hide: bool = True):
         """End the current walkthrough"""
@@ -303,6 +321,11 @@ class Actions:
         """Skip the current walk through step"""
         global hud_walkthrough
         hud_walkthrough.end_walkthrough()
+        
+    def hud_restore_walkthrough_step():
+        """Restore the current walkthrough step if possible"""
+        global hud_walkthrough
+        hud_walkthrough.restore_walkthrough_step()
         
     def hud_show_walkthroughs():
         """Show all the currently available walk through options"""

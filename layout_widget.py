@@ -18,32 +18,49 @@ class LayoutWidget(BaseWidget):
     mouse_capture_canvas: canvas.Canvas
     layout = []
     page_index = 0
-        
+    
     def enable(self, persisted=False):
-        if not self.enabled:
+        if not self.enabled and (not self.panel_content or self.panel_content.content[0]):
             if self.mouse_enabled:
                 self.mouse_capture_canvas = canvas.Canvas(min(self.x, self.limit_x), min(self.y, self.limit_y), max(self.width, self.limit_width), max(self.height, self.limit_height))            
                 self.mouse_capture_canvas.blocks_mouse = True
                 self.mouse_capture_canvas.register('mouse', self.on_mouse)
                 self.mouse_capture_canvas.freeze()
-           
-            super().enable(persisted)
-            self.canvas.blocks_mouse = False
+            
+            # Copied over from base widget enabled to make sure blocks_mouse setting isn't changed
+            self.enabled = True
+            self.canvas = canvas.Canvas(min(self.x, self.limit_x), min(self.y, self.limit_y), max(self.width, self.limit_width), max(self.height, self.limit_height))
+            self.canvas.register('draw', self.draw_cycle)
+            self.animation_tick = self.animation_max_duration if self.show_animations else 0
+            self.canvas.resume()
+            if persisted:
+                self.preferences.enabled = True
+                self.preferences.mark_changed = True
+                actions.user.persist_hud_preferences()
+            self.cleared = False
             
     def disable(self, persisted=False):
         if self.enabled:
             if self.mouse_enabled:
-                self.canvas.blocks_mouse = False
-                self.canvas.unregister('mouse', self.on_mouse)
                 self.mouse_capture_canvas.blocks_mouse = False
                 self.mouse_capture_canvas.unregister('mouse', self.on_mouse)
                 self.mouse_capture_canvas = None
         
-            super().disable(persisted)
+            # Copied over from base widget disable to make sure blocks_mouse setting isn't changed        
+            self.enabled = False
+            self.animation_tick = -self.animation_max_duration if self.show_animations else 0
+            self.canvas.resume()
+            
+            if persisted:
+                self.preferences.enabled = False
+                self.preferences.mark_changed = True
+                actions.user.persist_hud_preferences()
+                
+            self.cleared = False
+            self.start_setup("cancel")
     
     def refresh(self, new_content):
         self.mark_layout_invalid = True
-        self.page_index = 0
 
     def set_page_index(self, page_index: int):
         self.page_index = max(0, min(page_index, len(self.layout) - 1))
@@ -82,6 +99,7 @@ class LayoutWidget(BaseWidget):
             self.disable()
 
         if not self.enabled and panel_content.show:
+            self.panel_content = panel_content        
             self.enable(True)
         
         if self.enabled:

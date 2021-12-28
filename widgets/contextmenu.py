@@ -27,7 +27,7 @@ class HeadUpContextMenu(LayoutWidget):
     button_hovered = -1
     default_buttons = [
         HudButton(None, 'Close panel', ui.Rect(0, 0, 0, 0), close_widget),
-        HudButton(None, 'Cancel options', ui.Rect(0, 0, 0, 0), noop)
+        HudButton(None, 'Dismiss options', ui.Rect(0, 0, 0, 0), noop)
     ]
     buttons = []
 
@@ -35,6 +35,7 @@ class HeadUpContextMenu(LayoutWidget):
     content = {
         'mode': 'command'
     }
+    panel_content = None
     animation_max_duration = 0
         
     def on_mouse(self, event):
