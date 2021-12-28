@@ -65,7 +65,7 @@ class HeadUpScreenOverlay(BaseWidget):
             self.soft_enable()
             self.create_canvases()
     
-    def disable(self, persist=False):
+    def disable(self, persisted=False):
         if self.enabled:
             self.soft_disable()
             
