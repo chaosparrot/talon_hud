@@ -201,8 +201,8 @@ Roadmap
 
 These are ideas that I want to implement in no specific order and with no specific timeline in mind.
 
-X An overlay widget that shows off different interesting regions of the screen
 - An image panel with a header and a close icon which displays image content
+- Improved theming experience and more styling options
 - Splitting out or merging topics from widgets into separate widgets
 - Better default image, dimension and font scaling based on physical dimensions of the screen
 

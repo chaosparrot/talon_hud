@@ -66,7 +66,7 @@ class BaseWidget(metaclass=ABCMeta):
         self.expand_direction = self.preferences.expand_direction
         self.minimized = self.preferences.minimized
         
-        # For re-enabling or disabling widgets after a reload ( mostly for talon hud mode changes )
+        # For re-enabling or disabling widgets after a reload ( mostly for talon hud environment changes )
         if update_enabled:
             if self.enabled != self.preferences.enabled:
                 self.enable() if self.preferences.enabled else self.disable()

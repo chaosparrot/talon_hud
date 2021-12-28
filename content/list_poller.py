@@ -29,7 +29,7 @@ class ListPoller(Poller):
     def get_list_in_text(self):
         content = ""
         if self.list in registry.lists:
-            list_contents = registry.lists[self.list][0]
+            list_contents = registry.lists[self.list][-1]
             
             list_description = registry.decls.lists[self.list].desc if self.list in registry.decls.lists else ""
             if len(list_contents) == 0:

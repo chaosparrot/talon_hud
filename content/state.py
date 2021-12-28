@@ -337,11 +337,3 @@ class Actions:
         """Show a bunch of test buttons to choose from"""
         choices = actions.user.hud_create_choices([{"text": "Testing", "image": "next_icon"},{"text": "Another choice"},{"text": "Some other choice"},{"text": "Maybe pick this"},], print)
         actions.user.hud_publish_choices(choices)
-        
-    def test_add_icon():
-        """asdf"""
-        actions.user.hud_publish_screen_regions('cursor', [actions.user.hud_create_screen_region('cursor', None, 'de_DE')], True)
-        
-    def test_remove_icon():
-        """asdf aaa"""
-        actions.user.hud_clear_screen_regions('cursor')

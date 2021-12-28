@@ -1,5 +1,5 @@
 import os
-from talon import ui, speech_system, settings
+from talon import ui, settings
 
 semantic_directory = os.path.dirname(os.path.abspath(__file__))
 user_preferences_file_dir =  semantic_directory + "/preferences/"

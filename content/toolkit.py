@@ -14,9 +14,6 @@ def pick_toolkit_option(data):
     elif data["text"] == "Lists":
         actions.user.hud_toolkit_lists()
         return True
-    elif data["text"] == "History":
-        actions.user.hud_toolkit_history()
-        return False
     elif data["text"] == "Microphone selection":
         actions.user.show_microphone_options()
         return True
