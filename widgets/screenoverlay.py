@@ -472,4 +472,16 @@ class HeadUpScreenOverlay(BaseWidget):
         
         if persisted:
             self.preferences.mark_changed = True
-            actions.user.persist_hud_preferences()            
+            actions.user.persist_hud_preferences()
+
+    def set_theme(self, theme):
+        # Copied over from base widget to reflect the no-canvas state of this widget    
+        self.theme = theme
+        self.load_theme_values()
+        if self.enabled:
+            if self.canvas:
+                self.canvas.resume()
+            self.animation_tick = self.animation_max_duration if self.show_animations else 0
+            for canvas_reference in self.canvases:
+                canvas_reference['canvas'].freeze()
+            
