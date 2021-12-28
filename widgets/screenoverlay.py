@@ -11,7 +11,7 @@ class HeadUpScreenOverlay(BaseWidget):
 
     # In this widget the limit_width and limit_height variables are used to determine the size of the canvas
 
-    allowed_setup_options = ["limit", "dimension", "font_size"]
+    allowed_setup_options = ["dimension", "font_size"]
     mouse_enabled = False
     soft_enabled = False
     mouse_poller = None
@@ -276,7 +276,7 @@ class HeadUpScreenOverlay(BaseWidget):
                 icon_x += canvas_rect.width - icon_size - text_width - horizontal_padding
             else:
                 icon_x += horizontal_padding
-            text_y = canvas_rect.y + ( max(self.height, icon_size) - self.font_size ) / 2
+            text_y = canvas_rect.y + ( icon_size - self.font_size ) / 2 if region.icon else canvas_rect.y + self.font_size - vertical_padding
             
             text_x = icon_x + icon_size
 
@@ -381,19 +381,7 @@ class HeadUpScreenOverlay(BaseWidget):
             self.drag_position = []
             rect = self.canvas.rect
             
-            if (self.setup_type == "limit"):
-                self.x = 0
-                self.y = 0
-                self.limit_x = int(rect.x)
-                self.limit_y = int(rect.y)
-                self.limit_width = int(rect.width)
-                self.limit_height = int(rect.height)
-                self.preferences.limit_x = self.limit_x
-                self.preferences.limit_y = self.limit_y                
-                self.preferences.limit_width = self.limit_width
-                self.preferences.limit_height = self.limit_height
-                
-            elif (self.setup_type == "dimension"):
+            if (self.setup_type == "dimension"):
                 self.x = 0
                 self.y = 0
                 self.width = int(rect.width)
