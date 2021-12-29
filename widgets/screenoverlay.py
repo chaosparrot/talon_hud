@@ -2,7 +2,7 @@ from user.talon_hud.base_widget import BaseWidget
 from user.talon_hud.utils import layout_rich_text, hit_test_rect, is_light_colour, hex_to_ints
 from user.talon_hud.content.typing import HudScreenRegion
 from user.talon_hud.widget_preferences import HeadUpDisplayUserWidgetPreferences
-from talon import skia, ui, Module, cron, actions, ctrl, canvas
+from talon import skia, ui, cron, ctrl, canvas
 from talon.types.point import Point2d
 import time
 import numpy
@@ -59,7 +59,7 @@ class HeadUpScreenOverlay(BaseWidget):
             if persisted:
                 self.preferences.enabled = True
                 self.preferences.mark_changed = True
-                actions.user.persist_hud_preferences()
+                self.event_dispatch.request_persist_preferences()
             
             self.cleared = False
             self.soft_enable()
@@ -76,7 +76,7 @@ class HeadUpScreenOverlay(BaseWidget):
             if persisted:
                 self.preferences.enabled = False
                 self.preferences.mark_changed = True
-                actions.user.persist_hud_preferences()
+                self.event_dispatch.request_persist_preferences()
             
             self.start_setup("cancel")
             self.clear()
@@ -401,7 +401,7 @@ class HeadUpScreenOverlay(BaseWidget):
             self.canvas.unregister('draw', self.setup_draw_cycle)
             self.canvas = None
             
-            actions.user.persist_hud_preferences()
+            self.event_dispatch.request_persist_preferences()
         # Cancel every change
         elif setup_type == "cancel":
             self.drag_position = []        
@@ -418,6 +418,12 @@ class HeadUpScreenOverlay(BaseWidget):
                     canvas_reference['canvas'].rect = canvas_rect
                     canvas_reference['canvas'].freeze()
                     
+        elif setup_type == "reload":
+            self.drag_position = []  
+            self.setup_type = ""
+            for canvas_reference in self.canvases:
+                canvas_reference['canvas'].freeze()
+                
         # Start the setup by mocking a full screen screen region to place the canvas in
         else:
             main_screen = ui.main_screen()
@@ -430,8 +436,7 @@ class HeadUpScreenOverlay(BaseWidget):
             
             if not self.canvas:
                 self.canvas = canvas.Canvas(self.x, self.y, self.limit_width, self.limit_height)
-                self.canvas.register('draw', self.setup_draw_cycle)
-            
+                self.canvas.register('draw', self.setup_draw_cycle)            
             self.canvas.move(self.x, self.y)
             self.canvas.resume()
             super().start_setup(setup_type, mouse_position)
@@ -472,7 +477,7 @@ class HeadUpScreenOverlay(BaseWidget):
         
         if persisted:
             self.preferences.mark_changed = True
-            actions.user.persist_hud_preferences()
+            self.event_dispatch.request_persist_preferences()
 
     def set_theme(self, theme):
         # Copied over from base widget to reflect the no-canvas state of this widget    
@@ -480,7 +485,7 @@ class HeadUpScreenOverlay(BaseWidget):
         self.load_theme_values()
         if self.enabled:
             if self.canvas:
-                self.canvas.resume()
+                self.canvas.freeze()
             self.animation_tick = self.animation_max_duration if self.show_animations else 0
             for canvas_reference in self.canvases:
                 canvas_reference['canvas'].freeze()

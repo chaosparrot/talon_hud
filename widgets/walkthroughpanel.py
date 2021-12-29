@@ -1,4 +1,4 @@
-from talon import skia, ui, Module, cron, actions, clip
+from talon import skia, ui, cron, actions, clip
 from user.talon_hud.layout_widget import LayoutWidget
 from user.talon_hud.widget_preferences import HeadUpDisplayUserWidgetPreferences
 from user.talon_hud.utils import layout_rich_text, remove_tokens_from_rich_text, linear_gradient, retrieve_available_voice_commands, hex_to_ints, string_to_speakable_string, hit_test_icon
@@ -58,7 +58,7 @@ class HeadUpWalkThroughPanel(LayoutWidget):
     def disable(self, persisted=False):
        self.previous_content_dimensions = None
        self.transition_animation_state = 0
-       actions.user.hud_deactivate_poller('walk_through')       
+       self.event_dispatch.deactivate_poller('walk_through')
        super().disable(persisted)
 
     def refresh(self, new_content):
@@ -77,7 +77,7 @@ class HeadUpWalkThroughPanel(LayoutWidget):
             len(self.voice_commands_available) == len(new_content["walkthrough_said_voice_commands"]):
             if not "skip step" in self.voice_commands_available:
                 cron.cancel(self.step_scheduled)
-                self.step_scheduled = cron.after('1500ms', actions.user.hud_skip_walkthrough_step)
+                self.step_scheduled = cron.after(self.theme.get_int_value("walkthrough_panel_step_delay_ms", 1500) + 'ms', actions.user.hud_skip_walkthrough_step)
 
         super().refresh(new_content)
 
@@ -105,9 +105,9 @@ class HeadUpWalkThroughPanel(LayoutWidget):
             if clicked_icon != None:
                 self.icon_hovered = -1
                 clicked_icon.callback(self)
-            actions.user.hide_context_menu()
+            self.event_dispatch.hide_context_menu()
         elif event.button == 1 and event.event == "mouseup":            
-            actions.user.show_context_menu(self.id, event.gpos.x, event.gpos.y, self.buttons)
+            self.event_dispatch.show_context_menu(self.id, event.gpos, self.buttons)
         
         if icon_hovered != self.icon_hovered:
             self.icon_hovered = icon_hovered

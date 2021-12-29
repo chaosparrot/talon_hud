@@ -56,3 +56,4 @@ screen_overlay_region_horizontal_margin,10
 screen_overlay_region_vertical_margin,2
 focus_indicator_background,DD4500
 focus_indicator_text_colour,FFFFFF
+walkthrough_panel_step_delay_ms,1500

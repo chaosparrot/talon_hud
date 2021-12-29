@@ -173,6 +173,10 @@ settings():
     user.talon_hud_environment = "browser_hud"
 ```
 
+Changing the preferences folder
+---
+You can change the folder in which your HUD preferences are saved by going to the preferences.py file and following the instructions at the top of the file.
+
 Development guidelines
 ----
 

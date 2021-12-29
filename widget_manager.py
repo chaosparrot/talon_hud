@@ -16,6 +16,7 @@ from user.talon_hud.widgets.contextmenu import HeadUpContextMenu
 from user.talon_hud.widgets.cursortracker import HeadUpCursorTracker
 from user.talon_hud.widgets.screenoverlay import HeadUpScreenOverlay
 from user.talon_hud.theme import HeadUpDisplayTheme
+from user.talon_hud.event_dispatch import HeadUpEventDispatch
 
 semantic_directory = os.path.dirname(os.path.abspath(__file__))
 user_preferences_file_dir =  semantic_directory + "/preferences/"
@@ -32,10 +33,11 @@ class HeadUpWidgetManager:
     previous_screen_rects: list[ui.Rect]
     previous_talon_hud_environment = ""
     theme: HeadUpDisplayTheme
+    event_dispatch: HeadUpEventDispatch
     preferences: HeadUpDisplayUserPreferences
     widgets: list[BaseWidget]
     
-    def __init__(self, preferences: HeadUpDisplayUserPreferences, theme: HeadUpDisplayTheme):
+    def __init__(self, preferences: HeadUpDisplayUserPreferences, theme: HeadUpDisplayTheme, event_dispatch: HeadUpEventDispatch):
         self.default_screen_rect = ui.Rect(0, 0, 1920, 1080)
         self.default_screen_mm_size = [527.0, 296.0]
         
@@ -43,6 +45,7 @@ class HeadUpWidgetManager:
         self.previous_screen_rects = []
         self.preferences = preferences
         self.theme = theme
+        self.event_dispatch = event_dispatch
         self.initial_load_preferences()
         self.load_widgets()
         
@@ -55,7 +58,7 @@ class HeadUpWidgetManager:
                     self.default_screen_rect.width, 
                     self.default_screen_rect.height)
                 ]
-            self.reload_preferences(True)
+            self.reload_preferences(True, self.previous_talon_hud_environment)
     
     def load_widgets(self):
         """Load the user defined widgets"""
@@ -99,7 +102,7 @@ class HeadUpWidgetManager:
                 
         self.preferences.load_preferences(user_preferences_screen_file_path)
     
-    def reload_preferences(self, force_reload=False) -> str:        
+    def reload_preferences(self, force_reload=False, current_hud_environment="") -> str:        
         # Check if the screen dimensions have changed
         current_screen_rects = []
         dimensions_changed = force_reload
@@ -116,8 +119,8 @@ class HeadUpWidgetManager:
 
         # Reload the main preferences in case the Talon HUD mode changed
         new_theme = self.preferences.prefs['theme_name']
-        current_hud_environment = settings.get("user.talon_hud_environment")
         if current_hud_environment != None and current_hud_environment != self.previous_talon_hud_environment:
+            self.preferences.set_hud_environment(current_hud_environment)
             self.preferences.load_preferences(self.preferences.get_main_preferences_filename())
             self.previous_talon_hud_environment = current_hud_environment
             new_theme = self.preferences.prefs['theme_name']
@@ -322,41 +325,41 @@ class HeadUpWidgetManager:
             
     def load_status_bar(self, id, preferences=None):
         """Load a status bar widget with the given preferences"""
-        return HeadUpStatusBar(id, preferences, self.theme)
+        return HeadUpStatusBar(id, preferences, self.theme, self.event_dispatch)
 
     def load_event_log(self, id, preferences=None):
         """Load an event log widget with the given preferences"""
-        return HeadUpEventLog(id, preferences, self.theme)
+        return HeadUpEventLog(id, preferences, self.theme, self.event_dispatch)
 
     def load_ability_bar(self, id, preferences=None):
         """Load an ability bar widget with the given preferences"""
-        return HeadUpAbilityBar(id, preferences, self.theme)
+        return HeadUpAbilityBar(id, preferences, self.theme, self.event_dispatch)
         
     def load_context_menu(self, id, preferences=None):
         """Load a context menu widget with the given preferences"""
-        return HeadUpContextMenu(id, preferences, self.theme)
+        return HeadUpContextMenu(id, preferences, self.theme, self.event_dispatch)
         
     def load_cursor_tracker(self, id, preferences=None):
         """Load a cursor tracker widget with the given preferences"""
-        return HeadUpCursorTracker(id, preferences, self.theme)
+        return HeadUpCursorTracker(id, preferences, self.theme, self.event_dispatch)
         
     def load_screen_overlay(self, id, preferences=None):
         """Load a screen overlay widget with the given preferences"""
-        return HeadUpScreenOverlay(id, preferences, self.theme)
+        return HeadUpScreenOverlay(id, preferences, self.theme, self.event_dispatch)
 
     def load_text_panel(self, id, preferences=None, subscriptions=None):
         """Load a text panel widget with the given preferences"""
-        return HeadUpTextPanel(id, preferences, self.theme, subscriptions)
+        return HeadUpTextPanel(id, preferences, self.theme, self.event_dispatch, subscriptions)
         
     def load_documentation_panel(self, id, preferences=None, subscriptions=None):
         """Load a documentation panel widget with the given preferences"""
-        return HeadUpDocumentationPanel(id, preferences, self.theme, subscriptions)
+        return HeadUpDocumentationPanel(id, preferences, self.theme, self.event_dispatch, subscriptions)
         
     def load_choice_panel(self, id, preferences=None, subscriptions=None):
         """Load a choice panel widget with the given preferences"""
-        return HeadUpChoicePanel(id, preferences, self.theme, subscriptions)
+        return HeadUpChoicePanel(id, preferences, self.theme, self.event_dispatch, subscriptions)
         
     def load_walk_through_panel(self, id, preferences=None, subscriptions=None):
         """Load a choice panel widget with the given preferences"""
-        return HeadUpWalkThroughPanel(id, preferences, self.theme, subscriptions)
+        return HeadUpWalkThroughPanel(id, preferences, self.theme, self.event_dispatch, subscriptions)
     

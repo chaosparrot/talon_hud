@@ -1,4 +1,5 @@
 from talon import Context, Module, actions, app, skia, cron, ctrl, scope, canvas, registry, settings, ui
+from talon.types.point import Point2d
 import os
 import time
 import numpy
@@ -6,6 +7,7 @@ import numpy
 from typing import Any
 from user.talon_hud.preferences import HeadUpDisplayUserPreferences
 from user.talon_hud.theme import HeadUpDisplayTheme
+from user.talon_hud.event_dispatch import HeadUpEventDispatch
 from user.talon_hud.widget_manager import HeadUpWidgetManager
 from user.talon_hud.content.state import hud_content
 from user.talon_hud.content.status_bar_poller import StatusBarPoller
@@ -63,6 +65,7 @@ class HeadUpDisplay:
     display_state = None
     preferences = None
     theme = None
+    event_dispatch = None
     pollers = []
     keep_alive_pollers = [] # These pollers will only deactivate when the hud deactivates    
     disable_poller_job = None
@@ -73,6 +76,8 @@ class HeadUpDisplay:
     prev_mouse_pos = None
     mouse_poller = None
     current_talon_hud_environment = ""
+    update_context_debouncer = None
+    update_environment_debouncer = None
     
     def __init__(self, display_state, preferences):
         self.display_state = display_state
@@ -80,8 +85,9 @@ class HeadUpDisplay:
         self.pollers = {}
         self.disable_poller_job = None
         self.theme = HeadUpDisplayTheme(self.preferences.prefs['theme_name'])
+        self.event_dispatch = HeadUpEventDispatch()
         self.show_animations = self.preferences.prefs['show_animations']
-        self.widget_manager = HeadUpWidgetManager(self.preferences, self.theme)
+        self.widget_manager = HeadUpWidgetManager(self.preferences, self.theme, self.event_dispatch)
         
         # These pollers should always be active and available when reloading Talon HUD
         self.pollers = {
@@ -96,7 +102,7 @@ class HeadUpDisplay:
     def start(self):
         # Uncomment the line below to add the single click mic toggle by default
         # actions.user.hud_add_single_click_mic_toggle()
-    
+        
         if (self.preferences.prefs['enabled']):
             self.enable()
             
@@ -106,6 +112,16 @@ class HeadUpDisplay:
     def enable(self, persisted=False):
         if not self.enabled:
             self.enabled = True
+            
+            # Only reset the talon hud environment after a user action
+            if persisted:
+                self.current_talon_hud_environment = settings.get("user.talon_hud_environment")
+            
+            # Connect the events relating to non-content communication
+            self.event_dispatch.register('persist_preferences', self.persist_widgets_preferences)
+            self.event_dispatch.register('hide_context_menu', self.hide_context_menu)
+            self.event_dispatch.register('deactivate_poller', self.deactivate_poller)
+            self.event_dispatch.register('show_context_menu', self.move_context_menu)      
             
             attached_topics = list(self.keep_alive_pollers)
             for widget in self.widget_manager.widgets:
@@ -134,7 +150,10 @@ class HeadUpDisplay:
                 
             # TODO SHOULD PROBABLY FIX THIS FLOW TO MAKE SURE THE CONTENT IS PROPERLY REUSED IN THE WIDGETS INSTEAD
             actions.user.hud_refresh_content()
-            self.update_context()
+            
+            # Make sure context isn't updated in this thread because of automatic reloads
+            cron.cancel(self.update_context_debouncer)
+            self.update_context_debouncer = cron.after("50ms", self.update_context)
 
     def disable(self, persisted=False):
         if self.enabled:
@@ -143,6 +162,12 @@ class HeadUpDisplay:
             for widget in self.widget_manager.widgets:
                 if widget.enabled:
                     widget.disable()
+            
+            # Disconnect the events relating to non-content communication
+            self.event_dispatch.unregister('persist_preferences', self.persist_widgets_preferences)
+            self.event_dispatch.unregister('hide_context_menu', self.hide_context_menu)
+            self.event_dispatch.unregister('deactivate_poller', self.deactivate_poller)
+            self.event_dispatch.unregister('show_context_menu', self.move_context_menu)      
             
             self.disable_poller_job = cron.interval('30ms', self.disable_poller_check)
             self.display_state.unregister('content_update', self.content_update)
@@ -155,10 +180,13 @@ class HeadUpDisplay:
             
             if persisted:
                 self.preferences.persist_preferences({'enabled': False})
-            self.update_context()
+                
+            # Make sure context isn't updated in this thread because of automatic reloads
+            cron.cancel(self.update_context_debouncer)
+            self.update_context_debouncer = cron.after("50ms", self.update_context)
             
     # Persist the preferences of all the widgets
-    def persist_widgets_preferences(self):
+    def persist_widgets_preferences(self, _ = None):
         dict = {}
         for widget in self.widget_manager.widgets:
             if widget.preferences.mark_changed:
@@ -234,7 +262,7 @@ class HeadUpDisplay:
         
     def reload_preferences(self, _= None):
         """Reload user preferences ( in case a monitor switches or something )"""
-        self.widget_manager.reload_preferences()
+        self.widget_manager.reload_preferences(False, self.current_talon_hud_environment)
     
     def register_poller(self, topic: str, poller: Poller, keep_alive: bool):
         self.remove_poller(topic)
@@ -405,7 +433,7 @@ class HeadUpDisplay:
                 widget.set_page_index(widget.page_index - 1)
 
     # Move the context menu over to the given location fitting within the screen
-    def move_context_menu(self, widget_id: str, pos_x: int, pos_y: int, buttons: list[HudButton]):
+    def move_context_menu(self, widget_id: str, pos: Point2d, buttons: list[HudButton]):
         connected_widget = None
         context_menu_widget = None
         for widget in self.widget_manager.widgets:
@@ -414,7 +442,7 @@ class HeadUpDisplay:
             elif widget.id == 'context_menu':      
                 context_menu_widget = widget
         if connected_widget and context_menu_widget:
-            context_menu_widget.connect_widget(connected_widget, pos_x, pos_y, buttons)
+            context_menu_widget.connect_widget(connected_widget, pos.x, pos.y, buttons)
             self.choices_visible = True
             self.update_context()
             
@@ -441,7 +469,7 @@ class HeadUpDisplay:
     
     # Hide the context menu
     # Generally you want to do this when you click outside of the menu itself
-    def hide_context_menu(self):
+    def hide_context_menu(self, _ = None):
         context_menu_widget = None    
         for widget in self.widget_manager.widgets:
             if widget.id == 'context_menu' and widget.enabled:      
@@ -465,6 +493,7 @@ class HeadUpDisplay:
                     self.update_context()
 
     # Updates the context based on the current HUD state
+    # This needs to be done on user actions - Automatic flows need higher scrutiny
     def update_context(self):
         tags = [
             'user.talon_hud_available'
@@ -536,20 +565,26 @@ class HeadUpDisplay:
     def hud_environment_change(self, hud_environment: str):
         if self.current_talon_hud_environment != hud_environment:
             self.current_talon_hud_environment = hud_environment
-            reload_theme = self.widget_manager.reload_preferences(True)
             
-            # Switch the theme and make sure there is no lengthy animation between modes 
-            # as they can happen quite frequently
-            self.switch_theme(reload_theme, True)
+            # Add a debouncer for the environment change to reduce flickering on transitioning
+            cron.cancel(self.update_environment_debouncer)
+            self.update_environment_debouncer = cron.after("200ms", self.debounce_environment_change)
+
+    def debounce_environment_change(self):
+        reload_theme = self.widget_manager.reload_preferences(True, self.current_talon_hud_environment)
+        
+        # Switch the theme and make sure there is no lengthy animation between modes 
+        # as they can happen quite frequently
+        self.switch_theme(reload_theme, True)        
 
 preferences = HeadUpDisplayUserPreferences() 
 hud = HeadUpDisplay(hud_content, preferences)
 
-def hud_enable():
+def hud_start():
     global hud
     hud.start()
 
-app.register('ready', hud_enable)
+app.register('ready', hud_start)
 
 @mod.action_class
 class Actions:
@@ -618,7 +653,7 @@ class Actions:
                 
     def show_context_menu(widget_id: str, pos_x: int, pos_y: int, buttons: list[HudButton]):
         """Show the context menu for a specific widget id"""
-        hud.move_context_menu(widget_id, pos_x, pos_y, buttons)
+        hud.move_context_menu(widget_id, Point2d(pos_x, pos_y), buttons)
         
     def hide_context_menu():
         """Show the context menu for a specific widget id"""

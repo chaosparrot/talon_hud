@@ -1,5 +1,5 @@
 from user.talon_hud.base_widget import BaseWidget
-from talon import skia, ui, Module, cron, actions
+from talon import skia, ui, cron
 import time
 import numpy
 from user.talon_hud.widget_preferences import HeadUpDisplayUserWidgetPreferences

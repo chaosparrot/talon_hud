@@ -1,4 +1,4 @@
-from talon import Context, Module, actions, app, skia, cron, ctrl, scope, canvas, registry, settings, ui
+from talon import skia, cron, ctrl, scope, canvas, ui
 from talon.types import Point2d
 from abc import ABCMeta
 import numpy
@@ -12,6 +12,7 @@ class BaseWidget(metaclass=ABCMeta):
     cleared = True
     enabled = False
     theme = None
+    event_dispatch = None
     preferences = None
     
     mouse_enabled = False
@@ -37,10 +38,11 @@ class BaseWidget(metaclass=ABCMeta):
     setup_vertical_direction = ""
     setup_horizontal_direction = ""
     
-    def __init__(self, id, preferences_dict, theme, subscriptions = None):
+    def __init__(self, id, preferences_dict, theme, event_dispatch, subscriptions = None):
         self.id = id
         self.theme = theme
         self.preferences = copy.copy(self.preferences)
+        self.event_dispatch = event_dispatch
         
         self.load(preferences_dict)
         if subscriptions != None:
@@ -126,7 +128,7 @@ class BaseWidget(metaclass=ABCMeta):
             if persisted:
                 self.preferences.enabled = True
                 self.preferences.mark_changed = True
-                actions.user.persist_hud_preferences()
+                self.event_dispatch.request_persist_preferences()
             self.cleared = False
                         
     def disable(self, persisted=False):
@@ -141,7 +143,7 @@ class BaseWidget(metaclass=ABCMeta):
             if persisted:
                 self.preferences.enabled = False
                 self.preferences.mark_changed = True
-                actions.user.persist_hud_preferences()
+                self.event_dispatch.request_persist_preferences()
                 
             self.cleared = False
             self.start_setup("cancel")
@@ -155,7 +157,7 @@ class BaseWidget(metaclass=ABCMeta):
         
         if persisted:
             self.preferences.mark_changed = True
-            actions.user.persist_hud_preferences()            
+            self.event_dispatch.request_persist_preferences()
             
     # Clear up all the resources after a disabling
     def clear(self):
@@ -222,7 +224,7 @@ class BaseWidget(metaclass=ABCMeta):
         """This is where the mouse events get sent if mouse_enabled is set to True"""
         # Mouse dragging of elements that have mouse enabled
         if event.button == 0:
-            actions.user.hide_context_menu()
+            self.event_dispatch.hide_context_menu()
             if len(self.drag_position) == 0 and event.event == "mousedown":
                 self.drag_position = [event.gpos.x - self.limit_x, event.gpos.y - self.limit_y]
             elif event.event == "mouseup" and len(self.drag_position) > 0:
@@ -292,7 +294,7 @@ class BaseWidget(metaclass=ABCMeta):
             
             self.preferences.mark_changed = True
             self.canvas.resume()
-            actions.user.persist_hud_preferences()
+            self.event_dispatch.request_persist_preferences()
         # Cancel every change
         elif setup_type == "cancel":
             self.drag_position = []        

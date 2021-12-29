@@ -1,4 +1,3 @@
-from talon import skia, ui, Module, cron, actions, clip
 from user.talon_hud.widgets.textpanel import HeadUpTextPanel
 from user.talon_hud.widget_preferences import HeadUpDisplayUserWidgetPreferences
 

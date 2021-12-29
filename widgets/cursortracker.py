@@ -2,11 +2,10 @@ from user.talon_hud.base_widget import BaseWidget
 from user.talon_hud.utils import hit_test_rect
 from user.talon_hud.content.typing import HudScreenRegion
 from user.talon_hud.widget_preferences import HeadUpDisplayUserWidgetPreferences
-from talon import skia, ui, Module, cron, actions, ctrl
+from talon import skia, ui, cron, ctrl
 from talon.types.point import Point2d
 import time
 import numpy
-
 
 class HeadUpCursorTracker(BaseWidget):
 
@@ -165,7 +164,7 @@ class HeadUpCursorTracker(BaseWidget):
             self.setup_type = setup_type
             self.preferences.mark_changed = True
             self.canvas.resume()
-            actions.user.persist_hud_preferences()
+            self.event_dispatch.request_persist_preferences()
         # Cancel every change
         else:
             self.x = pos[0]
