@@ -199,15 +199,21 @@ class HeadUpEventLog(BaseWidget):
                 total_text_height = 0
                 current_line_width = 0
                 line_count = 0
+                current_line_height = 0
                 for line in lines:
                     if line.x == 0:
                         line_count += 1
                         current_line_width = line.width
-                        total_text_height += paint.textsize
+                        current_line_height = line.height
+                        total_text_height += current_line_height                        
                     else:
                         current_line_width += line.width
+                        total_text_height -= current_line_height
+                        current_line_height = max(current_line_height, line.height)
+                        total_text_height += current_line_height
                     total_text_width = max( total_text_width, current_line_width )
-                log_height = vertical_text_padding * ( 2 + line_count ) + total_text_height
+                
+                log_height = vertical_text_padding * 2 + total_text_height
             
                 if self.expand_direction == "down":                    
                     offset = 0 if index == 0 else log_margin + log_height
@@ -270,7 +276,7 @@ class HeadUpEventLog(BaseWidget):
                 opacity_hex = hex(opacity_int)[-2:] if opacity_int > 15 else '0' + hex(opacity_int)[-1:]
                 paint.color = text_colour + opacity_hex
                 
-                line_height = paint.textsize + vertical_text_padding# total_text_height / len(lines)
+                line_height = total_text_height / line_count#paint.textsize# total_text_height / len(lines)b
                 self.draw_rich_text(canvas, paint, lines, text_x, current_y + vertical_text_padding * 2, line_height )
                 
             return continue_drawing
