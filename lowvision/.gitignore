@@ -1,0 +1,8 @@
+.DS_Store
+.AppleDouble
+.LSOverride
+!index.html
+!sound.py
+*.wav
+*.txt
+!command_mode.wav
