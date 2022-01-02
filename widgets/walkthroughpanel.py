@@ -77,7 +77,7 @@ class HeadUpWalkThroughPanel(LayoutWidget):
             len(self.voice_commands_available) == len(new_content["walkthrough_said_voice_commands"]):
             if not "skip step" in self.voice_commands_available:
                 cron.cancel(self.step_scheduled)
-                self.step_scheduled = cron.after(self.theme.get_int_value("walkthrough_panel_step_delay_ms", 1500) + 'ms', actions.user.hud_skip_walkthrough_step)
+                self.step_scheduled = cron.after(str(self.theme.get_int_value("walkthrough_panel_step_delay_ms", 1500)) + 'ms', actions.user.hud_skip_walkthrough_step)
 
         super().refresh(new_content)
 
