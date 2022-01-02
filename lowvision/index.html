@@ -2,7 +2,7 @@
 <head>
     <script type="text/javascript">
 	    first_element = "Event log"
-	    document.title = [first_element, "Talon HUD"].join(" | ");
+	    document.title = [first_element, "Talon HUD narrator"].join(" | ");
 	</script>
 	<title>Talon HUD</title>
 </head>
@@ -42,18 +42,34 @@
 		</section>
 	</main>
 
-    <div aria-label="Announcements" role="region">
+    <!-- TODO - If we want to do anything with real time interaction, we will have to either add voice commands
+	Or a way to do proper communication like with a server? -->
+	<div id="live-region-container" aria-label="Announcements" role="region">
         <div id="live-region" style="font-size: 0px;" aria-live="polite"></div>	
 	</div>
 	
 	<script type="text/javascript">	
 	    var addTitleElement = function(titleElement) {
-		    document.title = titleElement + " | Talon HUD";
+		    document.title = titleElement + " | Talon HUD narrator";
 		}
 		
-	    setTimeout(function() {
-			document.getElementById("live-region").innerHTML = "MODE CHANGED";
-		}, 1000);
+		<!-- Currently we are abusing the paste bin to do direct messaging when in the HUD, -->
+		<!-- When we get a proper interface this is the first thing to go lmao -->
+		window.addEventListener('paste', function (event) {
+		    var pasteData = (event.clipboardData || window.clipboardData).getData('text');
+			event.preventDefault();
+						
+			var liveRegionContainer = document.getElementById("live-region-container");
+			liveRegionContainer.style.display = "block";
+
+			var liveRegion = document.getElementById("live-region");
+			liveRegion.innerHTML = pasteData;
+			
+			window.setTimeout(function() {
+				var liveRegion = document.getElementById("live-region");
+				liveRegion.innerHTML = "";			
+			}, 2000);
+		});
 	</script>
 </body>
 </html>
