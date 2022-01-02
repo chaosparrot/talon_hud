@@ -3,6 +3,6 @@
 .LSOverride
 !index.html
 !sound.py
-*.wav
+assets/*.wav
 *.txt
-!command_mode.wav
+!assets/command_mode.wav

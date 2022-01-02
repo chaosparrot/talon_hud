@@ -20,6 +20,8 @@ class HeadUpDisplayUserPreferences:
         'show_animations': True,
         'enabled': False,
         'theme_name': 'light',
+        'audio_enabled': False,
+        'audio_cue_volume': '75'
     }
     
     prefs = {}
@@ -27,7 +29,7 @@ class HeadUpDisplayUserPreferences:
         "_limit_x", "_limit_y", "_limit_width", "_limit_height",
         "_font_size", "_alignment", "_expand_direction")
     
-    boolean_keys = ['enabled', 'show_animations']
+    boolean_keys = ['enabled', 'show_animations', 'audio_enabled']
     hud_environment = ""
     
     def __init__(self, hud_environment = ""):

@@ -84,3 +84,12 @@ class HudWalkThroughStep:
 class HudWalkThrough:
     title: str
     steps: list[HudWalkThroughStep]
+    
+@dataclass
+class HudAudioCue:
+    id: str
+    title: str
+    description: str
+    file: str
+    volume: int = 75
+    enabled: bool = False

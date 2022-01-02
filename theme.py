@@ -9,6 +9,7 @@ class HeadUpDisplayTheme:
 
     name = ''
     image_dict = {}
+    audio_dict = {}
     values = {}
 
     def __init__(self, theme_name):
@@ -30,7 +31,11 @@ class HeadUpDisplayTheme:
         for index, filename in enumerate(files):
             if (filename.endswith(".png")):
                 filename_len = len(filename)
-                self.image_dict[filename[:filename_len - 4]] = skia.Image.from_file(theme_dir + "/" + filename)                
+                self.image_dict[filename[:filename_len - 4]] = skia.Image.from_file(os.path.join(theme_dir, filename))
+            elif (filename.endswith(".wav")):
+                filename_len = len(filename)
+                self.audio_dict[filename[:filename_len - 4]] = os.path.join(theme_dir, filename)
+                
 
     def get_image(self, image_name, width = None, height = None):
         full_image_name = image_name
@@ -61,6 +66,12 @@ class HeadUpDisplayTheme:
                     else:
                         return self.image_dict[image_name]
             return None
+
+    def get_audio_path(self, filename, default=""):
+        if filename in self.audio_dict:
+            return self.audio_dict[filename]
+        else:
+            return default
 
     def resize_image(self, image, width, height):
         aspect_ratio = image.width / image.height

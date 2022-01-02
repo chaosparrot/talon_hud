@@ -4,11 +4,12 @@ import os
 import time
 import numpy
 
-from typing import Any
+from typing import Any, Union
 from user.talon_hud.preferences import HeadUpDisplayUserPreferences
 from user.talon_hud.theme import HeadUpDisplayTheme
 from user.talon_hud.event_dispatch import HeadUpEventDispatch
 from user.talon_hud.widget_manager import HeadUpWidgetManager
+from user.talon_hud.lowvision.audio_manager import HeadUpAudioManager
 from user.talon_hud.content.state import hud_content
 from user.talon_hud.content.status_bar_poller import StatusBarPoller
 from user.talon_hud.content.history_poller import HistoryPoller
@@ -27,14 +28,24 @@ digits = "zero one two three four five six seven eight nine".split()
 teens = "ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen".split()
 tens = "twenty thirty forty fifty sixty seventy eighty ninety".split()
 digits_without_zero = digits[1:]
+numerical_choice_index_map = {}
 numerical_choice_strings = []
 numerical_choice_strings.extend(digits_without_zero)
 numerical_choice_strings.extend(teens)
+for digit_index, digit in enumerate(digits):
+    numerical_choice_index_map[digit] = digit_index
+for digit_index, digit_plus_ten in enumerate(teens):
+    numerical_choice_index_map[digit_plus_ten] = digit_index + 10
+
 for index, ten in enumerate(tens):
     numerical_choice_strings.append(ten)
-    for digit in digits_without_zero:
+    numerical_choice_index_map[ten] = (index + 1) * 10 + 10
+    for digit_index, digit in enumerate(digits_without_zero):
        numerical_choice_strings.append(ten + " " + digit)
-numerical_choice_strings.append("hundred")
+       numerical_choice_index_map[ten + " " + digit] = ( index + 1 ) * 10 + digit_index + 1
+    
+numerical_choice_strings.append("one hundred")
+numerical_choice_index_map["one hundred"] = 100
 
 ctx = Context()
 mod = Module()
@@ -44,6 +55,7 @@ mod.list("talon_hud_choices", desc="Available choices shown on screen")
 mod.list("talon_hud_themes", desc="Available themes for the Talon HUD")
 mod.list("talon_hud_numerical_choices", desc="Available choices shown on screen numbered")
 mod.list("talon_hud_quick_choices", desc="List of widgets with their quick options")
+mod.list("talon_hud_volume_number", desc="List of numbers available to select for volume changing")
 mod.tag("talon_hud_available", desc="Tag that shows the availability of the Talon HUD repository for other scripts")
 mod.tag("talon_hud_visible", desc="Tag that shows that the Talon HUD is visible")
 mod.tag("talon_hud_choices_visible", desc="Tag that shows there are choices available on screen that can be chosen")
@@ -51,6 +63,7 @@ mod.setting("talon_hud_environment", type="string", desc="Which environment to s
 
 ctx.tags = ['user.talon_hud_available']
 ctx.settings['user.talon_hud_environment'] = ""
+ctx.lists['user.talon_hud_volume_number'] = numerical_choice_index_map.keys()
 
 # A list of Talon HUD versions that can be used to check for in other packages
 TALON_HUD_RELEASE_030 = 3 # Walk through version
@@ -66,11 +79,11 @@ class HeadUpDisplay:
     preferences = None
     theme = None
     event_dispatch = None
+    audio_manager = None    
     pollers = []
     keep_alive_pollers = [] # These pollers will only deactivate when the hud deactivates    
     disable_poller_job = None
     show_animations = False
-    widgets = []
     choices_visible = False
     
     prev_mouse_pos = None
@@ -88,6 +101,7 @@ class HeadUpDisplay:
         self.event_dispatch = HeadUpEventDispatch()
         self.show_animations = self.preferences.prefs['show_animations']
         self.widget_manager = HeadUpWidgetManager(self.preferences, self.theme, self.event_dispatch)
+        self.audio_manager = HeadUpAudioManager(self.preferences, self.theme)
         
         # These pollers should always be active and available when reloading Talon HUD
         self.pollers = {
@@ -105,14 +119,16 @@ class HeadUpDisplay:
         
         if (self.preferences.prefs['enabled']):
             self.enable()
-            
+            if self.preferences.prefs['audio_enabled']:
+                self.audio_manager.enable()
+                
             if actions.sound.active_microphone() == "None":
                 actions.user.hud_add_log("warning", "Microphone is set to 'None'!\n\nNo voice commands will be registered.")
     
     def enable(self, persisted=False):
         if not self.enabled:
             self.enabled = True
-            
+                        
             # Only reset the talon hud environment after a user action
             if persisted:
                 self.current_talon_hud_environment = settings.get("user.talon_hud_environment")
@@ -137,7 +153,7 @@ class HeadUpDisplay:
             # Reload the preferences just in case a screen change happened in between the hidden state
             if persisted:
                 self.reload_preferences()
-            
+
             self.display_state.register('content_update', self.content_update)
             self.display_state.register('panel_update', self.panel_update)            
             self.display_state.register('log_update', self.log_update)
@@ -154,10 +170,14 @@ class HeadUpDisplay:
             # Make sure context isn't updated in this thread because of automatic reloads
             cron.cancel(self.update_context_debouncer)
             self.update_context_debouncer = cron.after("50ms", self.update_context)
+            
+            if self.preferences.prefs['audio_enabled']:
+                self.audio_manager.enable()            
 
     def disable(self, persisted=False):
         if self.enabled:
-            self.enabled = False
+            self.enabled = False            
+            self.audio_manager.disable()
             
             for widget in self.widget_manager.widgets:
                 if widget.enabled:
@@ -263,6 +283,7 @@ class HeadUpDisplay:
     def reload_preferences(self, _= None):
         """Reload user preferences ( in case a monitor switches or something )"""
         self.widget_manager.reload_preferences(False, self.current_talon_hud_environment)
+        #self.audio_manager.reload_preferences()
     
     def register_poller(self, topic: str, poller: Poller, keep_alive: bool):
         self.remove_poller(topic)
@@ -575,7 +596,24 @@ class HeadUpDisplay:
         
         # Switch the theme and make sure there is no lengthy animation between modes 
         # as they can happen quite frequently
-        self.switch_theme(reload_theme, True)        
+        self.switch_theme(reload_theme, True)
+        
+        
+    # ---------- AUDIO RELATED ACTIONS ---------- #
+    def audio_enable(self, id = None):
+        if not id:
+            self.audio_manager.enable(True)
+        else:
+            self.audio_manager.enable_id(id, True)
+        
+    def audio_disable(self, id = None):
+        if not id:
+            self.audio_manager.disable(True)
+        else:
+            self.audio_manager.disable_id(id)
+        
+    def audio_set_volume(self, volume, id = None):
+        self.audio_manager.set_volume(volume, True, id)
 
 preferences = HeadUpDisplayUserPreferences() 
 hud = HeadUpDisplay(hud_content, preferences)
@@ -714,3 +752,35 @@ class Actions:
         """Get the current theme object from the HUD"""
         global hud
         return hud.theme
+        
+    def hud_audio_enable():
+        """Enables the audio cues from the HUD"""
+        global hud
+        hud.audio_enable()
+        
+    def hud_audio_disable():
+        """Disables the audio cues from the HUD"""
+        global hud
+        hud.audio_disable()
+        
+    def hud_audio_set_volume(volume_key: str):
+        """Set the global volume of the HUD"""
+        global hud
+        global numerical_choice_index_map
+        hud.audio_set_volume(numerical_choice_index_map[volume_key], True)
+
+    def hud_audio_enable_id(id: str, trigger_automatically:Union[bool, int] = True):
+        """Enables a specific audio cue from the HUD"""
+        global hud
+        hud.audio_enable(id, trigger_automatically)
+        
+    def hud_audio_disable_id(id: str):
+        """Disables a specific audio cue from the HUD"""
+        global hud
+        hud.audio_disable(id)
+        
+    def hud_audio_set_volume_id(volume_key: str, id: str, trigger_automatically:Union[bool, int] = True):
+        """Set the volume of a specific audio cue in the HUD"""
+        global hud
+        global numerical_choice_index_map
+        hud.audio_set_volume(numerical_choice_index_map[volume_key], trigger_automatically, id)
