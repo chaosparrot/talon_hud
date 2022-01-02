@@ -1,7 +1,18 @@
-from typing import Dict
+from dataclasses import dataclass
+from typing import Callable, Dict, TypeVar
+
+T = TypeVar('T')
+
+@dataclass
+class ExtraPreference:
+    name: str
+    serializer: Callable[[T], str]
+    deserializer: Callable[[str], T]
 
 # Class for saving the user preferences of a specific widget
 class HeadUpDisplayUserWidgetPreferences:
+    extra_preferences: list[ExtraPreference] = []
+
     # Internal, non-persisting flag to set this preference as changed for easy change detection
     mark_changed = False
         
@@ -46,7 +57,7 @@ class HeadUpDisplayUserWidgetPreferences:
     # Initialize is purposefully kept completely optional to allow the widgets to taylor their defaults
     def __init__(self, type: str = "", enabled: bool = False, sleep_enabled: bool = False, show_animations: bool = True,
         x: int = 0, y: int = 0, width: int = 0, height:int = 0, limit_x: int = -1, limit_y: int = -1, limit_width: int = 0, limit_height:int = 0, 
-        font_size: int = 24, alignment: str = "left", expand_direction:str = "down", minimized: bool = False):
+        font_size: int = 24, alignment: str = "left", expand_direction:str = "down", minimized: bool = False, **kwargs):
         
         self.type = type
         self.enabled = enabled
@@ -66,6 +77,9 @@ class HeadUpDisplayUserWidgetPreferences:
         self.alignment = alignment
         self.expand_direction = expand_direction
         self.minimized = minimized
+        
+        for key, value in kwargs.items():
+            setattr(self, key, value)
     
     # Exports the widgets preferences as a dict useful for persisting
     def export(self, id:str) -> Dict[str, str]:
@@ -87,7 +101,11 @@ class HeadUpDisplayUserWidgetPreferences:
         dict[id + '_alignment'] = self.alignment
         dict[id + '_expand_direction'] = self.expand_direction
         dict[id + '_minimized'] = "1" if self.minimized else "0"
-        
+
+        for extra_preference in self.extra_preferences:
+            value = getattr(self, extra_preference.name)
+            dict[f"{id}_{extra_preference.name}"] = extra_preference.serializer(value)
+         
         return dict
         
     # Load the widgets preferences from a persisted format
@@ -129,3 +147,11 @@ class HeadUpDisplayUserWidgetPreferences:
             self.expand_direction = persisted_dict[id + "_expand_direction"]
         if (id + "_minimized") in persisted_dict:
             self.minimized = int(persisted_dict[id + "_minimized"]) > 0
+
+        for extra_preference in self.extra_preferences:
+            try:
+                raw_value = persisted_dict[f"{id}_{extra_preference.name}"]
+                value = extra_preference.deserializer(raw_value)
+                setattr(self, extra_preference.name, value)
+            except KeyError:
+                pass

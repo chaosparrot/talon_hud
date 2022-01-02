@@ -2,8 +2,11 @@ from user.talon_hud.base_widget import BaseWidget
 from talon import skia, ui, cron
 import time
 import numpy
-from user.talon_hud.widget_preferences import HeadUpDisplayUserWidgetPreferences
+from user.talon_hud.widget_preferences import HeadUpDisplayUserWidgetPreferences, ExtraPreference
 from user.talon_hud.utils import layout_rich_text
+
+class HeadUpEventLogPreferences(HeadUpDisplayUserWidgetPreferences):
+    extra_preferences = [ExtraPreference("ttl_duration_seconds", str, int)]
 
 class HeadUpEventLog(BaseWidget):
 
@@ -21,7 +24,7 @@ class HeadUpEventLog(BaseWidget):
     # Which means more screen real estate is on the left and top which is why we want the alignment to the right and the expand direction to go up
     # Also assume the logs should be read chronologically from top to bottom, 
     # Which means new messages push old messages up if they haven't disappeared yet
-    preferences = HeadUpDisplayUserWidgetPreferences(type="event_log", x=1430, y=720, width=450, height=200, enabled=True, alignment="right", expand_direction="up", font_size=18)
+    preferences = HeadUpEventLogPreferences(type="event_log", x=1430, y=720, width=450, height=200, enabled=True, alignment="right", expand_direction="up", font_size=18, ttl_duration_seconds=9)
 
     # TODO - For the downward direction we need to pop earlier messages if the height is exceeded to make room for newer logs
 
@@ -38,10 +41,10 @@ class HeadUpEventLog(BaseWidget):
     
     infinite_ttl = 1000000 # One million seconds is effectively eternal from a UX perspective, as it takes 12 days
     
-    def load_theme_values(self):
+    def load_extra_preferences(self):
         # Set and reset TTL on theme change
         previous_duration = self.ttl_duration_seconds
-        self.ttl_duration_seconds = self.theme.get_float_value('event_log_ttl_duration_seconds', 9)
+        self.ttl_duration_seconds = self.preferences.ttl_duration_seconds
         self.ttl_duration_seconds = self.ttl_duration_seconds if self.ttl_duration_seconds != -1 else self.infinite_ttl
         for visual_log in self.visual_logs:
             visual_log['ttl'] = visual_log['ttl'] - previous_duration + self.ttl_duration_seconds

@@ -68,6 +68,8 @@ class BaseWidget(metaclass=ABCMeta):
         self.expand_direction = self.preferences.expand_direction
         self.minimized = self.preferences.minimized
         
+        self.load_extra_preferences()
+        
         # For re-enabling or disabling widgets after a reload ( mostly for talon hud environment changes )
         if update_enabled:
             if self.enabled != self.preferences.enabled:
@@ -75,6 +77,12 @@ class BaseWidget(metaclass=ABCMeta):
 
         if initialize:
             self.load_theme_values()        
+    
+    def load_extra_preferences(self):
+        """
+        To be overridden by derived types to load widget-specific preferences
+        """
+        pass
     
     # Set the topic that has claimed this widget
     def set_topic(self, topic:str):
