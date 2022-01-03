@@ -3,7 +3,7 @@ from user.talon_hud.content.typing import HudAudioCue
 from user.talon_hud.theme import HeadUpDisplayTheme
 from user.talon_hud.preferences import HeadUpDisplayUserPreferences
 import os
-from ._wav import play_wav
+from ._wav import play_wav, clear_audio
 
 default_audio_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "assets")
 
@@ -38,6 +38,7 @@ class HeadUpAudioManager:
 
     def disable(self, persisted=False):
         self.enabled = False
+        clear_audio()
         if persisted:
             self.preferences.persist_preferences({'audio_enabled': "0"})
 

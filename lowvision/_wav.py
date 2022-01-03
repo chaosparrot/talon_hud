@@ -67,12 +67,21 @@ class _Player:
         with self.lock:
             self.buffer += samples
             
+    def clear(self):
+        with self.lock:
+            self.buffer = []
+            
 # Cache to avoid repeated, slow disk I/O
 @functools.lru_cache(maxsize=32)
 def load_wav(path, volume=1):
     return _WavSource(path, volume)
 
 _players = {}
+
+def clear_audio():
+    player_key = (44100, 1)
+    player = _players.get(player_key)
+    player.clear()
 
 def play_wav(path, volume=1):
     global _players
