@@ -34,4 +34,9 @@ class HistoryPoller(Poller):
             time_ms += meta["audio_ms"] if "audio_ms" in meta else 0
             model = meta["desc"] if "desc" in meta else "-"
         
-        actions.user.hud_add_phrase(command, timestamp, float(time_ms), model, mic)        
+        actions.user.hud_add_phrase(command, timestamp, float(time_ms), model, mic)
+
+def on_ready():
+    actions.user.hud_register_audio_cue('Command recognized', "Triggers whenever talon recognizes a command", "command_recognized", False)
+
+app.register('ready', on_ready)

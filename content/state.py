@@ -2,7 +2,7 @@ from talon import actions, cron, scope, Module, ui
 from talon.types.point import Point2d
 from talon_init import TALON_USER
 from talon.scripting import Dispatch
-from user.talon_hud.content.typing import HudPanelContent, HudButton, HudChoice, HudChoices, HudScreenRegion
+from user.talon_hud.content.typing import HudPanelContent, HudButton, HudChoice, HudChoices, HudScreenRegion, HudAudioCue
 import time
 from typing import Callable, Any, Union
 import os
@@ -37,7 +37,7 @@ class HeadUpDisplayContent(Dispatch):
         },
         "screen_regions": {
            "cursor": []
-        }
+        },
     }
     
     # Publish content meant for text boxes and other panels
@@ -62,7 +62,16 @@ class HeadUpDisplayContent(Dispatch):
         
         if updated:
             self.dispatch("content_update", self.content)
+
+    def register_cue(self, cue: HudAudioCue):
+        self.dispatch("register_audio_cue", cue)
             
+    def unregister_cue(self, cue_id):
+        self.dispatch("unregister_audio_cue", cue_id)
+        
+    def trigger_audio_cue(self, cue_title):
+        cue_id = cue_title.lower().replace(" ", "_")    
+        self.dispatch("trigger_audio_cue", cue_id)        
             
     # Update a specific list in the content and make sure they are unique
     def add_to_set(self, content_key, dict):
@@ -332,8 +341,21 @@ class Actions:
         content = HudPanelContent("choice", title, [content], [], time.time(), True, choices)
         global hud_content
         hud_content.publish(content)
-                
-    def show_test_choices():
-        """Show a bunch of test buttons to choose from"""
-        choices = actions.user.hud_create_choices([{"text": "Testing", "image": "next_icon"},{"text": "Another choice"},{"text": "Some other choice"},{"text": "Maybe pick this"},], print)
-        actions.user.hud_publish_choices(choices)
+        
+    def hud_register_audio_cue(title: str, description: str, file: str, enabled: Union[bool, int] = True):
+        """Register an audio cue which may be triggered by a poller"""
+        cue_id = title.lower().replace(" ", "_")
+        global hud_content        
+        hud_content.register_cue(HudAudioCue(cue_id, title, description, file, 75, enabled > 0))
+        
+    def hud_unregister_audio_cue(title: str):
+        """Register an audio cue which may be triggered by a poller"""
+        cue_id = title.lower().replace(" ", "_")
+        global hud_content
+        hud_content.unregister_cue(cue_id)
+        
+    def hud_trigger_audio_cue(title: str):
+        """Trigger an audio cue if it exists and if it is enabled"""
+        cue_id = title.lower().replace(" ", "_")
+        global hud_content
+        hud_content.trigger_audio_cue(cue_id)

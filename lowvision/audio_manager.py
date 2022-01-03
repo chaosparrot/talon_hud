@@ -57,10 +57,10 @@ class HeadUpAudioManager:
         audio_cue_enabled_name = "audio_cue_" + cue.id + "_enabled"
         
         if audio_cue_volume_name in self.preferences.prefs:
-            cue.volume = min(max(0, int(self.preferences.prefs[audio_cue_volume_name]), 100))
+            cue.volume = min(max(0, int(self.preferences.prefs[audio_cue_volume_name])), 100)
         if audio_cue_enabled_name in self.preferences.prefs:
             cue.enabled = int(self.preferences.prefs[audio_cue_enabled_name]) > 0
-    
+
     def persist_preferences(self):
         dict = {
             "audio_cue_volume": str(self.global_cue_volume),
@@ -87,7 +87,7 @@ class HeadUpAudioManager:
             self.preferences.persist_preferences({"audio_cue_" + id + "_enabled": "0"})
 
     def set_volume(self, cue_volume, trigger=False, id=None):
-        if id:        
+        if not id:        
             self.global_cue_volume = min(max(0,cue_volume), 100)
             self.preferences.persist_preferences({"audio_cue_volume": str(self.global_cue_volume)})
             if trigger:
@@ -101,10 +101,10 @@ class HeadUpAudioManager:
 
     def register_cue(self, cue: HudAudioCue):
         self.load_cue_preferences(cue)
-        self.cue[cue.id] = cue
+        self.cues[cue.id] = cue
                 
     def unregister_cue(self, cue: HudAudioCue):
-        del self.cue[cue.id]
+        del self.cues[cue.id]
 
     def get_cue_path(self, cue: HudAudioCue):
         return self.theme.get_audio_path(cue.file, os.path.join(default_audio_path, cue.file + ".wav"))

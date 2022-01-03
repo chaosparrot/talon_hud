@@ -7,6 +7,7 @@ from user.talon_hud.content.state import hud_content
 class StatusBarPoller(Poller):
     job = None
     current_lang_forced = False
+    previous_mode = "command"
     
     def enable(self):
         if (self.job is None):
@@ -17,6 +18,11 @@ class StatusBarPoller(Poller):
         self.job = None
 
     def state_check(self):
+        mode = self.determine_mode()
+        if mode != self.previous_mode:
+            hud_content.trigger_audio_cue('Mode change ' + mode)
+            self.previous_mode = mode
+    
         content = {
             'mode': self.determine_mode(),
             'language': self.determine_language(),
@@ -90,3 +96,10 @@ class StatusBarPoller(Poller):
             return self.language_to_ext[language]
         else:
             ''
+            
+def on_ready():
+    actions.user.hud_register_audio_cue('Mode change sleep', "Triggers whenever talon enters sleep mode", "sleep_mode")
+    actions.user.hud_register_audio_cue('Mode change command', "Triggers whenever talon enters command mode", "command_mode")
+    actions.user.hud_register_audio_cue('Mode change dictation', "Triggers whenever talon enters dictation mode", "pen")        
+    
+app.register('ready', on_ready)
