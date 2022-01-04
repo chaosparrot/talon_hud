@@ -1,0 +1,5 @@
+.DS_Store
+.AppleDouble
+.LSOverride
+audio/*.wav
+!audio/command_mode.wav

@@ -84,6 +84,7 @@ class HeadUpDisplay:
     audio_manager = None    
     pollers = []
     keep_alive_pollers = [] # These pollers will only deactivate when the hud deactivates    
+    custom_themes = {}
     disable_poller_job = None
     show_animations = False
     choices_visible = False
@@ -268,9 +269,16 @@ class HeadUpDisplay:
                 widget.set_preference(property, value, persisted)
         self.determine_active_setup_mouse()
 
-    def switch_theme(self, theme_name, disable_animation = False):
-        if (self.theme.name != theme_name):
-            self.theme = HeadUpDisplayTheme(theme_name)
+    def add_theme(self, theme_name, theme_dir):
+        if os.path.exists(theme_dir):
+            self.custom_themes[theme_name] = theme_dir
+        else:
+            app.notify("Invalid directory for '" + theme_name + "': " + theme_dir)
+
+    def switch_theme(self, theme_name, disable_animation = False, forced = False):
+        if self.theme.name != theme_name or forced:
+            theme_dir = self.custom_themes[theme_name] if theme_name in self.custom_themes else None
+            self.theme = HeadUpDisplayTheme(theme_name, theme_dir)
             for widget in self.widget_manager.widgets:
                 if disable_animation:
                     show_animations = widget.show_animations
@@ -538,7 +546,10 @@ class HeadUpDisplay:
         themes_directory = os.path.dirname(os.path.abspath(__file__)) + "/themes"
         themes_list = os.listdir(themes_directory)
         for theme in themes_list:
-            themes[string_to_speakable_string(theme)] = theme
+            if theme != "_base_theme":
+                themes[string_to_speakable_string(theme)] = theme
+        for custom_theme_name in self.custom_themes:
+            themes[string_to_speakable_string(custom_theme_name)] = custom_theme_name
         
         for widget in self.widget_manager.widgets:
             current_widget_names = [string_to_speakable_string(widget.id)]        
@@ -650,7 +661,7 @@ preferences = HeadUpDisplayUserPreferences()
 hud = HeadUpDisplay(hud_content, preferences)
 
 def hud_start():
-    global hud
+    global hud    
     hud.start()
 
 app.register('ready', hud_start)
@@ -783,6 +794,11 @@ class Actions:
         """Get the current theme object from the HUD"""
         global hud
         return hud.theme
+        
+    def hud_register_theme(theme_name: str, theme_dir: str):
+        """Add a theme directory from outside of the HUD to the possible themes"""
+        global hud
+        hud.add_theme(theme_name, theme_dir)
         
     def hud_audio_enable():
         """Enables the audio cues from the HUD"""
