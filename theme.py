@@ -12,18 +12,29 @@ class HeadUpDisplayTheme:
     image_dict = {}
     audio_dict = {}
     values = {}
+    theme_dir = ''
 
     def __init__(self, theme_name, theme_dir=None):
         self.name = theme_name
-        base_theme_dir = semantic_directory + "/themes/_base_theme"
+        base_theme_dir = os.path.join(os.path.join(semantic_directory, "themes"), "_base_theme")
         if theme_dir is None:
-            theme_dir = semantic_directory + "/themes/" + theme_name
+            theme_dir = os.path.join(os.path.join(semantic_directory, "themes"), theme_name)
+        self.theme_dir = theme_dir
         
-        # Cascade the themes by first loading in the base theme
+        # Cascade the theme values by first loading in the base theme
         self.load_dir(base_theme_dir)
         
         # Here, override the base theme values
         self.load_dir(theme_dir)
+    
+    # Get a list of the directories to watch for changes
+    def get_watch_directories(self) -> list[str]:
+        base_dir = os.path.join(os.path.join(semantic_directory, "themes"), "_base_theme")
+        directories = [base_dir]        
+        if self.theme_dir != base_dir:
+            directories.append(self.theme_dir)
+        
+        return directories
                 
     def load_dir(self, theme_dir):
         theme_config_file = theme_dir + "/theme.csv"

@@ -1,4 +1,4 @@
-from talon import Context, Module, actions, app, skia, cron, ctrl, scope, canvas, registry, settings, ui
+from talon import Context, Module, actions, app, skia, cron, ctrl, scope, canvas, registry, settings, ui, fs
 from talon.types.point import Point2d
 import os
 import time
@@ -95,6 +95,8 @@ class HeadUpDisplay:
     update_context_debouncer = None
     update_cue_context_debouncer = None
     update_environment_debouncer = None
+    
+    watching_theme_directories = False
     
     def __init__(self, display_state, preferences):
         self.display_state = display_state
@@ -277,6 +279,10 @@ class HeadUpDisplay:
 
     def switch_theme(self, theme_name, disable_animation = False, forced = False):
         if self.theme.name != theme_name or forced:
+            should_reset_watch = self.watching_theme_directories
+            if should_reset_watch:
+                self.unwatch_theme()
+            
             theme_dir = self.custom_themes[theme_name] if theme_name in self.custom_themes else None
             self.theme = HeadUpDisplayTheme(theme_name, theme_dir)
             for widget in self.widget_manager.widgets:
@@ -287,8 +293,31 @@ class HeadUpDisplay:
                     widget.show_animations = show_animations
                 else:
                     widget.set_theme(self.theme)
+                    
+            if should_reset_watch:
+                self.watch_theme()
             
             self.preferences.persist_preferences({'theme_name': theme_name})
+
+    def reload_theme(self, name=None, flags=None):
+        self.theme = HeadUpDisplayTheme(self.theme.name, self.theme.theme_dir)
+        for widget in self.widget_manager.widgets:
+            show_animations = widget.show_animations
+            widget.show_animations = False
+            widget.set_theme(self.theme)
+            widget.show_animations = show_animations
+
+    def watch_theme(self):
+        directories = self.theme.get_watch_directories()
+        for directory in directories:
+            fs.watch(directory, self.reload_theme)
+        self.watching_theme_directories = True
+        
+    def unwatch_theme(self):
+        directories = self.theme.get_watch_directories()
+        for directory in directories:
+            fs.unwatch(directory, self.reload_theme)    
+        self.watching_theme_directories = False
 
     def start_setup_id(self, id, setup_type, mouse_pos = None):
         for widget in self.widget_manager.widgets:
@@ -799,6 +828,16 @@ class Actions:
         """Add a theme directory from outside of the HUD to the possible themes"""
         global hud
         hud.add_theme(theme_name, theme_dir)
+        
+    def hud_watch_theme():
+        """Watch the theme directories for changes"""
+        global hud
+        hud.watch_theme()
+        
+    def hud_unwatch_theme():
+        """Stop watching for changes in the theme directories"""
+        global hud
+        hud.unwatch_theme()
         
     def hud_audio_enable():
         """Enables the audio cues from the HUD"""
