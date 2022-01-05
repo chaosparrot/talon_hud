@@ -85,7 +85,10 @@ class LayoutWidget(BaseWidget):
             self.drag_position = []  
             self.setup_type = ""
             if self.canvas:
-                self.canvas.rect = ui.Rect(self.limit_x, self.limit_y, self.limit_width, self.limit_height)
+                # Only do a rect change if it has actually changed to prevent costly operations
+                if self.canvas.rect.x != self.limit_x or self.canvas.rect.y != self.limit_y or \
+                    self.canvas.rect.width != self.limit_width or self.canvas.rect.height != self.limit_height:
+                    self.canvas.rect = ui.Rect(self.limit_x, self.limit_y, self.limit_width, self.limit_height)
                 self.canvas.resume()
         else:
             super().start_setup(setup_type, mouse_position)

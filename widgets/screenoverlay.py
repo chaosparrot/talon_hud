@@ -430,7 +430,7 @@ class HeadUpScreenOverlay(BaseWidget):
             region = HudScreenRegion('setup', 'Setup mode text', 'command_icon', 'DD4500', main_screen.rect, \
                 Point2d(main_screen.rect.x, main_screen.rect.y))
             region.vertical_centered = True
-            canvas_rect = self.align_region_canvas_rect(region)        
+            canvas_rect = self.align_region_canvas_rect(region)
             self.x = canvas_rect.x
             self.y = canvas_rect.y
             

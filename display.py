@@ -92,6 +92,8 @@ class HeadUpDisplay:
     prev_mouse_pos = None
     mouse_poller = None
     current_talon_hud_environment = ""
+    
+    update_preferences_debouncer = None
     update_context_debouncer = None
     update_cue_context_debouncer = None
     update_environment_debouncer = None
@@ -143,7 +145,7 @@ class HeadUpDisplay:
                 self.current_talon_hud_environment = settings.get("user.talon_hud_environment")
             
             # Connect the events relating to non-content communication
-            self.event_dispatch.register('persist_preferences', self.persist_widgets_preferences)
+            self.event_dispatch.register('persist_preferences', self.debounce_widget_preferences)
             self.event_dispatch.register('hide_context_menu', self.hide_context_menu)
             self.event_dispatch.register('deactivate_poller', self.deactivate_poller)
             self.event_dispatch.register('show_context_menu', self.move_context_menu)
@@ -195,7 +197,7 @@ class HeadUpDisplay:
                     widget.disable()
             
             # Disconnect the events relating to non-content communication
-            self.event_dispatch.unregister('persist_preferences', self.persist_widgets_preferences)
+            self.event_dispatch.unregister('persist_preferences', self.debounce_widget_preferences)
             self.event_dispatch.unregister('hide_context_menu', self.hide_context_menu)
             self.event_dispatch.unregister('deactivate_poller', self.deactivate_poller)
             self.event_dispatch.unregister('show_context_menu', self.move_context_menu)            
@@ -225,7 +227,12 @@ class HeadUpDisplay:
                 dict = {**dict, **widget.preferences.export(widget.id)}
                 widget.preferences.mark_changed = False
         self.preferences.persist_preferences(dict)
-        self.determine_active_setup_mouse()        
+        self.determine_active_setup_mouse()
+        
+    # Debounce the widget preference persistence to make sure we do not get a ton of persisting operations
+    def debounce_widget_preferences(self, _ = None):
+        cron.cancel(self.update_preferences_debouncer)
+        self.update_preferences_debouncer = cron.after("100ms", self.persist_widgets_preferences)
     
     def enable_id(self, id):
         if not self.enabled:
@@ -711,7 +718,7 @@ class Actions:
     def persist_hud_preferences():
         """Saves the HUDs preferences"""
         global hud
-        hud.persist_widgets_preferences()
+        hud.debounce_widget_preferences()
 
     def enable_hud_id(id: str):
         """Enables a specific HUD element"""

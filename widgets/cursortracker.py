@@ -45,10 +45,11 @@ class HeadUpCursorTracker(BaseWidget):
 
     def enable(self, persist=False):
         if not self.enabled:
-            self.previous_pos = ctrl.mouse_pos()
-            self.determine_active_icon(self.previous_pos)
             super().enable(persist)
-            self.soft_enable()
+            if self.cursor_icons:
+                self.prev_mouse_pos = ctrl.mouse_pos()
+                self.determine_active_icon(self.prev_mouse_pos)            
+                self.soft_enable()
     
     def disable(self, persist=False):
         if self.enabled:
@@ -91,6 +92,8 @@ class HeadUpCursorTracker(BaseWidget):
                 if self.setup_type == "":
                     self.x = pos[0] + self.limit_x
                     self.y = pos[1] + self.limit_y
+                    
+                    print( "POLLING MOUSE POS!" )
                     self.canvas.move(self.x, self.y)
                     
                     self.determine_active_icon(pos)
@@ -167,9 +170,6 @@ class HeadUpCursorTracker(BaseWidget):
             self.event_dispatch.request_persist_preferences()
         # Cancel every change
         else:
-            self.x = pos[0]
-            self.y = pos[1]
-            self.canvas.move(self.x, self.y)
             self.canvas.resume()
             super().start_setup(setup_type, mouse_position)
                 

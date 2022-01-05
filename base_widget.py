@@ -52,7 +52,7 @@ class BaseWidget(metaclass=ABCMeta):
             
     # Load the widgets preferences
     def load(self, dict, initialize = True, update_enabled = False):
-        self.preferences.load(self.id, dict)
+        self.preferences.load(self.id, dict)        
         self.sleep_enabled = self.preferences.sleep_enabled
         self.show_animations = self.preferences.show_animations
         self.x = self.preferences.x
@@ -71,8 +71,10 @@ class BaseWidget(metaclass=ABCMeta):
         # For re-enabling or disabling widgets after a reload ( mostly for talon hud environment changes )
         if update_enabled:
             if self.enabled != self.preferences.enabled:
+                self.show_animations = False
                 self.enable() if self.preferences.enabled else self.disable()
-
+                self.show_animations = True
+        
         if initialize:
             self.load_theme_values()        
     
@@ -302,7 +304,7 @@ class BaseWidget(metaclass=ABCMeta):
                 self.load({}, False)
                 
                 self.setup_type = ""                
-                if self.canvas:
+                if self.canvas and self.enabled:
                     rect = ui.Rect(self.x, self.y, self.width, self.height)                    
                     self.canvas.rect = rect
                     self.canvas.resume()
@@ -310,9 +312,13 @@ class BaseWidget(metaclass=ABCMeta):
         elif setup_type == "reload":
             self.drag_position = []
             self.setup_type = ""             
-            if self.canvas:            
-                rect = ui.Rect(self.x, self.y, self.width, self.height)                    
-                self.canvas.rect = rect
+            if self.canvas and self.enabled:
+                rect = ui.Rect(self.x, self.y, self.width, self.height)
+                
+                # Only do a rect change if it has actually changed to prevent costly operations
+                if self.canvas.rect.x != self.x or self.canvas.rect.y != self.y or \
+                    self.canvas.rect.width != self.width or self.canvas.rect.height != self.height:
+                    self.canvas.rect = rect
                 self.canvas.resume()
                 
         # Start the setup state
