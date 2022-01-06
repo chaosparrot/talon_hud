@@ -81,7 +81,8 @@ _players = {}
 def clear_audio():
     player_key = (44100, 1)
     player = _players.get(player_key)
-    player.clear()
+    if player:
+        player.clear()
 
 def play_wav(path, volume=1):
     global _players

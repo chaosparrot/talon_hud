@@ -1,9 +1,6 @@
-from talon import Context, Module, actions, app, skia, cron, ctrl, scope, canvas, registry, settings, ui
-from talon.types import Point2d
-from abc import ABCMeta
-import numpy
+from talon import canvas, ui
 from user.talon_hud.base_widget import BaseWidget
-from user.talon_hud.utils import layout_rich_text, HudRichTextLine
+from user.talon_hud.utils import layout_rich_text
 from random import randint
 
 class LayoutWidget(BaseWidget):
@@ -36,7 +33,7 @@ class LayoutWidget(BaseWidget):
             if persisted:
                 self.preferences.enabled = True
                 self.preferences.mark_changed = True
-                actions.user.persist_hud_preferences()
+                self.event_dispatch.request_persist_preferences()
             self.cleared = False
             
     def disable(self, persisted=False):
@@ -54,7 +51,7 @@ class LayoutWidget(BaseWidget):
             if persisted:
                 self.preferences.enabled = False
                 self.preferences.mark_changed = True
-                actions.user.persist_hud_preferences()
+                self.event_dispatch.request_persist_preferences()
                 
             self.cleared = False
             self.start_setup("cancel")

@@ -44,6 +44,11 @@ class HudButton:
     callback: Callable[[Any], None]
 
 @dataclass
+class HudDynamicVoiceCommand:
+    command: str
+    callback: Callable[[Any], None]
+
+@dataclass
 class HudPanelContent:
     topic: str
     title: str
@@ -52,7 +57,7 @@ class HudPanelContent:
     published_at: float
     show: bool
     choices: HudChoices = None
-    tags: list[str] = None
+    voice_commands: list[HudDynamicVoiceCommand] = None
 
 HOVER_VISIBILITY_ON = 1 # Only show the items when the region is hovered by the mouse
 HOVER_VISIBILITY_OFF = 0 # Keep the screen region active regardless of mouse hover

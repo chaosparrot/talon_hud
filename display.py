@@ -55,6 +55,7 @@ mod.list("talon_hud_choices", desc="Available choices shown on screen")
 mod.list("talon_hud_themes", desc="Available themes for the Talon HUD")
 mod.list("talon_hud_numerical_choices", desc="Available choices shown on screen numbered")
 mod.list("talon_hud_quick_choices", desc="List of widgets with their quick options")
+mod.list("talon_hud_widget_enabled_voice_commands", desc="List of extra voice commands added by visible widgets")
 mod.list("talon_hud_volume_number", desc="List of numbers available to select for volume changing")
 mod.list("talon_hud_audio_cue", desc="List of all available audio cues")
 mod.tag("talon_hud_available", desc="Tag that shows the availability of the Talon HUD repository for other scripts")
@@ -66,6 +67,7 @@ ctx.tags = ['user.talon_hud_available']
 ctx.settings['user.talon_hud_environment'] = ""
 ctx.lists['user.talon_hud_volume_number'] = numerical_choice_index_map.keys()
 ctx.lists['user.talon_hud_audio_cue'] = []
+ctx.lists['user.talon_hud_widget_enabled_voice_commands'] = []
 
 # A list of Talon HUD versions that can be used to check for in other packages
 TALON_HUD_RELEASE_030 = 3 # Walk through version
@@ -92,7 +94,8 @@ class HeadUpDisplay:
     prev_mouse_pos = None
     mouse_poller = None
     current_talon_hud_environment = ""
-    
+
+    enabled_voice_commands = {}
     update_preferences_debouncer = None
     update_context_debouncer = None
     update_cue_context_debouncer = None
@@ -130,6 +133,8 @@ class HeadUpDisplay:
         
         if (self.preferences.prefs['enabled']):
             self.enable()
+            ctx.tags = ['user.talon_hud_available', 'user.talon_hud_visible', 'user.talon_hud_choices_visible']
+            
             if self.preferences.prefs['audio_enabled']:
                 self.audio_manager.enable()
                 
@@ -140,8 +145,10 @@ class HeadUpDisplay:
         if not self.enabled:
             self.enabled = True
                         
-            # Only reset the talon hud environment after a user action
+            # Only reset the talon HUD environment after a user action
+            # And only set the visible tag
             if persisted:
+                ctx.tags = ['user.talon_hud_available', 'user.talon_hud_visible', 'user.talon_hud_choices_visible']
                 self.current_talon_hud_environment = settings.get("user.talon_hud_environment")
             
             # Connect the events relating to non-content communication
@@ -212,7 +219,9 @@ class HeadUpDisplay:
             settings.unregister("user.talon_hud_environment", self.hud_environment_change)            
             self.determine_active_setup_mouse()
             
+            # Only change the tags upon a user action - No automatic flow should set tags to prevent cascades
             if persisted:
+                ctx.tags = ['user.talon_hud_available']
                 self.preferences.persist_preferences({'enabled': False})
                 
             # Make sure context isn't updated in this thread because of automatic reloads
@@ -243,11 +252,9 @@ class HeadUpDisplay:
                 widget.enable(True)
                 if widget.topic in self.pollers and not self.pollers[widget.topic].enabled:
                 	self.pollers[widget.topic].enable()
-
-                if isinstance(widget, HeadUpTextPanel) and widget.panel_content.tags != None \
-                   and len(widget.panel_content.tags) > 0:
-                   self.update_context()
-
+                    
+                self.update_context()
+                
     def disable_id(self, id):
         for widget in self.widget_manager.widgets:
             if widget.enabled and widget.id == id:
@@ -255,9 +262,7 @@ class HeadUpDisplay:
                 if widget.topic in self.pollers and widget.topic not in self.keep_alive_pollers:
                 	self.pollers[widget.topic].disable()
                     
-                if isinstance(widget, HeadUpTextPanel) and widget.panel_content.tags != None \
-                   and len(widget.panel_content.tags) > 0:
-                   self.update_context()
+                self.update_context()
         self.determine_active_setup_mouse()
         
     def subscribe_content_id(self, id, content_key):
@@ -477,7 +482,8 @@ class HeadUpDisplay:
                     self.pollers[widget_to_claim.topic].disable()
             
         if updated:
-            self.update_context()
+            cron.cancel(self.update_context_debouncer)
+            self.update_context_debouncer = cron.after("50ms", self.update_context)
 
     # Determine whether or not we need to have a global mouse poller
     # This poller is needed for setup modes as not all canvases block the mouse
@@ -527,8 +533,9 @@ class HeadUpDisplay:
                 context_menu_widget = widget
         if connected_widget and context_menu_widget:
             context_menu_widget.connect_widget(connected_widget, pos.x, pos.y, buttons)
-            self.choices_visible = True
-            self.update_context()
+
+            cron.cancel(self.update_context_debouncer)
+            self.update_context_debouncer = cron.after("50ms", self.update_context)
             
     # Connect the context menu using voice
     def connect_context_menu(self, widget_id):
@@ -548,8 +555,9 @@ class HeadUpDisplay:
         
             if context_menu_widget:
                 context_menu_widget.connect_widget(connected_widget, pos_x, pos_y, buttons)
-                self.choices_visible = True
-                self.update_context()                
+                
+                cron.cancel(self.update_context_debouncer)
+                self.update_context_debouncer = cron.after("50ms", self.update_context)
     
     # Hide the context menu
     # Generally you want to do this when you click outside of the menu itself
@@ -559,9 +567,9 @@ class HeadUpDisplay:
             if widget.id == 'context_menu' and widget.enabled:      
                 context_menu_widget = widget
                 break
+        
         if context_menu_widget:
             context_menu_widget.disconnect_widget()
-            self.choices_visible = False
             self.update_context()
     
     # Active a given choice for a given widget
@@ -571,23 +579,23 @@ class HeadUpDisplay:
             if widget.id == widget_id:
                 if isinstance(widget, HeadUpChoicePanel):
                     widget.select_choice(int(choice_index))
-                    self.update_context()
                 else:
                     widget.click_button(int(choice_index))
-                    self.update_context()
+                self.update_context()
+                    
+    def activate_enabled_voice_command(self, voice_command):
+        if voice_command in self.enabled_voice_commands:
+            self.enabled_voice_commands[voice_command]()
 
     # Updates the context based on the current HUD state
     # This needs to be done on user actions - Automatic flows need higher scrutiny
-    def update_context(self):
-        tags = [
-            'user.talon_hud_available'
-        ]
-        
+    def update_context(self):        
         widget_names = {}
         choices = {}
         quick_choices = {}
         numerical_choices = {}
         themes = {}
+        enabled_voice_commands = {}
         
         themes_directory = os.path.dirname(os.path.abspath(__file__)) + "/themes"
         themes_list = os.listdir(themes_directory)
@@ -613,11 +621,6 @@ class HeadUpDisplay:
                 if choice_title:
                     for widget_name in current_widget_names:
                         quick_choices[widget_name + " " + choice_title] = widget.id + "|" + str(index)
-
-            # Add tags set for specific content on display
-            if widget.enabled and isinstance(widget, HeadUpTextPanel) and widget.panel_content.tags is not None:
-                for index, tag in enumerate(widget.panel_content.tags):
-                    tags.append(tag)
             
             # Add context choices
             if widget.enabled and isinstance(widget, HeadUpContextMenu):
@@ -625,6 +628,13 @@ class HeadUpDisplay:
                     choice_title = string_to_speakable_string(button.text)
                     if choice_title:
                         choices[choice_title] = widget.id + "|" + str(index)
+
+            # Add extra voice commands ( for instance, ones alluded to in text )
+            if widget.enabled and isinstance(widget, HeadUpTextPanel) and widget.panel_content.voice_commands:
+                for index, voice_command in enumerate(widget.panel_content.voice_commands):
+                    enabled_voice_command = string_to_speakable_string(voice_command.command)
+                    if enabled_voice_command:
+                        enabled_voice_commands[enabled_voice_command] = voice_command.callback
              
             # Add choice panel choices
             if widget.enabled and isinstance(widget, HeadUpChoicePanel):
@@ -638,16 +648,14 @@ class HeadUpDisplay:
                 if widget.panel_content.choices and widget.panel_content.choices.multiple:
                     choices["confirm"] = widget.id + "|" + str(index + 1)
 
-        if self.enabled:
-            tags.append('user.talon_hud_visible')
-        if self.choices_visible:
-            tags.append('user.talon_hud_choices_visible')
-        ctx.tags = tags
         ctx.lists['user.talon_hud_numerical_choices'] = numerical_choices
         ctx.lists['user.talon_hud_widget_names'] = widget_names
         ctx.lists['user.talon_hud_choices'] = choices
         ctx.lists['user.talon_hud_quick_choices'] = quick_choices
         ctx.lists['user.talon_hud_themes'] = themes
+        
+        self.enabled_voice_commands = enabled_voice_commands
+        ctx.lists['user.talon_hud_widget_enabled_voice_commands'] = enabled_voice_commands.keys()
 
     def hud_environment_change(self, hud_environment: str):
         if self.current_talon_hud_environment != hud_environment:
@@ -809,6 +817,11 @@ class Actions:
         """Activate a choice available on the screen"""    
         global hud
         hud.activate_choice(choice_string)
+        
+    def hud_activate_enabled_voice_command(enabled_voice_command: str):
+        """Activate a defined voice command attached to an enabled widget"""
+        global hud
+        hud.activate_enabled_voice_command(enabled_voice_command)
         
     def hud_activate_choices(choice_string_list: list[str]):
         """Activate multiple choices available on the screen"""    

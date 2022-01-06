@@ -2,7 +2,7 @@ from talon import actions, cron, scope, Module, ui
 from talon.types.point import Point2d
 from talon_init import TALON_USER
 from talon.scripting import Dispatch
-from user.talon_hud.content.typing import HudPanelContent, HudButton, HudChoice, HudChoices, HudScreenRegion, HudAudioCue
+from user.talon_hud.content.typing import HudPanelContent, HudButton, HudChoice, HudChoices, HudScreenRegion, HudAudioCue, HudDynamicVoiceCommand
 import time
 from typing import Callable, Any, Union
 import os
@@ -281,13 +281,19 @@ class Actions:
         global hud_content
         hud_content.dispatch("content_update", hud_content.content)
         
-    def hud_publish_content(content: str, topic: str = '', title:str = '', show: Union[bool, int] = True, buttons: list[HudButton] = None, tags: list[str] = None):
+    def hud_publish_content(content: str, topic: str = '', title:str = '', show: Union[bool, int] = True, buttons: list[HudButton] = None, voice_commands: Any = None):
         """Publish a specific piece of content to a topic"""            
         if buttons == None:
             buttons = []
-        if tags == None:
-            tags = []
-        content = HudPanelContent(topic, title, [content], buttons, time.time(), show, tags = tags)
+            
+        commands = []
+        if voice_commands == None:
+            commands = {}
+        else:
+            for voice_command in voice_commands:
+                commands.append(HudDynamicVoiceCommand(voice_command, voice_commands[voice_command]))
+            
+        content = HudPanelContent(topic, title, [content], buttons, time.time(), show, voice_commands=commands)
         
         global hud_content
         hud_content.publish(content)

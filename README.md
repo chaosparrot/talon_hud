@@ -213,6 +213,7 @@ These are ideas that I want to implement in no specific order and with no specif
 Known issues
 ---
 - Multiple page walkthrough panel does not work properly with text indices
+- 'Dismiss options' in the context menu makes the HUD go into a state where the next context menu won't respond properly
 
 If any of these ideas seem cool for you to work on, give me a message on the talon slack so we can coordinate stuff.
 

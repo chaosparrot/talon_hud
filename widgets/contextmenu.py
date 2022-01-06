@@ -1,4 +1,4 @@
-from talon import skia, ui, cron, clip
+from talon import skia, ui, cron, clip, canvas
 from talon.types import Point2d as Point2d
 from user.talon_hud.base_widget import BaseWidget
 from user.talon_hud.layout_widget import LayoutWidget
@@ -60,6 +60,26 @@ class HeadUpContextMenu(LayoutWidget):
                 self.buttons[button_index].callback(self.connected_widget)
                 self.event_dispatch.hide_context_menu()
     
+    def enable(self, persisted=False):
+        if not self.enabled:
+            # Copied over from layout widget enabled to make sure blocks_mouse setting isn't changed        
+            if self.mouse_enabled:
+                self.mouse_capture_canvas = canvas.Canvas(min(self.x, self.limit_x), min(self.y, self.limit_y), max(self.width, self.limit_width), max(self.height, self.limit_height))            
+                self.mouse_capture_canvas.blocks_mouse = True
+                self.mouse_capture_canvas.register('mouse', self.on_mouse)
+                self.mouse_capture_canvas.freeze()
+            
+            self.enabled = True
+            self.canvas = canvas.Canvas(min(self.x, self.limit_x), min(self.y, self.limit_y), max(self.width, self.limit_width), max(self.height, self.limit_height))
+            self.canvas.register('draw', self.draw_cycle)
+            self.animation_tick = self.animation_max_duration if self.show_animations else 0
+            self.canvas.resume()
+            if persisted:
+                self.preferences.enabled = True
+                self.preferences.mark_changed = True
+                self.event_dispatch.request_persist_preferences()
+            self.cleared = False
+    
     def connect_widget(self, widget: BaseWidget, pos_x: int, pos_y: int, buttons: list[HudButton]):        
         # Connect a widget up to context menu and move the context menu over
         self.limit_x = pos_x
@@ -68,19 +88,18 @@ class HeadUpContextMenu(LayoutWidget):
         self.y = pos_y
         self.connected_widget = widget
     
-        if self.enabled == False:
-            self.mark_position_invalid = True
-            self.mark_layout_invalid = True            
-            self.enable()
-        else:
-            self.mark_position_invalid = True
-            self.mark_layout_invalid = True
+        self.mark_position_invalid = True
+        self.mark_layout_invalid = True
+        if self.enabled:
             self.canvas.move(pos_x, pos_y)
             self.canvas.resume()
             
         self.buttons = list(self.default_buttons)
         if len(buttons) > 0:
             self.buttons[:0] = buttons
+         
+        if self.enabled == False:
+            self.enable()
             
     def disconnect_widget(self):
         self.connected_widget = None

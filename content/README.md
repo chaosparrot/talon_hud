@@ -68,7 +68,7 @@ These are the values that you can give to the hud_publish_content action
 - Title: This is the header title that will be shown in the text panel. This value will also be used to address the text panel. For example, if you set a title 'Command area', the user will be able to say 'Command area hide' to hide the text panel.
 - Show: This is a True or False value. If set to True, this will urge a widget to display and enable itself if it isn't shown yet. If the user has minimized the text panel, it will not be opened. Defaults to True.
 - Buttons: These are extra HudButton added to the context menu when the user right clicks the text panel, or like in the example above, says `command area options`.
-- Tags: Tags to be enabled while this content is visible on the screen. You can use this to add exploratory voice commands embedded in your text.
+- Voice commands: A dictionary of voice commands and actions that will only be active as long as the widget stays active
 
 # Adding right click buttons to a text panel
 
