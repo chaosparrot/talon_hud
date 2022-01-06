@@ -4,6 +4,7 @@ import time
 import numpy
 from user.talon_hud.widget_preferences import HeadUpDisplayUserWidgetPreferences
 from user.talon_hud.utils import layout_rich_text
+from user.talon_hud.content.typing import HudButton
 
 class HeadUpEventLog(BaseWidget):
 
@@ -23,8 +24,6 @@ class HeadUpEventLog(BaseWidget):
     # Which means new messages push old messages up if they haven't disappeared yet
     preferences = HeadUpDisplayUserWidgetPreferences(type="event_log", x=1430, y=720, width=450, height=200, enabled=True, alignment="right", expand_direction="up", font_size=18)
 
-    # TODO - For the downward direction we need to pop earlier messages if the height is exceeded to make room for newer logs
-
     ttl_animation_max_duration = 10
     animation_max_duration = 60 # Keep it the same as the status bar for now
 
@@ -37,17 +36,25 @@ class HeadUpEventLog(BaseWidget):
     ttl_poller = None
     
     infinite_ttl = 1000000 # One million seconds is effectively eternal from a UX perspective, as it takes 12 days
+    locked = False
+    
+    def update_buttons(self):
+        buttons = []
+        buttons.append(HudButton("", "Keep alive", ui.Rect(0,0,0,0), lambda widget: widget.set_log_ttl(-1)))
+        if self.ttl_duration_seconds == self.infinite_ttl:
+            buttons[0].text = "Timed live"
+            buttons[0].callback = lambda widget: widget.set_log_ttl()
+            buttons.append(HudButton("", "Unlock entries" if self.locked else "Lock entries", ui.Rect(0,0,0,0), lambda widget: widget.set_lock(not widget.locked)))
+        
+        buttons.append(HudButton("", "Clear logs", ui.Rect(0,0,0,0), lambda widget: widget.clear_logs()))
+        self.buttons = buttons
     
     def load_theme_values(self):
         # Set and reset TTL on theme change
-        previous_duration = self.ttl_duration_seconds
-        self.ttl_duration_seconds = self.theme.get_float_value('event_log_ttl_duration_seconds', 9)
-        self.ttl_duration_seconds = self.ttl_duration_seconds if self.ttl_duration_seconds != -1 else self.infinite_ttl
-        for visual_log in self.visual_logs:
-            visual_log['ttl'] = visual_log['ttl'] - previous_duration + self.ttl_duration_seconds
+        self.set_log_ttl()
                 
     def append_log(self, log):
-        if self.soft_enabled and self.enabled and len(log['message']) > 0:        
+        if self.soft_enabled and self.enabled and len(log['message']) > 0 and not self.locked:
             visual_log = {
                 "show_on": log["time"],
                 "ttl": log["time"] + self.ttl_duration_seconds, 
@@ -143,6 +150,23 @@ class HeadUpEventLog(BaseWidget):
                 self.soft_enabled = True
             else:
                 self.soft_disable()
+        self.update_buttons()
+
+    def set_log_ttl(self, ttl = None):
+        previous_duration = self.ttl_duration_seconds
+        self.ttl_duration_seconds = self.theme.get_float_value('event_log_ttl_duration_seconds', 9) if ttl is None else ttl
+        self.ttl_duration_seconds = self.ttl_duration_seconds if self.ttl_duration_seconds != -1 else self.infinite_ttl
+        for visual_log in self.visual_logs:
+            visual_log['ttl'] = visual_log['ttl'] - previous_duration + self.ttl_duration_seconds
+        
+        if self.ttl_duration_seconds != self.infinite_ttl and self.locked:
+            self.locked = False
+
+    def set_lock(self, locked = False):
+        self.locked = locked
+        
+    def clear_logs(self):
+        self.visual_logs = []
 
     def poll_ttl_visuals(self):
         current_time = time.monotonic()

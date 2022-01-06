@@ -98,7 +98,7 @@ class HeadUpDisplay:
     update_cue_context_debouncer = None
     update_environment_debouncer = None
     
-    watching_theme_directories = False
+    watching_directories = False
     
     def __init__(self, display_state, preferences):
         self.display_state = display_state
@@ -123,7 +123,7 @@ class HeadUpDisplay:
         
         # Uncomment the line below to add language icons by default
         # self.subscribe_content_id('status_bar', 'language')       
-        
+
     def start(self):
         # Uncomment the line below to add the single click mic toggle by default
         # actions.user.hud_add_single_click_mic_toggle()
@@ -286,9 +286,9 @@ class HeadUpDisplay:
 
     def switch_theme(self, theme_name, disable_animation = False, forced = False):
         if self.theme.name != theme_name or forced:
-            should_reset_watch = self.watching_theme_directories
+            should_reset_watch = self.watching_directories
             if should_reset_watch:
-                self.unwatch_theme()
+                self.unwatch_directories()
             
             theme_dir = self.custom_themes[theme_name] if theme_name in self.custom_themes else None
             self.theme = HeadUpDisplayTheme(theme_name, theme_dir)
@@ -302,7 +302,7 @@ class HeadUpDisplay:
                     widget.set_theme(self.theme)
                     
             if should_reset_watch:
-                self.watch_theme()
+                self.watch_directories()
             
             self.preferences.persist_preferences({'theme_name': theme_name})
 
@@ -314,17 +314,27 @@ class HeadUpDisplay:
             widget.set_theme(self.theme)
             widget.show_animations = show_animations
 
-    def watch_theme(self):
+    def watch_directories(self):
         directories = self.theme.get_watch_directories()
         for directory in directories:
             fs.watch(directory, self.reload_theme)
-        self.watching_theme_directories = True
+            
+        directories = self.preferences.get_watch_directories()
+        for directory in directories:
+            fs.watch(directory, self.debounce_environment_change)
+
+        self.watching_directories = True
         
-    def unwatch_theme(self):
+    def unwatch_directories(self):
         directories = self.theme.get_watch_directories()
         for directory in directories:
-            fs.unwatch(directory, self.reload_theme)    
-        self.watching_theme_directories = False
+            fs.unwatch(directory, self.reload_theme)
+            
+        directories = self.preferences.get_watch_directories()
+        for directory in directories:
+            fs.unwatch(directory, self.debounce_environment_change)
+            
+        self.watching_directories = False
 
     def start_setup_id(self, id, setup_type, mouse_pos = None):
         for widget in self.widget_manager.widgets:
@@ -647,7 +657,7 @@ class HeadUpDisplay:
             cron.cancel(self.update_environment_debouncer)
             self.update_environment_debouncer = cron.after("200ms", self.debounce_environment_change)
 
-    def debounce_environment_change(self):
+    def debounce_environment_change(self, _=None, __=None):
         reload_theme = self.widget_manager.reload_preferences(True, self.current_talon_hud_environment)
         
         # Switch the theme and make sure there is no lengthy animation between modes 
@@ -836,15 +846,15 @@ class Actions:
         global hud
         hud.add_theme(theme_name, theme_dir)
         
-    def hud_watch_theme():
-        """Watch the theme directories for changes"""
+    def hud_watch_directories():
+        """Watch the theme and preferences directories for changes - This gives a performance penalty and should only be used during development"""
         global hud
-        hud.watch_theme()
+        hud.watch_directories()
         
-    def hud_unwatch_theme():
+    def hud_unwatch_directories():
         """Stop watching for changes in the theme directories"""
         global hud
-        hud.unwatch_theme()
+        hud.unwatch_directories()
         
     def hud_audio_enable():
         """Enables the audio cues from the HUD"""
