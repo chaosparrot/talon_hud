@@ -33,7 +33,7 @@ class WalkthroughPoller:
         if self.enabled == False:
             speech_system.register("pre:phrase", self.check_step)
             self.scope_job = cron.interval('1500ms', self.display_step_based_on_context)
-            ctx.tags = ["user.talon_hud_walkthrough"]        
+            ctx.tags = ["user.talon_hud_walkthrough"]
         self.enabled = True
 
     def disable(self):
@@ -58,7 +58,7 @@ class WalkthroughPoller:
             key = split_line[0]
             current_step = split_line[1]
             total_step = split_line[2]
-            walkthrough_steps[key] = {"current": int(current_step), "total": int(total_step)}
+            walkthrough_steps[key] = {"current": int(current_step), "total": int(total_step), "progress": int(current_step) / int(total_step) if int(total_step) > 0 else 0}
         self.walkthrough_steps = walkthrough_steps
         
         # For the initial loading, start the walkthrough if it hasn't been completed fully yet
@@ -158,15 +158,18 @@ class WalkthroughPoller:
 
             # Update the walkthrough CSV state
             if self.current_walkthrough.title not in self.walkthrough_steps:
-                self.walkthrough_steps[self.current_walkthrough.title] = {"current": 0, "total": len(self.current_walkthrough.steps)}
-            self.walkthrough_steps[self.current_walkthrough.title]['current'] = self.current_stepnumber + 1                        
+                self.walkthrough_steps[self.current_walkthrough.title] = {"current": 0, "total": len(self.current_walkthrough.steps), "progress": 0}
+            self.walkthrough_steps[self.current_walkthrough.title]['current'] = self.current_stepnumber + 1
+            self.walkthrough_steps[self.current_walkthrough.title]['progress'] = (self.current_stepnumber + 1) / self.walkthrough_steps[self.current_walkthrough.title]['total']
+            
             self.persist_walkthrough_steps(self.walkthrough_steps)
             self.current_words = []
             
             if self.current_stepnumber + 1 < len(self.current_walkthrough.steps):
                 self.transition_to_step(self.current_stepnumber + 1)
                 self.walkthrough_steps[self.current_walkthrough.title]['current'] = self.current_stepnumber
-                
+                self.walkthrough_steps[self.current_walkthrough.title]['progress'] = (self.current_stepnumber + 1) / self.walkthrough_steps[self.current_walkthrough.title]['total']
+
                 # If the first step has a restore callback, call that straight away to set the user up
                 if self.current_stepnumber == 0 and self.current_walkthrough.steps[0].restore_callback is not None:
                     self.current_walkthrough.steps[self.current_stepnumber].restore_callback(self.current_stepnumber)
@@ -179,13 +182,14 @@ class WalkthroughPoller:
 
             # Update the walkthrough CSV state
             self.walkthrough_steps[self.current_walkthrough.title]['current'] = max(0, self.current_stepnumber - 1)
+            self.walkthrough_steps[self.current_walkthrough.title]['progress'] = max(0, self.current_stepnumber - 1) / self.walkthrough_steps[self.current_walkthrough.title]['total']
             self.persist_walkthrough_steps(self.walkthrough_steps)
             self.current_words = []
             
             if self.current_stepnumber - 1 >= 0:
                 self.transition_to_step(max(0, self.current_stepnumber - 1))
                 self.walkthrough_steps[self.current_walkthrough.title]['current'] = self.current_stepnumber
-
+            self.walkthrough_steps[self.current_walkthrough.title]['progress'] = self.current_stepnumber / self.walkthrough_steps[self.current_walkthrough.title]['total']
         
     def transition_to_step(self, stepnumber):
         """Transition to the next step"""
@@ -242,14 +246,14 @@ class WalkthroughPoller:
         """Display the correct step information based on the context matching"""
         in_right_context = self.is_in_right_context()
         if self.in_right_context != in_right_context or force_publish:
-            step = self.current_walkthrough.steps[self.current_stepnumber]        
+            step = self.current_walkthrough.steps[self.current_stepnumber]
             if not in_right_context:
                 actions.user.hud_publish_content(step.context_hint, "walk_through")            
             else:
                 # Forced publication must clear the voice commands said as well
                 # To ensure a clean widget state
                 if force_publish:
-                    actions.user.hud_set_walkthrough_voice_commands([])
+                    actions.user.hud_set_walkthrough_voice_commands([], self.walkthrough_steps[self.current_walkthrough.title])
                 
                 actions.user.hud_publish_content(step.content, "walk_through")
             self.in_right_context = in_right_context
@@ -268,7 +272,7 @@ class WalkthroughPoller:
                 
                 # Send an update about the voice commands said during the step if it has changed
                 if current_length != len(self.current_words):
-                    actions.user.hud_set_walkthrough_voice_commands(list(self.current_words))
+                    actions.user.hud_set_walkthrough_voice_commands(list(self.current_words), self.walkthrough_steps[self.current_walkthrough.title])
                 
     
 hud_walkthrough = WalkthroughPoller()

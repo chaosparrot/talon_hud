@@ -32,6 +32,7 @@ class HeadUpDisplayContent(Dispatch):
         "phrases": [],        
         "abilities": [],
         "walkthrough_voice_commands": [],
+        "walkthrough_progress": {"current": 0, "total": 0, "progress": 0},
         "topics": {
             'debug': HudPanelContent('debug', '', 'Debug panel', [], 0, False),
         },
@@ -226,10 +227,16 @@ class Actions:
             "clickable": False
         })
 
-    def hud_set_walkthrough_voice_commands(commands: list[str]):
+    def hud_set_walkthrough_voice_commands(commands: list[str], progress: Any = None):
         """Set the voice commands uttered by the user during the walkthrough step"""
         global hud_content
-        hud_content.update({"walkthrough_said_voice_commands": commands})
+        dict = {
+            "walkthrough_said_voice_commands": commands,
+        }
+        if progress is not None:
+            dict["walkthrough_progress"] = progress
+        
+        hud_content.update(dict)
 
     def hud_remove_status_icon(id: str):
         """Remove an icon to the status bar"""

@@ -16,7 +16,7 @@ class HeadUpWalkThroughPanel(LayoutWidget):
     step_scheduled = None
 
     # Top, right, bottom, left, same order as CSS padding
-    padding = [10, 20, 10, 8]
+    padding = [12, 20, 12, 8]
     line_padding = 6
 
     # Animation frame related variables
@@ -43,15 +43,17 @@ class HeadUpWalkThroughPanel(LayoutWidget):
         HudButton("", "Restore current step", ui.Rect(0,0,0,0), lambda widget: actions.user.hud_restore_walkthrough_step())        
     ]
 
-    subscribed_content = ["mode", "walkthrough_said_voice_commands"]
+    subscribed_content = ["mode", "walkthrough_said_voice_commands", "walkthrough_progress"]
     content = {
         'mode': 'command',
-        'walkthrough_said_voice_commands': []
+        'walkthrough_said_voice_commands': [],
+        'walkthrough_progress': {'current': 0, 'total': 0, 'progress': 0}
     }
     
     subscribed_topics = ['walk_through']
     topic = 'walk_through'
     
+    previous_progress = {'current': 0, 'total': 0, 'progress': 0}
     panel_content = HudPanelContent('walk_through', '', [''], [], 0, False)
     voice_commands_available = []
     
@@ -71,13 +73,18 @@ class HeadUpWalkThroughPanel(LayoutWidget):
             elif len(new_content["walkthrough_said_voice_commands"]) == 0:
                 self.animated_words = []
                 self.animated_word_state = 0
+                
+        if "walkthrough_progress" in new_content:
+            if self.content["walkthrough_progress"]["progress"] != self.previous_progress["progress"]:
+                self.previous_progress['progress'] = self.content["walkthrough_progress"]['progress']
+            self.content["walkthrough_progress"] = new_content["walkthrough_progress"]
 
         # Navigate to the next step if all our voice commands have been exhausted
         if len(self.voice_commands_available) > 0 and "walkthrough_said_voice_commands" in new_content and \
             len(self.voice_commands_available) == len(new_content["walkthrough_said_voice_commands"]):
             if not "skip step" in self.voice_commands_available:
                 cron.cancel(self.step_scheduled)
-                self.step_scheduled = cron.after(self.theme.get_int_value("walkthrough_panel_step_delay_ms", 1500) + 'ms', actions.user.hud_skip_walkthrough_step)
+                self.step_scheduled = cron.after(str(self.theme.get_int_value("walkthrough_panel_step_delay_ms", 1500)) + 'ms', actions.user.hud_skip_walkthrough_step)
 
         super().refresh(new_content)
 
@@ -259,6 +266,9 @@ class HeadUpWalkThroughPanel(LayoutWidget):
         background_colour = self.theme.get_colour('text_box_background', 'F5F5F5')
         paint.color = background_colour
         
+        progress_bar_offset = 0
+        progress_bar_height = 7
+        
         # Animate the transition if an animation state has been set
         self.transition_animation_state = max(0, self.transition_animation_state - 1)
         if self.transition_animation_state > 0:
@@ -276,12 +286,28 @@ class HeadUpWalkThroughPanel(LayoutWidget):
                 self.previous_content_dimensions.height + difference.height)
         
             self.draw_background(canvas, paint, background_rect)
+            
+            # Draw the progress bar
+            progress = self.previous_progress['progress'] + ( growth * (self.content["walkthrough_progress"]["progress"] - self.previous_progress['progress']))
+            paint.color = self.theme.get_colour('spoken_voice_command_background_colour', '6CC653')
+            rect = ui.Rect(background_rect.x + progress_bar_offset, background_rect.y, \
+                min(background_rect.width - progress_bar_offset * 2, (background_rect.width - progress_bar_offset * 2) * progress), progress_bar_height)
+            canvas.draw_rect(rect)            
         else:
-            self.animated_word_state = max(0, self.animated_word_state - 1)
+            self.animated_word_state = max(0, self.animated_word_state - 1)           
+            
+            # Draw the background first
             self.draw_background(canvas, paint, dimensions["rect"])
+            
+            # Draw the progress bar
+            paint.color = self.theme.get_colour('spoken_voice_command_background_colour', '6CC653')
+            rect = ui.Rect(dimensions["rect"].x + progress_bar_offset, dimensions["rect"].y, \
+                min(dimensions["rect"].width - progress_bar_offset * 2, (dimensions["rect"].width  - progress_bar_offset * 2) * self.content["walkthrough_progress"]["progress"]), progress_bar_height)
+            canvas.draw_rect(rect)
                     
             paint.color = self.theme.get_colour('text_colour')
             self.draw_voice_command_backgrounds(canvas, paint, dimensions, self.animated_word_state)
+            dimensions['rect']
             self.draw_content_text(canvas, paint, dimensions)
             self.draw_header_buttons(canvas, paint, dimensions)
             
