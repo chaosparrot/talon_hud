@@ -119,14 +119,14 @@ class HeadUpWidgetManager:
 
         # Reload the main preferences in case the Talon HUD mode changed
         new_theme = self.preferences.prefs['theme_name']
-        if current_hud_environment != self.previous_talon_hud_environment:
+        environment_changed = current_hud_environment != self.previous_talon_hud_environment
+        if environment_changed:
             self.preferences.set_hud_environment(current_hud_environment)
             
             # Prevent two reloads after another if the monitor has also changed
             if not dimensions_changed:
                 self.preferences.load_preferences(self.preferences.get_main_preferences_filename())
             self.previous_talon_hud_environment = current_hud_environment
-            new_theme = self.preferences.prefs['theme_name']
         
         if dimensions_changed:
             screen_preferences_file = self.preferences.get_screen_preferences_filepath(current_screen_rects)
@@ -149,6 +149,8 @@ class HeadUpWidgetManager:
             else:
                 self.preferences.load_preferences( screen_preferences_file )
                 
+        if environment_changed:
+            new_theme = self.preferences.prefs['theme_name']            
         
         # Apply the new preferences to the widgets directly
         for widget in self.widgets:

@@ -617,7 +617,7 @@ class HeadUpDisplay:
                 
             # Add quick choices
             for index, button in enumerate(widget.buttons):
-                choice_title = string_to_speakable_string(button.text)                    
+                choice_title = string_to_speakable_string(button.text)
                 if choice_title:
                     for widget_name in current_widget_names:
                         quick_choices[widget_name + " " + choice_title] = widget.id + "|" + str(index)
