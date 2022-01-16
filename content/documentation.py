@@ -1,5 +1,6 @@
 from talon import app, actions, Module
 import os
+from user.talon_hud.utils import md_to_richtext_content
 
 mod = Module()
 
@@ -29,6 +30,8 @@ class HeadUpDocumentation:
             text_file = open(self.files[title], "r")
             documentation = text_file.read()
             text_file.close()
+            if self.files[title].endswith(".md"):
+                documentation = md_to_richtext_content(documentation)
             actions.user.hud_publish_content(documentation, "documentation", title)
 
     def show_overview(self):

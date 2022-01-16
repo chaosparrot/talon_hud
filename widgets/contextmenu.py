@@ -103,7 +103,7 @@ class HeadUpContextMenu(LayoutWidget):
             
     def disconnect_widget(self):
         self.connected_widget = None
-        self.disable(True)
+        self.disable()
             
     def draw(self, canvas) -> bool:
         if not self.mark_position_invalid:

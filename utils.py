@@ -155,6 +155,94 @@ def layout_rich_text(paint:skia.Paint, text:str, width:int = 1920, height:int = 
     paint.font.embolden = False
     return final_lines
 
+def md_to_richtext_content(md_string: str):
+    sanitized_content = sanitize_md_from_unsupported_tags(md_string)
+    
+    # Marks to be translated to the internal rich text delimiters
+    mark_voice_command = "-MARK-VOICE-COMMAND-"
+    mark_italic = "-MARK-ITALIC-"
+    mark_italic_u = "-MARK-U-ITALIC-"    
+    mark_emphasis = "-MARK-EMPHASIS-"
+    mark_emphasis_u = "-MARK-U-EMPHASIS-"
+    mark_error = "-MARK-ERROR-"
+    
+    # Escaped marks
+    escaped_backtick = "-ESCAPED-BACKTICK-"
+    escaped_star = "-ESCAPED-STAR-"
+    escaped_underscore = "-ESCAPED-UNDERSCORE-"
+    
+    # Keep escaped characters around
+    md_content = sanitized_content.replace("\\`", escaped_backtick).replace("\\*", escaped_star).replace("\\_", escaped_underscore)\
+        .replace(" ` ", " " + escaped_backtick + " ").replace(" * ", " " + escaped_star + " ").replace(" _ ", " " + escaped_underscore + " ")
+    content_escaped = len(md_content) != len(sanitized_content)
+    
+    # Replace all the MD markers
+    md_content = md_content.replace("!!", mark_error)            
+    md_content = md_content.replace("__", mark_emphasis_u).replace("**", mark_emphasis)
+    md_content = md_content.replace("_", mark_italic_u).replace("*", mark_italic)
+    md_content = md_content.replace(mark_emphasis + mark_emphasis_u, mark_emphasis + mark_italic_u)\
+    	.replace(mark_emphasis_u + mark_emphasis, mark_emphasis_u + mark_italic)            
+    md_content = md_content.replace("```", "`").replace("`", mark_voice_command)
+    
+    # This is probably a highly inefficient way of replacing tokens, but it should probably be atleast consistent?
+    md_content = replace_md_content_mark(md_content, mark_voice_command, "<cmd@")
+    md_content = replace_md_content_mark(md_content, mark_error, "<!!")
+    md_content = replace_md_content_mark(md_content, mark_italic, "</")
+    md_content = replace_md_content_mark(md_content, mark_italic_u, "</")
+    md_content = replace_md_content_mark(md_content, mark_emphasis, "<*")
+    md_content = replace_md_content_mark(md_content, mark_emphasis_u, "<*")
+    
+    # Only unescape the content if we have escaped
+    if content_escaped:
+        md_content = md_content.replace(escaped_backtick, "`").replace(escaped_star, "*").replace(escaped_underscore, "_")
+            
+    return md_content
+
+def replace_md_content_mark(md_content: str, mark_to_replace: str, token: str) -> str:
+    mark_opened = False
+    token_splits = md_content.split(mark_to_replace)
+    if len(token_splits) > 0:
+        replaced_content = token_splits[0]
+        for split_token in token_splits[1:]:
+            mark_opened = not mark_opened
+            replaced_content += ( token if mark_opened else "/>" ) + split_token
+        md_content = replaced_content
+    return md_content
+
+def sanitize_md_from_unsupported_tags(md_content: str) -> str:
+    content = []
+    lines = md_content.splitlines()
+    line_added = False
+    
+    for line in lines:
+        stripped_line = line.strip()
+        
+        # Skip all headers
+        # Skip all table rows
+        # Skip all block quotes
+        if stripped_line.startswith("#") or \
+            stripped_line.startswith("|") or \
+            stripped_line.startswith(">"):
+            content_added = False
+            continue
+		    
+        # Skip all horizontal lines and remove the previous line before it if it has been added
+        elif ( "-" in stripped_line and len(stripped_line.replace("-", "")) > 0) or \
+            ( "=" in stripped_line and len(stripped_line.replace("=", "")) > 0):
+            if content_added:
+                content.pop()
+                content_added = False		    
+            continue
+        elif line == "":
+            content.append(line)
+            
+            # Empty lines need to be marked as no content to allow the header removal to work properly
+            content_added = False
+        else:
+            content.append(line)
+            content_added = True
+    return "\n".join(content)    
+
 def calculate_words_bounds(words: list[str], paint, space_text_bounds) -> ui.Rect:
     current_words_joined = " ".join(words)
     _, current_line_bounds = paint.measure_text(current_words_joined)            

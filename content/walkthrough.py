@@ -1,8 +1,9 @@
 from talon import app, Module, actions, Context, speech_system, cron, scope
 from user.talon_hud.content.typing import HudWalkThrough, HudWalkThroughStep
-from user.talon_hud.utils import retrieve_available_voice_commands
+from user.talon_hud.utils import retrieve_available_voice_commands, md_to_richtext_content
 import os
 import json
+import copy
 
 semantic_directory = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 walkthrough_file_location = semantic_directory + "/preferences/walkthrough.csv"
@@ -112,17 +113,27 @@ class WalkthroughPoller:
         """Load the walkthrough file"""
         filename = self.walkthrough_files[title]
         walkthrough_defaults = {"content": "", "context_hint": "", "modes": [], "tags": [], "app": ""}
-        with open(filename) as json_file:
-            jsondata = json.load(json_file)
-            steps = []
-            if isinstance(jsondata, list):
-                for unfiltered_step in jsondata:
-                    step = { key: unfiltered_step[key] if key in unfiltered_step else walkthrough_defaults[key] for key in walkthrough_defaults.keys() }
-                    walkthrough_step = actions.user.hud_create_walkthrough_step(**step)
-                    steps.append( walkthrough_step )
-            
-            if len(steps) > 0:
-                actions.user.hud_create_walkthrough(title, steps)
+        steps = []        
+        if filename.endswith(".json"):
+            with open(filename) as json_file:
+                jsondata = json.load(json_file)
+                if isinstance(jsondata, list):
+                    for unfiltered_step in jsondata:
+                        step = { key: unfiltered_step[key] if key in unfiltered_step else walkthrough_defaults[key] for key in walkthrough_defaults.keys() }
+                        walkthrough_step = actions.user.hud_create_walkthrough_step(**step)
+                        steps.append( walkthrough_step )
+        elif filename.endswith(".md"):
+            with open(filename) as md_file:
+                richtext_content = md_to_richtext_content(md_file.read())
+                richtext_lines = richtext_content.splitlines()
+                for richtext_line in richtext_lines:
+                    if richtext_line != '':
+                        step = copy.copy(walkthrough_defaults)
+                        step['content'] = richtext_line
+                        walkthrough_step = actions.user.hud_create_walkthrough_step(**step)
+                        steps.append( walkthrough_step )
+        if len(steps) > 0:
+            actions.user.hud_create_walkthrough(title, steps)
         
     def add_walkthrough(self, walkthrough: HudWalkThrough):
         """Add a walkthrough to the list of walkthroughs"""
