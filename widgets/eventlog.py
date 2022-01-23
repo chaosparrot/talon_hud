@@ -2,9 +2,12 @@ from user.talon_hud.base_widget import BaseWidget
 from talon import skia, ui, cron
 import time
 import numpy
-from user.talon_hud.widget_preferences import HeadUpDisplayUserWidgetPreferences
+from user.talon_hud.widget_preferences import HeadUpDisplayUserWidgetPreferences, ExtraPreference
 from user.talon_hud.utils import layout_rich_text
-from user.talon_hud.content.typing import HudButton
+from user.talon_hud.content.typing import HudButton, HudLogMessage
+
+class HeadUpEventLogPreferences(HeadUpDisplayUserWidgetPreferences):
+    extra_preferences = [ExtraPreference("ttl_duration_seconds", str, float)]
 
 class HeadUpEventLog(BaseWidget):
 
@@ -13,16 +16,22 @@ class HeadUpEventLog(BaseWidget):
         'mode': 'command'
     }
     subscribed_logs = ['*']
-    allowed_setup_options = ["position", "dimension", "limit", "font_size"]    
+    allowed_setup_options = ["position", "dimension", "limit", "font_size"]
     
     visual_logs = []
     visual_log_length = 0
+    
+    # New content topic types
+    topic_types = ['log_messages']
+    current_topics = ["*"]
+    subscriptions = ["command", "error", "warning", "info", "success"]
 
     # By default - This widget sits just above the statusbar on the right side of the screen
     # Which means more screen real estate is on the left and top which is why we want the alignment to the right and the expand direction to go up
     # Also assume the logs should be read chronologically from top to bottom, 
     # Which means new messages push old messages up if they haven't disappeared yet
-    preferences = HeadUpDisplayUserWidgetPreferences(type="event_log", x=1430, y=720, width=450, height=200, enabled=True, alignment="right", expand_direction="up", font_size=18)
+    preferences = HeadUpEventLogPreferences(type="event_log", x=1430, y=720, width=450, height=200, enabled=True, alignment="right", expand_direction="up", font_size=18, 
+        subscriptions=["command", "error", "warning", "info", "success"])
 
     ttl_animation_max_duration = 10
     animation_max_duration = 60 # Keep it the same as the status bar for now
@@ -43,24 +52,24 @@ class HeadUpEventLog(BaseWidget):
         buttons.append(HudButton("", "Keep alive", ui.Rect(0,0,0,0), lambda widget: widget.set_log_ttl(-1)))
         if self.ttl_duration_seconds == self.infinite_ttl:
             buttons[0].text = "Timed live"
-            buttons[0].callback = lambda widget: widget.set_log_ttl()
+            buttons[0].callback = lambda widget: widget.set_log_ttl(self.theme.get_float_value('event_log_ttl_duration_seconds', 9))
             buttons.append(HudButton("", "Unlock entries" if self.locked else "Lock entries", ui.Rect(0,0,0,0), lambda widget: widget.set_lock(not widget.locked)))
         
         buttons.append(HudButton("", "Clear logs", ui.Rect(0,0,0,0), lambda widget: widget.clear_logs()))
         self.buttons = buttons
     
-    def load_theme_values(self):
+    def load_extra_preferences(self):
         # Set and reset TTL on theme change
         self.set_log_ttl()
                 
-    def append_log(self, log):
-        if self.soft_enabled and self.enabled and len(log['message']) > 0 and not self.locked:
+    def append_log(self, log: HudLogMessage):
+        if self.soft_enabled and self.enabled and len(log.message) > 0 and not self.locked:
             visual_log = {
-                "show_on": log["time"],
-                "ttl": log["time"] + self.ttl_duration_seconds, 
-                "id": log["time"],
-                "type": log["type"], 
-                "message": log["message"], 
+                "show_on": log.time,
+                "ttl": log.time + self.ttl_duration_seconds, 
+                "id": log.time,
+                "type": log.type, 
+                "message": log.message, 
                 "animation_tick": self.ttl_animation_max_duration if self.show_animations else 0, 
                 "animation_goal": 0
             }
@@ -77,31 +86,35 @@ class HeadUpEventLog(BaseWidget):
 
     def revise_logs(self, logs):
         if self.soft_enabled and self.enabled and len(logs) > 0:
-            revise_index = 0
-            for index, visual_log in enumerate(self.visual_logs):
-                if visual_log['id'] == logs[0]["time"]:
-                    revise_index = index
-                    break
+            for log_index, log in enumerate(logs):                
+                revise_index = -1
+                for index, visual_log in enumerate(self.visual_logs):
+                    if visual_log['id'] == log.time:
+                        revise_index = index
+                        break
             
-            self.visual_logs.pop(revise_index)           
-            new_logs = []
-            for index, new_log in enumerate(logs):
-                visual_delay = self.ttl_delayed_seconds * index
-                
-                visual_log = {
-                    "show_on": new_log["time"] + visual_delay,
-                    "ttl": new_log["time"] + self.ttl_duration_seconds + visual_delay, 
-                    "id": new_log["time"],
-                    "type": new_log["type"], 
-                    "message": new_log["message"], 
-                    "animation_tick": self.ttl_animation_max_duration if self.show_animations else 0, 
-                    "animation_goal": 0
-                }
-                
-                if (self.expand_direction == "up"):
-                    self.visual_logs.insert(revise_index, visual_log)
+                if revise_index != -1:
+                    self.visual_logs.pop(revise_index)
+                    new_logs = []
+                    for index, new_log in enumerate(logs):
+                        visual_delay = self.ttl_delayed_seconds * index
+                        
+                        visual_log = {
+                            "show_on": new_log.time + visual_delay,
+                            "ttl": new_log.time + self.ttl_duration_seconds + visual_delay, 
+                            "id": new_log.time,
+                            "type": new_log.type, 
+                            "message": new_log.message, 
+                            "animation_tick": self.ttl_animation_max_duration if self.show_animations else 0, 
+                            "animation_goal": 0
+                        }
+                        
+                        if (self.expand_direction == "up"):
+                            self.visual_logs.insert(revise_index, visual_log)
+                        else:
+                            self.visual_logs.append(visual_log)
                 else:
-                    self.visual_logs.append(visual_log)
+                    self.append_log(log)
                 
             # Poll for TTL expiration at half the rate of the animation duration - It's not mission critical to make the logs disappear at exactly the right time
             if self.ttl_poller is None:
@@ -150,11 +163,29 @@ class HeadUpEventLog(BaseWidget):
                 self.soft_enabled = True
             else:
                 self.soft_disable()
+        
+        if "event" in new_content:
+            if new_content["event"].operation == "append":
+                self.append_log(new_content["event"].content)
+                print( "APPEND!" )
+            elif new_content["event"].operation == "patch":
+                print( "EVENT SENT!" )
+                self.revise_logs(new_content["event"].content)
         self.update_buttons()
 
     def set_log_ttl(self, ttl = None):
         previous_duration = self.ttl_duration_seconds
-        self.ttl_duration_seconds = self.theme.get_float_value('event_log_ttl_duration_seconds', 9) if ttl is None else ttl
+        
+        if ttl is None:
+            self.ttl_duration_seconds = self.preferences.ttl_duration_seconds if hasattr(self.preferences, 'ttl_duration_seconds') else self.theme.get_float_value('event_log_ttl_duration_seconds', 9)
+        else:
+            # Set and persist the TTL when it has been manually added
+            if ttl != self.ttl_duration_seconds:
+                self.ttl_duration_seconds = ttl
+                self.preferences.ttl_duration_seconds = ttl
+                self.preferences.mark_changed = True
+                self.event_dispatch.request_persist_preferences()            
+        
         self.ttl_duration_seconds = self.ttl_duration_seconds if self.ttl_duration_seconds != -1 else self.infinite_ttl
         for visual_log in self.visual_logs:
             visual_log['ttl'] = visual_log['ttl'] - previous_duration + self.ttl_duration_seconds

@@ -99,7 +99,7 @@ class HeadUpDisplayUserPreferences:
             
             # Override defaults with file values
             for index,line in enumerate(lines):
-                split_line = line.strip('\n').split(',')
+                split_line = line.strip('\n').split(',', 1)
                 key = split_line[0]
                 value = split_line[1]
                 if (key in self.boolean_keys):
@@ -132,7 +132,7 @@ class HeadUpDisplayUserPreferences:
         
         # Override defaults with file values
         for index,line in enumerate(lines):
-            split_line = line.strip('\n').split(',')
+            split_line = line.strip('\n').split(',', 1)
             key = split_line[0]
             value = split_line[1]
             if (key in self.boolean_keys):
@@ -196,9 +196,9 @@ class HeadUpDisplayUserPreferences:
                 # Only add new lines to non-final rows
                 if index + 1 != len(self.prefs):
                     line = line + '\n'
-                    lines.append(line)
+                lines.append(line)
 
         if len(lines) > 0:
-            fh = open(filename, "w")                
+            fh = open(filename, "w")
             fh.write("".join(lines))
             fh.close()        

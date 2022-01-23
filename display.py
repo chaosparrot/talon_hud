@@ -17,7 +17,7 @@ from user.talon_hud.layout_widget import LayoutWidget
 from user.talon_hud.widgets.textpanel import HeadUpTextPanel
 from user.talon_hud.widgets.choicepanel import HeadUpChoicePanel
 from user.talon_hud.widgets.contextmenu import HeadUpContextMenu
-from user.talon_hud.content.typing import HudPanelContent, HudButton
+from user.talon_hud.content.typing import HudPanelContent, HudButton, HudContentEvent
 from user.talon_hud.content.poller import Poller
 from user.talon_hud.utils import string_to_speakable_string
 
@@ -172,10 +172,9 @@ class HeadUpDisplay:
             if persisted:
                 self.reload_preferences()
 
+            self.display_state.register('broadcast_update', self.broadcast_update)
             self.display_state.register('content_update', self.content_update)
             self.display_state.register('panel_update', self.panel_update)            
-            self.display_state.register('log_update', self.log_update)
-            self.display_state.register('log_revise', self.log_revise)
             self.display_state.register('trigger_audio_cue', self.audio_manager.trigger_cue)
             
             ui.register('screen_change', self.reload_preferences)
@@ -211,9 +210,8 @@ class HeadUpDisplay:
             
             self.disable_poller_job = cron.interval('30ms', self.disable_poller_check)
             self.display_state.unregister('content_update', self.content_update)
+            self.display_state.unregister('broadcast_update', self.broadcast_update)            
             self.display_state.unregister('panel_update', self.panel_update)
-            self.display_state.unregister('log_update', self.log_update)
-            self.display_state.unregister('log_revise', self.log_revise)
             self.display_state.unregister('trigger_audio_cue', self.audio_manager.trigger_cue)            
             ui.unregister('screen_change', self.reload_preferences)
             settings.unregister("user.talon_hud_environment", self.hud_environment_change)            
@@ -415,6 +413,22 @@ class HeadUpDisplay:
             cron.cancel(self.disable_poller_job)
             self.disable_poller_job = None
         
+    def broadcast_update(self, event: HudContentEvent):
+        for widget in self.widget_manager.widgets:
+            print( event.topic_type, event.topic, widget.topic_types, widget.subscriptions )
+            if event.topic_type in widget.topic_types and \
+                (event.topic in widget.subscriptions or \
+                ('*' in widget.subscriptions and "!" + event.topic not in widget.subscriptions)):
+                
+                current_enabled_state = widget.enabled
+                widget.content_handler(event)
+                if widget.enabled != current_enabled_state:
+                    if event.topic in self.pollers and event.topic not in self.keep_alive_pollers:
+                        if widget.enabled:
+                            self.pollers[event.topic].enable()
+                        else:
+                            self.pollers[event.topic].disable()
+
     def content_update(self, data):
         for widget in self.widget_manager.widgets:
             update_dict = {}
@@ -434,18 +448,6 @@ class HeadUpDisplay:
                             self.pollers[widget.topic].enable()
                         else:
                             self.pollers[widget.topic].disable()
-                
-    def log_update(self, logs):
-        new_log = logs[-1]
-        for widget in self.widget_manager.widgets:
-            if new_log['type'] in widget.subscribed_logs or '*' in widget.subscribed_logs:
-                widget.append_log(new_log)
-                
-    def log_revise(self, logs):
-        for widget in self.widget_manager.widgets:
-            if logs[0]['type'] in widget.subscribed_logs or '*' in widget.subscribed_logs:
-                widget.revise_logs(logs)
-        
 
     def panel_update(self, panel_content: HudPanelContent):
         updated = False
@@ -529,13 +531,12 @@ class HeadUpDisplay:
         for widget in self.widget_manager.widgets:
             if widget.enabled and widget.id == widget_id:
                 connected_widget = widget
-            elif widget.id == 'context_menu':      
+            elif widget.id == 'context_menu':
                 context_menu_widget = widget
         if connected_widget and context_menu_widget:
             context_menu_widget.connect_widget(connected_widget, pos.x, pos.y, buttons)
 
-            cron.cancel(self.update_context_debouncer)
-            self.update_context_debouncer = cron.after("50ms", self.update_context)
+            self.update_context()
             
     # Connect the context menu using voice
     def connect_context_menu(self, widget_id):
@@ -555,9 +556,7 @@ class HeadUpDisplay:
         
             if context_menu_widget:
                 context_menu_widget.connect_widget(connected_widget, pos_x, pos_y, buttons)
-                
-                cron.cancel(self.update_context_debouncer)
-                self.update_context_debouncer = cron.after("50ms", self.update_context)
+                self.update_context()
     
     # Hide the context menu
     # Generally you want to do this when you click outside of the menu itself

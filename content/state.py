@@ -2,7 +2,7 @@ from talon import actions, cron, scope, Module, ui
 from talon.types.point import Point2d
 from talon_init import TALON_USER
 from talon.scripting import Dispatch
-from user.talon_hud.content.typing import HudPanelContent, HudButton, HudChoice, HudChoices, HudScreenRegion, HudAudioCue, HudDynamicVoiceCommand
+from user.talon_hud.content.typing import HudPanelContent, HudButton, HudChoice, HudChoices, HudScreenRegion, HudAudioCue, HudDynamicVoiceCommand, HudLogMessage, HudContentEvent
 import time
 from typing import Callable, Any, Union
 import os
@@ -39,6 +39,28 @@ class HeadUpDisplayContent(Dispatch):
         "screen_regions": {
            "cursor": []
         },
+    }
+    
+    topic_types = {
+        'variables': {
+            'mode': 'command'
+        },
+        'log_messages': {
+            'command': [],
+            'error': [],
+            'info': [],
+            'warning': [],
+            'success': [],
+            'phrase': [],
+            'announcer': []
+        },
+        'walkthrough': {},
+        'text': {},
+        'choices': {},
+        'status_icons': {},
+        'ability_icons': {},
+        'cursor_regions': {},        
+        'screen_regions': {},
     }
     
     # Publish content meant for text boxes and other panels
@@ -109,84 +131,79 @@ class HeadUpDisplayContent(Dispatch):
         self.content['phrases'].append(phrase_data)
         self.content['phrases'][-max_log_length:]
         self.dispatch("content_update", self.content)
+
+    # NEW CONTENT API
+    def append_to_log_messages(self, topic, log_message, timestamp = None, metadata = None):    
+        log_message = HudLogMessage(timestamp if timestamp else time.monotonic(), topic, log_message, metadata)
+        if topic not in self.topic_types['log_messages']:
+            self.topic_types['log_messages'] = []
+        self.topic_types['log_messages'][topic].append(log_message)
+        self.topic_types['log_messages'][topic][-max_log_length:]
         
-    def append_to_log(self, type, log_message):
-        self.content['log'].append({'type': type, 'message': log_message, 'time': time.monotonic()})
-        self.content['log'][-max_log_length:]
         if self.queued_log_splits:
             self.revise_log(True)
         else:
-            self.dispatch("log_update", self.content['log'])
+            self.dispatch("broadcast_update", HudContentEvent('log_messages', topic, log_message, 'append'))
 
-    def show_throttled_logs(self, sleep_s: int = 0):
+    def show_throttled_logs(self, sleep_s: float = 0):
         if sleep_s:
             actions.sleep(sleep_s)
         
         if self.throttled_logs:
-            for log in self.throttled_logs:
-                self.content['log'].append(log)
-                self.content['log'][-max_log_length:]
+            for log_message in self.throttled_logs:
+                self.topic_types['log_messages'][log_message.type].append(log_message)
+                self.topic_types['log_messages'][log_message.type][-max_log_length:]
                 if self.queued_log_splits:
                     self.revise_log(True)
                 else:
-                    self.dispatch("log_update", self.content['log'])
+                    self.dispatch("broadcast_update", HudContentEvent('log_messages', log_message.type, log_message, 'append'))
             self.throttled_logs = []
 
     def revise_log(self, send_update = False):
-        revised_indecis = []        
+        revised_indecis = []
+        updated_logs = []
         for queue_index, queued_log in enumerate(self.queued_log_splits):
             type = queued_log['type']
             prefix = queued_log['prefix']
             discard_remaining = queued_log['discard_remaining']
             throttled = queued_log['throttled']
             
-            log_amount = len(self.content['log'])
+            log_amount = len(self.topic_types['log_messages'][type])
             if log_amount > 0:
                 
-                # Get the last index of the type of log we are after
-                index = -1
-                log = None
-                for i in range(0, log_amount):
-                    if i == 0:
-                       i += 1
-                    
-                    if self.content['log'][-i]['type'] == type:
-                        index = i
-                        log = self.content['log'][-i]
-                        break
+                index = log_amount - 1
+                log = self.topic_types['log_messages'][type][index] if index != -1 and index < log_amount else None
                 
-                if index != -1 and log['message'].startswith(prefix):
+                if index != -1 and log is not None and log.message.startswith(prefix):
                     revised_indecis.append( queue_index )
-                    remaining = log['message'][len(prefix):].lstrip()
+                    remaining = log.message[len(prefix):].lstrip()
                     if remaining:
-                        self.content['log'][-index]['message'] = prefix.strip()
-                        if send_update:
-                            self.dispatch("log_update", self.content['log'])
-                        
-                        revised_logs = [self.content['log'][-index]]
+                        self.topic_types['log_messages'][type][index].message = prefix.strip()
+                               
+                        revised_logs = [self.topic_types['log_messages'][type][index]]
                         if not discard_remaining:
-                            remainder_log = {'type': type, 'message': remaining, 'time': log['time']}
+                            remainder_log = HudLogMessage(log.time, type, remaining)
                             
                             if not throttled:
                                 revised_logs.append(remainder_log)
                                 if index >= log_amount or index == 1:
-                                    self.content['log'].append(remainder_log)
+                                    self.topic_types['log_messages'][type].append(remainder_log)
                                 else:
-                                    self.content['log'].insert(-index, remainder_log)
+                                    self.topic_types['log_messages'][type].insert(index, remainder_log)
                             else:
                                 self.throttled_logs.append(remainder_log)
                         
                         if send_update == False:
-                            self.dispatch("log_revise", revised_logs)
+                            event = HudContentEvent("log_messages", type, revised_logs, "patch")
+                            self.dispatch("broadcast_update", event)
     
         # Remove the queued splits from the log in reverse to preserve the order
         revised_indecis.reverse()
         for queue_index in revised_indecis:
             self.queued_log_splits.pop(queue_index)
-    
-        if send_update:
-            self.dispatch("log_update", self.content['log'])                        
-    
+        
+        if send_update and len(updated_logs):
+            self.dispatch("broadcast_update", HudContentEvent("log_messages", type, updated_logs, "patch"))
     
     def edit_log_message(self, prefix, throttled = False, discard_remaining = False, type = "command"):
         if self.queued_log_splits is None:
@@ -205,7 +222,7 @@ class Actions:
     def hud_add_log(type: str, message: str):
         """Adds a log to the HUD"""
         global hud_content
-        hud_content.append_to_log(type, message)
+        hud_content.append_to_log_messages(type, message)
         
     def hud_edit_log(prefix_split: str, throttle_remaining: int = 0, discard_remaining: int = 0, type: str = "command"):
         """Edits a log message to be split up into multiple with optional discarding of the remainder"""
@@ -268,13 +285,16 @@ class Actions:
     def hud_add_phrase(phrase: str, timestamp: float, time_ms: float, model: str, microphone: str):
         """Add a phrase to the phrase log"""
         global hud_content
-        hud_content.append_to_phrases({
+        metadata = {
             "phrase": phrase,
             "time_ms": time_ms,
             "timestamp": timestamp,
             "model": model,
             "microphone": microphone
-        })
+        }
+        
+        hud_content.append_to_phrases(metadata)
+        hud_content.append_to_log_messages('phrase', phrase, timestamp, metadata)
     
     def hud_refresh_content():
         """Sends a refresh event to all the widgets where the content has changed"""

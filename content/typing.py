@@ -98,3 +98,23 @@ class HudAudioCue:
     file: str
     volume: int = 75
     enabled: bool = False
+
+CONTENT_EVENT_OPERATION_REPLACE = 'replace' # Used to signal a complete replacement of the given topic
+CONTENT_EVENT_OPERATION_PATCH = 'patch' # Used to signal a partial replacement of the given topic
+CONTENT_EVENT_OPERATION_APPEND = 'append' # Used to signal a single item being appended to a collection
+
+@dataclass
+class HudContentEvent:
+    topic_type: str
+    topic: str
+    content: Any
+    operation: str = 'replace'
+    claim: bool = False
+    show: bool = False
+    
+@dataclass
+class HudLogMessage:
+    time: float
+    type: str
+    message: str
+    metadata: Any = None

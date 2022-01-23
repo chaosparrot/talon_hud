@@ -301,7 +301,7 @@ class HeadUpWidgetManager:
             # Special widgets that have varying positions            
             self.load_widget("context_menu", "context_menu"),
             self.load_widget("cursor_tracker", "cursor_tracker"),
-            self.load_widget("screen_overlay", "screen_overlay"),            
+            self.load_widget("screen_overlay", "screen_overlay"),
         ]
         
     def load_widget(self, id: str, type: str, subscriptions = None) -> BaseWidget:
@@ -368,4 +368,3 @@ class HeadUpWidgetManager:
     def load_walk_through_panel(self, id, preferences=None, subscriptions=None):
         """Load a choice panel widget with the given preferences"""
         return HeadUpWalkThroughPanel(id, preferences, self.theme, self.event_dispatch, subscriptions)
-    

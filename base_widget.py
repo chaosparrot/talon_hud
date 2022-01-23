@@ -24,10 +24,16 @@ class BaseWidget(metaclass=ABCMeta):
     buttons = []
     
     allowed_setup_options = ["position", "dimension", "limit", "font_size"]
+    subscribed_topics = []
+    
     subscribed_content = ['mode']
     subscribed_logs = []
     subscribed_topics = []
     topic = ''
+    
+    # New content topic types
+    topic_types = []
+    current_topics = ["*"]
     
     content = {}
         
@@ -67,6 +73,10 @@ class BaseWidget(metaclass=ABCMeta):
         self.alignment = self.preferences.alignment
         self.expand_direction = self.preferences.expand_direction
         self.minimized = self.preferences.minimized
+        self.subscriptions = self.preferences.subscriptions
+        self.current_topics = self.preferences.current_topics
+        
+        self.load_extra_preferences()
         
         # For re-enabling or disabling widgets after a reload ( mostly for talon hud environment changes )
         if update_enabled:
@@ -78,6 +88,12 @@ class BaseWidget(metaclass=ABCMeta):
         if initialize:
             self.load_theme_values()        
     
+    def load_extra_preferences(self):
+        """
+        To be overridden by derived types to load widget-specific preferences
+        """
+        pass
+    
     # Set the topic that has claimed this widget
     def set_topic(self, topic:str):
     	self.topic = topic
@@ -88,6 +104,12 @@ class BaseWidget(metaclass=ABCMeta):
         if self.enabled:
             self.canvas.resume()
             self.animation_tick = self.animation_max_duration if self.show_animations else 0
+
+    def content_handler(self, event):
+        self.refresh({"event": event})
+        
+        if self.enabled and self.canvas:
+            self.canvas.resume()
     
     def update_content(self, content):
         if not self.sleep_enabled and "mode" in content:
