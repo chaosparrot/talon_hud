@@ -71,7 +71,7 @@ class HeadUpCursorTracker(BaseWidget):
     def update_icons(self, cursor_icons: list[HudScreenRegion] = None):
         soft_enable = False    
         if cursor_icons != None:
-            new_icons = cursor_icons          
+            new_icons = cursor_icons[:]
             soft_enable = self.cursor_icons != new_icons and len(new_icons) > 0
             self.cursor_icons = new_icons
         
