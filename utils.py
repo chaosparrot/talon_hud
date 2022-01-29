@@ -227,8 +227,8 @@ def sanitize_md_from_unsupported_tags(md_content: str) -> str:
             continue
 		    
         # Skip all horizontal lines and remove the previous line before it if it has been added
-        elif ( "-" in stripped_line and len(stripped_line.replace("-", "")) > 0) or \
-            ( "=" in stripped_line and len(stripped_line.replace("=", "")) > 0):
+        elif ( "-" in stripped_line and not len(stripped_line.replace("-", "")) > 0) or \
+            ( "=" in stripped_line and not len(stripped_line.replace("=", "")) > 0):
             if content_added:
                 content.pop()
                 content_added = False		    

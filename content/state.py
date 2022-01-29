@@ -48,7 +48,7 @@ class HeadUpDisplayContent(Dispatch):
         'log_messages': {
             'command': [],
             'error': [],
-            'info': [],
+            'event': [],
             'warning': [],
             'success': [],
             'phrase': [],
@@ -136,7 +136,7 @@ class HeadUpDisplayContent(Dispatch):
     def append_to_log_messages(self, topic, log_message, timestamp = None, metadata = None):    
         log_message = HudLogMessage(timestamp if timestamp else time.monotonic(), topic, log_message, metadata)
         if topic not in self.topic_types['log_messages']:
-            self.topic_types['log_messages'] = []
+            self.topic_types['log_messages'][topic] = []
         self.topic_types['log_messages'][topic].append(log_message)
         self.topic_types['log_messages'][topic][-max_log_length:]
         

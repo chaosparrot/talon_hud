@@ -24,14 +24,14 @@ class HeadUpEventLog(BaseWidget):
     # New content topic types
     topic_types = ['log_messages']
     current_topics = ["*"]
-    subscriptions = ["command", "error", "warning", "info", "success"]
+    subscriptions = ["command", "error", "warning", "event", "success"]
 
     # By default - This widget sits just above the statusbar on the right side of the screen
     # Which means more screen real estate is on the left and top which is why we want the alignment to the right and the expand direction to go up
     # Also assume the logs should be read chronologically from top to bottom, 
     # Which means new messages push old messages up if they haven't disappeared yet
     preferences = HeadUpEventLogPreferences(type="event_log", x=1430, y=720, width=450, height=200, enabled=True, alignment="right", expand_direction="up", font_size=18, 
-        subscriptions=["command", "error", "warning", "info", "success"])
+        subscriptions=["command", "error", "warning", "event", "success"])
 
     ttl_animation_max_duration = 10
     animation_max_duration = 60 # Keep it the same as the status bar for now
@@ -167,9 +167,7 @@ class HeadUpEventLog(BaseWidget):
         if "event" in new_content:
             if new_content["event"].operation == "append":
                 self.append_log(new_content["event"].content)
-                print( "APPEND!" )
             elif new_content["event"].operation == "patch":
-                print( "EVENT SENT!" )
                 self.revise_logs(new_content["event"].content)
         self.update_buttons()
 

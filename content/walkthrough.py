@@ -1,4 +1,5 @@
-from talon import app, Module, actions, Context, speech_system, cron, scope
+from typing import Callable, Any
+from talon import app, Module, actions, Context, speech_system, cron, scope, fs
 from user.talon_hud.content.typing import HudWalkThrough, HudWalkThroughStep
 from user.talon_hud.utils import retrieve_available_voice_commands, md_to_richtext_content
 import os
@@ -20,21 +21,31 @@ class WalkthroughPoller:
     walkthroughs = None
     walkthrough_steps = None
     current_walkthrough = None
+    current_walkthrough_title = None
     current_stepnumber = -1
     current_words = []
     in_right_context = True
+    development_mode = False
+    reload_job = None
     
     def __init__(self):
         self.walkthroughs = {}
         self.walkthrough_files = {}
+        self.lazy_walkthroughs = {}
         self.walkthrough_steps = {}
         self.order = []
+        
+    def set_development_mode(self, enabled):
+        self.development_mode = enabled
+        self.watch_walkthrough_file(self.development_mode)
 
     def enable(self):
         if self.enabled == False:
             speech_system.register("pre:phrase", self.check_step)
             self.scope_job = cron.interval('1500ms', self.display_step_based_on_context)
             ctx.tags = ["user.talon_hud_walkthrough"]
+            if self.development_mode:
+                self.watch_walkthrough_file(True)
         self.enabled = True
 
     def disable(self):
@@ -43,7 +54,23 @@ class WalkthroughPoller:
             self.scope_job = None
             speech_system.unregister("pre:phrase", self.check_step)        
             ctx.tags = []
+            if self.development_mode:
+                self.watch_walkthrough_file(False)
         self.enabled = False
+        
+    def watch_walkthrough_file(self, watch=True):
+        if self.current_walkthrough_title is not None and self.current_walkthrough_title in self.walkthrough_files:
+            current_walkthrough_file = self.walkthrough_files[ self.current_walkthrough_title ]
+            fs.unwatch(current_walkthrough_file, self.reload_walkthrough)    
+            if watch:
+                fs.watch(current_walkthrough_file, self.reload_walkthrough)
+        
+    def reload_walkthrough(self, _, __):
+        cron.cancel(self.reload_job)
+        self.reload_job = cron.after("50ms", self.reload_walkthrough_step)
+    
+    def reload_walkthrough_step(self):
+        print( "TODO" )
     
     def load_state(self):
         if not os.path.exists(walkthrough_file_location):
@@ -107,7 +134,19 @@ class WalkthroughPoller:
     def add_walkthrough_file(self, title: str, filename: str):
         """Add a file that can be loaded in later as a walkthrough"""
         self.walkthrough_files[title] = filename
+        self.add_lazy_walkthrough( title, lambda self=self, title=title: self.load_walkthrough_file(title) )
+        
+    def add_lazy_walkthrough(self, title: str, get_walkthrough: Callable[[], list[HudWalkThroughStep]]):
+        """Add a file that can be loaded in later as a walkthrough"""
+        self.lazy_walkthroughs[title] = get_walkthrough
         actions.user.hud_create_walkthrough(title, [])
+        
+    def lazy_load_walkthrough(self, title):
+        """Load the walkthrough file"""
+        steps = self.lazy_walkthroughs[title]()
+
+        if len(steps) > 0:
+            actions.user.hud_create_walkthrough(title, steps)
         
     def load_walkthrough_file(self, title):
         """Load the walkthrough file"""
@@ -132,8 +171,7 @@ class WalkthroughPoller:
                         step['content'] = richtext_line
                         walkthrough_step = actions.user.hud_create_walkthrough_step(**step)
                         steps.append( walkthrough_step )
-        if len(steps) > 0:
-            actions.user.hud_create_walkthrough(title, steps)
+        return steps
         
     def add_walkthrough(self, walkthrough: HudWalkThrough):
         """Add a walkthrough to the list of walkthroughs"""
@@ -147,11 +185,14 @@ class WalkthroughPoller:
             self.end_walkthrough(False)
             self.enable()
             
-            # Preload the walkthrough from the file
-            if len(self.walkthroughs[walkthrough_title].steps) == 0 and walkthrough_title in self.walkthrough_files:
-                self.load_walkthrough_file(walkthrough_title)
+            # Preload the walkthrough from a file or callback
+            if len(self.walkthroughs[walkthrough_title].steps) == 0 and walkthrough_title in self.lazy_walkthroughs:
+                self.lazy_load_walkthrough(walkthrough_title)
             
             self.current_walkthrough = self.walkthroughs[walkthrough_title]
+            self.current_walkthrough_title = walkthrough_title
+            self.watch_walkthrough_file(True)
+            
             actions.user.enable_hud_id("walk_through")
             if walkthrough_title in self.walkthrough_steps:
             
@@ -166,6 +207,13 @@ class WalkthroughPoller:
     def next_step(self):
         """Navigate to the next step in the walkthrough"""
         if self.current_walkthrough is not None:
+        
+            # Next step also functions as next page on a widget
+            pagination = actions.user.get_widget_pagination("walk_through")
+            if pagination.current < pagination.total:
+                actions.user.increase_widget_page("walk_through")
+                return
+            
 
             # Update the walkthrough CSV state
             if self.current_walkthrough.title not in self.walkthrough_steps:
@@ -190,6 +238,12 @@ class WalkthroughPoller:
     def previous_step(self):
         """Navigate to the previous step in the walkthrough"""
         if self.current_walkthrough is not None:
+        
+            # Previous step also functions as previous page on a widget
+            pagination = actions.user.get_widget_pagination("walk_through")
+            if pagination.current > 1:
+                actions.user.decrease_widget_page("walk_through")
+                return
 
             # Update the walkthrough CSV state
             self.walkthrough_steps[self.current_walkthrough.title]['current'] = max(0, self.current_stepnumber - 1)
@@ -233,7 +287,9 @@ class WalkthroughPoller:
             actions.user.hud_add_log("event", "Finished the \"" + self.current_walkthrough.title + "\" walkthrough!")
 
         self.disable()
+        self.watch_walkthrough_file(False)
         self.current_walkthrough = None
+        self.current_walkthrough_title = None
         self.current_stepnumber = -1
         self.in_right_context = False
     
@@ -278,7 +334,7 @@ class WalkthroughPoller:
                 
                 current_length = len(self.current_words)
                 for voice_command in step.voice_commands:
-                    if voice_command in phrase_to_check and voice_command not in self.current_words:
+                    if voice_command in phrase_to_check:
                         self.current_words.append(voice_command)
                 
                 # Send an update about the voice commands said during the step if it has changed
@@ -304,13 +360,18 @@ class Actions:
         """Add a walk through through a file"""
         global hud_walkthrough 
         hud_walkthrough.add_walkthrough_file(title, filename)
+        
+    def hud_add_lazy_walkthrough(title: str, get_walkthrough: Callable[[], list[HudWalkThroughStep]]):
+        """Add a walk through through a file"""
+        global hud_walkthrough 
+        hud_walkthrough.add_lazy_walkthrough(title, get_walkthrough)
 
-    def hud_create_walkthrough_step(content: str, context_hint: str = '', tags: list[str] = None, modes: list[str] = None, app: str = ''):
+    def hud_create_walkthrough_step(content: str, context_hint: str = '', tags: list[str] = None, modes: list[str] = None, app: str = '', restore_callback: Callable[[Any, Any], None] = None):
         """Create a step for a walk through"""
         voice_commands = retrieve_available_voice_commands(content)
         tags = [] if tags is None else tags
         modes = [] if modes is None else modes
-        return HudWalkThroughStep(content, context_hint, tags, modes, app, voice_commands)
+        return HudWalkThroughStep(content, context_hint, tags, modes, app, voice_commands, restore_callback)
 
     def hud_create_walkthrough(title: str, steps: list[HudWalkThroughStep]):
         """Create a walk through with all the required steps"""
@@ -341,6 +402,16 @@ class Actions:
         """Restore the current walkthrough step if possible"""
         global hud_walkthrough
         hud_walkthrough.restore_walkthrough_step()
+        
+    def hud_watch_walkthrough_files():
+        """Enable watching for changes in the walkthrough files for quicker development"""
+        global hud_walkthrough
+        hud_walkthrough.set_development_mode(True)
+        
+    def hud_unwatch_walkthrough_files():
+        """Disable watching for changes in the walkthrough files for quicker development"""
+        global hud_walkthrough
+        hud_walkthrough.set_development_mode(False)
         
     def hud_show_walkthroughs():
         """Show all the currently available walk through options"""

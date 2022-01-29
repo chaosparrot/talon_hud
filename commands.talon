@@ -43,5 +43,11 @@ tag: user.talon_hud_available
 ^[head up] [audio] {user.talon_hud_audio_cue} volume {user.talon_hud_volume_number} [percent]$: user.hud_audio_set_volume_id(talon_hud_volume_number, talon_hud_audio_cue)
 
 # Head up development commands - Sets watchers on certain configurations, like themes, so development is quicker
-^head up development start$: user.hud_watch_directories()
-^head up development stop$: user.hud_unwatch_directories()
+^head up development start$: 
+    user.hud_watch_directories()
+    user.hud_watch_walkthrough_files()
+    user.hud_watch_documentation_files()
+^head up development stop$: 
+    user.hud_unwatch_directories()
+    user.hud_unwatch_walkthrough_files()
+    user.hud_unwatch_documentation_files()

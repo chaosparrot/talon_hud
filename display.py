@@ -17,7 +17,7 @@ from user.talon_hud.layout_widget import LayoutWidget
 from user.talon_hud.widgets.textpanel import HeadUpTextPanel
 from user.talon_hud.widgets.choicepanel import HeadUpChoicePanel
 from user.talon_hud.widgets.contextmenu import HeadUpContextMenu
-from user.talon_hud.content.typing import HudPanelContent, HudButton, HudContentEvent
+from user.talon_hud.content.typing import HudPanelContent, HudButton, HudContentEvent, HudContentPage
 from user.talon_hud.content.poller import Poller
 from user.talon_hud.utils import string_to_speakable_string
 
@@ -209,8 +209,8 @@ class HeadUpDisplay:
             self.event_dispatch.unregister('show_context_menu', self.move_context_menu)            
             
             self.disable_poller_job = cron.interval('30ms', self.disable_poller_check)
+            self.display_state.unregister('broadcast_update', self.broadcast_update)
             self.display_state.unregister('content_update', self.content_update)
-            self.display_state.unregister('broadcast_update', self.broadcast_update)            
             self.display_state.unregister('panel_update', self.panel_update)
             self.display_state.unregister('trigger_audio_cue', self.audio_manager.trigger_cue)            
             ui.unregister('screen_change', self.reload_preferences)
@@ -412,14 +412,13 @@ class HeadUpDisplay:
                 poller.disable()
             cron.cancel(self.disable_poller_job)
             self.disable_poller_job = None
-        
+
     def broadcast_update(self, event: HudContentEvent):
         for widget in self.widget_manager.widgets:
-            print( event.topic_type, event.topic, widget.topic_types, widget.subscriptions )
             if event.topic_type in widget.topic_types and \
                 (event.topic in widget.subscriptions or \
                 ('*' in widget.subscriptions and "!" + event.topic not in widget.subscriptions)):
-                
+
                 current_enabled_state = widget.enabled
                 widget.content_handler(event)
                 if widget.enabled != current_enabled_state:
@@ -428,7 +427,7 @@ class HeadUpDisplay:
                             self.pollers[event.topic].enable()
                         else:
                             self.pollers[event.topic].disable()
-
+        
     def content_update(self, data):
         for widget in self.widget_manager.widgets:
             update_dict = {}
@@ -524,6 +523,14 @@ class HeadUpDisplay:
             if widget.enabled and widget.id == widget_id and isinstance(widget, LayoutWidget):
                 widget.set_page_index(widget.page_index - 1)
 
+    # Get the current page data
+    def get_widget_pagination(self, widget_id: str) -> HudContentPage:
+        page = HudContentPage(0, 0, 0)
+        for widget in self.widget_manager.widgets:
+            if widget.enabled and widget.id == widget_id and isinstance(widget, LayoutWidget):
+                page = widget.get_content_page()
+        return page
+
     # Move the context menu over to the given location fitting within the screen
     def move_context_menu(self, widget_id: str, pos: Point2d, buttons: list[HudButton]):
         connected_widget = None
@@ -531,11 +538,10 @@ class HeadUpDisplay:
         for widget in self.widget_manager.widgets:
             if widget.enabled and widget.id == widget_id:
                 connected_widget = widget
-            elif widget.id == 'context_menu':
+            elif widget.id == 'context_menu':      
                 context_menu_widget = widget
         if connected_widget and context_menu_widget:
             context_menu_widget.connect_widget(connected_widget, pos.x, pos.y, buttons)
-
             self.update_context()
             
     # Connect the context menu using voice
@@ -802,10 +808,10 @@ class Actions:
         global hud
         hud.decrease_widget_page(widget_id)
         
-    def decrease_widget_page(widget_id: str):
-        """Decrease the content page of the widget if it has pages available"""
+    def get_widget_pagination(widget_id: str) -> HudContentPage:
+        """Get the pagination information of the widget"""
         global hud
-        hud.decrease_widget_page(widget_id)
+        return hud.get_widget_pagination(widget_id)
         
     def hud_widget_options(widget_id: str):
         """Connect the widget to the context menu to show the options"""

@@ -98,6 +98,13 @@ class HudAudioCue:
     file: str
     volume: int = 75
     enabled: bool = False
+    
+# One-indexed page with result
+@dataclass
+class HudContentPage:
+    current: float
+    total: float
+    percent: float
 
 CONTENT_EVENT_OPERATION_REPLACE = 'replace' # Used to signal a complete replacement of the given topic
 CONTENT_EVENT_OPERATION_PATCH = 'patch' # Used to signal a partial replacement of the given topic

@@ -1,6 +1,7 @@
 from talon import canvas, ui
 from user.talon_hud.base_widget import BaseWidget
 from user.talon_hud.utils import layout_rich_text
+from user.talon_hud.content.typing import HudContentPage
 from random import randint
 
 class LayoutWidget(BaseWidget):
@@ -65,6 +66,12 @@ class LayoutWidget(BaseWidget):
             self.start_setup("")        
             self.mark_layout_invalid = True
             self.canvas.resume()
+            
+    def get_content_page(self) -> HudContentPage:
+        current = self.page_index + 1
+        total = max(1, len(self.layout) if self.layout else 1)
+        percent = current / total
+        return HudContentPage(current, total, percent)
         
     def start_setup(self, setup_type, mouse_position = None):
         self.mark_layout_invalid = True
