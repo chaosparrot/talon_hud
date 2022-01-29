@@ -70,7 +70,18 @@ class WalkthroughPoller:
         self.reload_job = cron.after("50ms", self.reload_walkthrough_step)
     
     def reload_walkthrough_step(self):
-        print( "TODO" )
+        if self.current_walkthrough is not None:
+            self.current_walkthrough.steps = self.lazy_walkthroughs[self.current_walkthrough_title]()
+            
+            # When the new step count is larger than the current step number, 
+            # reset the current step number to the last step
+            if self.current_stepnumber >= len(self.current_walkthrough.steps):
+                self.current_stepnumber = len(self.current_walkthrough.steps) - 1
+                
+            if len(self.current_walkthrough.steps) == 0:
+                self.end_walkthrough()
+            else:
+                self.display_step_based_on_context(True)
     
     def load_state(self):
         if not os.path.exists(walkthrough_file_location):
@@ -198,7 +209,7 @@ class WalkthroughPoller:
             
                 # If we have started a walkthrough but haven't finished it - continue where we left off
                 if walkthrough_title in self.walkthrough_steps and self.walkthrough_steps[walkthrough_title]['current'] < len(self.current_walkthrough.steps):
-                    self.current_stepnumber = self.walkthrough_steps[walkthrough_title]['current'] - 1                    
+                    self.current_stepnumber = self.walkthrough_steps[walkthrough_title]['current'] - 1
                 # Otherwise, just start over
                 else:
                     self.current_stepnumber = -1
