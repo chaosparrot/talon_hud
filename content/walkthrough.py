@@ -202,7 +202,8 @@ class WalkthroughPoller:
             
             self.current_walkthrough = self.walkthroughs[walkthrough_title]
             self.current_walkthrough_title = walkthrough_title
-            self.watch_walkthrough_file(True)
+            if self.development_mode:
+                self.watch_walkthrough_file(True)
             
             actions.user.enable_hud_id("walk_through")
             if walkthrough_title in self.walkthrough_steps:
@@ -347,6 +348,7 @@ class WalkthroughPoller:
                 for voice_command in step.voice_commands:
                     if voice_command in phrase_to_check:
                         self.current_words.append(voice_command)
+                        phrase_to_check = " ".join(phrase_to_check.split(voice_command, 1))
                 
                 # Send an update about the voice commands said during the step if it has changed
                 if current_length != len(self.current_words):

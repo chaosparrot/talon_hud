@@ -76,7 +76,19 @@ class HeadUpWalkThroughPanel(LayoutWidget):
         if "walkthrough_said_voice_commands" in new_content:
             if self.show_animations and len(new_content["walkthrough_said_voice_commands"]) > 0 and \
                 new_content["walkthrough_said_voice_commands"] != self.content["walkthrough_said_voice_commands"]:
-                self.animated_words = list(set(new_content["walkthrough_said_voice_commands"]) - set(self.content["walkthrough_said_voice_commands"]))
+                
+                # Make a list of said voice commands during the last command to be highlighted
+                animated_words = []
+                for said_voice_command in new_content["walkthrough_said_voice_commands"]:                    
+                    current_count = self.content["walkthrough_said_voice_commands"].count(said_voice_command)
+                    new_count = new_content["walkthrough_said_voice_commands"].count(said_voice_command)
+                    if new_count > current_count:
+                        for index in range(new_count - current_count):
+                            indexed_voice_command = said_voice_command + ":" + str(current_count + index)
+                            if indexed_voice_command not in animated_words:
+                                animated_words.append(indexed_voice_command)
+                
+                self.animated_words = animated_words
                 self.animated_word_state = self.max_animated_word_state
             elif len(new_content["walkthrough_said_voice_commands"]) == 0:
                 self.animated_words = []
@@ -204,21 +216,21 @@ class HeadUpWalkThroughPanel(LayoutWidget):
                 voice_command_indecis.append(index)
             elif len(voice_command_words) > 0:
                 voice_command = " ".join(voice_command_words)
-                self.voice_commands_available.append(voice_command)
                 for voice_command_index in voice_command_indecis:
-                    self.commands_positions[str(voice_command_index)] = voice_command
+                    self.commands_positions[str(voice_command_index)] = voice_command + ":" + str(self.voice_commands_available.count(voice_command))
+                self.voice_commands_available.append(voice_command)
                 voice_command_words = []
                 voice_command_indecis = []
 
         # Add remaining voice commands if they haven't been added yet
         if len(voice_command_words) > 0:
             voice_command = " ".join(voice_command_words)
-            self.voice_commands_available.append(voice_command)
             for voice_command_index in voice_command_indecis:
-                self.commands_positions[str(voice_command_index)] = voice_command
+                self.commands_positions[str(voice_command_index)] = voice_command + ":" + str(self.voice_commands_available.count(voice_command))
                 voice_command_words = []
                 voice_command_indecis = []
-
+            self.voice_commands_available.append(voice_command)
+            
         layout_pages = []
         
         line_count = 0
@@ -226,7 +238,7 @@ class HeadUpWalkThroughPanel(LayoutWidget):
         total_text_height = 0
         current_line_length = 0        
         page_height_limit = self.limit_height - footer_height
-        
+
         # We do not render content if the text box is minimized
         current_content_height = self.padding[0] + self.padding[2]
         current_page_text = []
@@ -461,7 +473,7 @@ class HeadUpWalkThroughPanel(LayoutWidget):
             
         non_spoken_background_colour = self.theme.get_colour('voice_command_background_colour', '535353')
         spoken_background_colour = self.theme.get_colour('spoken_voice_command_background_colour', '6CC653')
-    
+        
         current_line = -1
         for index, text in enumerate(rich_text):
             current_line = current_line + 1 if text.x == 0 else current_line
@@ -514,8 +526,14 @@ class HeadUpWalkThroughPanel(LayoutWidget):
                     
                 # Not an animated set of words - Just draw the state
                 else:
-                    paint.color = spoken_background_colour if str(index) in self.commands_positions and \
-                        self.commands_positions[str(index)] in self.content['walkthrough_said_voice_commands'] else non_spoken_background_colour
+                    paint.color = non_spoken_background_colour
+                    if str(index) in self.commands_positions:
+                        used_voice_commands = []
+                        for voice_command in self.content['walkthrough_said_voice_commands']:
+                            if self.commands_positions[str(index)] == voice_command + ":" + str(used_voice_commands.count(voice_command)):
+                                paint.color = spoken_background_colour
+                                break
+                            used_voice_commands.append(voice_command)
                     paint.style = Paint.Style.FILL
                     canvas.draw_rrect(skia.RoundRect.from_rect(rect, x=5, y=5))
         
@@ -531,6 +549,9 @@ class HeadUpWalkThroughPanel(LayoutWidget):
         warning_colour = self.theme.get_colour('warning_colour', 'F75B00')
         success_colour = self.theme.get_colour('success_colour', '00CC00')
         info_colour = self.theme.get_colour('info_colour', '30AD9E')
+        
+        spoken_voice_command_text_colour = self.theme.get_colour('spoken_voice_command_text_colour', '000000FF')
+        voice_command_text_colour = self.theme.get_colour('voice_command_text_colour', 'DDDDDD')        
     
         current_line = -1
         for index, text in enumerate(rich_text):
@@ -538,9 +559,14 @@ class HeadUpWalkThroughPanel(LayoutWidget):
             paint.font.skew_x = -0.33 if "italic" in text.styles else 0
             paint.color = text_colour
             if "command_available" in text.styles:
-                paint.color = self.theme.get_colour('spoken_voice_command_text_colour', '000000FF') \
-                    if str(index) in self.commands_positions and self.commands_positions[str(index)] in self.content["walkthrough_said_voice_commands"] else \
-                    self.theme.get_colour('voice_command_text_colour', 'DDDDDD')
+                paint.color = voice_command_text_colour
+                if str(index) in self.commands_positions:
+                    used_voice_commands = []
+                    for voice_command in self.content['walkthrough_said_voice_commands']:
+                        if self.commands_positions[str(index)] == voice_command + ":" + str(used_voice_commands.count(voice_command)):
+                            paint.color = spoken_voice_command_text_colour
+                            break
+                        used_voice_commands.append(voice_command)            
             else:
                 if "warning" in text.styles:
                     paint.color = warning_colour
