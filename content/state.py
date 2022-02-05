@@ -3,11 +3,10 @@ from talon.types.point import Point2d
 from talon_init import TALON_USER
 from talon.scripting import Dispatch
 from .typing import HudPanelContent, HudButton, HudChoice, HudChoices, HudScreenRegion, HudAudioCue, HudDynamicVoiceCommand, HudLogMessage, HudContentEvent, HudAbilityIcon
-import time
 from typing import Callable, Any, Union
+import time
 import os
 
-hud_directory = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 max_log_length = 50
 mod = Module()
 
@@ -70,6 +69,10 @@ class HeadUpDisplayContent(Dispatch):
 
         self.content['topics'][topic] = panel_content
         self.dispatch('panel_update', panel_content)
+        
+    # Publish content meant for text boxes and other panels - V2!
+    def publishv2(self, topic_type, panel_content: HudPanelContent):
+        self.dispatch('broadcast_update', HudContentEvent(topic_type, panel_content.topic, panel_content, 'replace', True, panel_content.show ))
     
     # Update the content and sends an event if the state has changed
     def update(self, dict):
@@ -351,7 +354,7 @@ class Actions:
         content = HudPanelContent(topic, title, [content], buttons, time.time(), show, voice_commands=commands)
         
         global hud_content
-        hud_content.publish(content)
+        hud_content.publishv2("text", content)
         
     def hud_create_button(text: str, callback: Callable[[], None], image: str = ''):
         """Create a button used in the Talon HUD"""
@@ -404,7 +407,7 @@ class Actions:
         
         content = HudPanelContent("choice", title, [content], [], time.time(), True, choices)
         global hud_content
-        hud_content.publish(content)
+        hud_content.publishv2("choice", content)
         
     def hud_register_audio_cue(title: str, description: str, file: str, enabled: Union[bool, int] = True):
         """Register an audio cue which may be triggered by a poller"""

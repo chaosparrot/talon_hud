@@ -33,7 +33,7 @@ class BaseWidget(metaclass=ABCMeta):
     
     # New content topic types
     topic_types = []
-    current_topics = ["*"]
+    current_topics = []
     
     contentv2 = None
     content = {}
@@ -77,6 +77,8 @@ class BaseWidget(metaclass=ABCMeta):
         self.minimized = self.preferences.minimized
         self.subscriptions = self.preferences.subscriptions
         self.current_topics = self.preferences.current_topics
+        if len(self.current_topics) > 0 and self.current_topics[0] != "":
+            self.topic = self.current_topics[0]
         
         self.load_extra_preferences()
         
@@ -98,7 +100,13 @@ class BaseWidget(metaclass=ABCMeta):
     
     # Set the topic that has claimed this widget
     def set_topic(self, topic:str):
-    	self.topic = topic
+    	if self.topic != topic:
+            self.topic = topic
+            self.current_topics = [topic]
+            self.preferences.current_topics = [topic]
+            self.preferences.mark_changed = True
+            self.event_dispatch.request_persist_preferences()
+            
     
     def set_theme(self, theme):
         self.theme = theme
@@ -107,12 +115,15 @@ class BaseWidget(metaclass=ABCMeta):
             self.canvas.resume()
             self.animation_tick = self.animation_max_duration if self.show_animations else 0
 
-    def content_handler(self, event):
+    def content_handler(self, event) -> bool:
         self.contentv2.process_event(event)
         self.refresh({"event": event})
         
+        updated = False
         if self.enabled and self.canvas:
             self.canvas.resume()
+            updated = True
+        return updated
     
     def update_content(self, content):
         if not self.sleep_enabled and "mode" in content:
@@ -280,7 +291,7 @@ class BaseWidget(metaclass=ABCMeta):
         pass
         
     def start_setup(self, setup_type, mouse_position = None):
-        """Starts a setup mode that is used for moving, resizing and other various changes that the user might setup"""    
+        """Starts a setup mode that is used for moving, resizing and other various changes that the user might setup"""            
         if (mouse_position is not None):
             self.drag_position = [mouse_position[0] - self.limit_x, mouse_position[1] - self.limit_y]
         
@@ -320,7 +331,8 @@ class BaseWidget(metaclass=ABCMeta):
             self.setup_type = setup_type
             
             self.preferences.mark_changed = True
-            self.canvas.resume()
+            if self.canvas:
+                self.canvas.resume()
             self.event_dispatch.request_persist_preferences()
         # Cancel every change
         elif setup_type == "cancel":
@@ -364,6 +376,9 @@ class BaseWidget(metaclass=ABCMeta):
                 
     def setup_move(self, pos):
         """Responds to global mouse movements when a widget is in a setup mode"""
+        if not self.canvas:
+            return
+        
         if (self.setup_type == "position"):
             x, y = pos
             if len(self.drag_position) > 0:

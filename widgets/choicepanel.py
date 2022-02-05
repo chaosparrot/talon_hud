@@ -1,9 +1,9 @@
 from talon import skia, ui, cron, clip
-from user.talon_hud.layout_widget import LayoutWidget
-from user.talon_hud.widgets.textpanel import HeadUpTextPanel
-from user.talon_hud.widget_preferences import HeadUpDisplayUserWidgetPreferences
-from user.talon_hud.utils import layout_rich_text, remove_tokens_from_rich_text, linear_gradient, hit_test_button
-from user.talon_hud.content.typing import HudRichTextLine, HudPanelContent, HudButton, HudIcon, HudChoice
+from ..layout_widget import LayoutWidget
+from ..widgets.textpanel import HeadUpTextPanel
+from ..widget_preferences import HeadUpDisplayUserWidgetPreferences
+from ..utils import layout_rich_text, remove_tokens_from_rich_text, linear_gradient, hit_test_button
+from ..content.typing import HudRichTextLine, HudPanelContent, HudButton, HudIcon, HudChoice
 from talon.types.point import Point2d
 
 class HeadUpChoicePanel(HeadUpTextPanel):
@@ -30,6 +30,11 @@ class HeadUpChoicePanel(HeadUpTextPanel):
     }
     animation_max_duration = 40
     image_size = 20
+    
+    # New content topic types
+    topic_types = ["choice"]
+    current_topics = []
+    subscriptions = ["*"]
     
     def on_mouse(self, event):
         choice_hovered = -1

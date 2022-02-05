@@ -25,7 +25,7 @@ class HeadUpCursorTracker(BaseWidget):
     
     # New content topic types
     topic_types = ['cursor_regions']
-    current_topics = [""]
+    current_topics = []
     subscriptions = ["*"]
     
     active_icon = None

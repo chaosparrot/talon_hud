@@ -23,7 +23,7 @@ class HeadUpEventLog(BaseWidget):
     
     # New content topic types
     topic_types = ['log_messages']
-    current_topics = ["*"]
+    current_topics = []
     subscriptions = ["command", "error", "warning", "event", "success"]
 
     # By default - This widget sits just above the statusbar on the right side of the screen

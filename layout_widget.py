@@ -1,7 +1,7 @@
 from talon import canvas, ui
 from .base_widget import BaseWidget
 from .utils import layout_rich_text
-from .content.typing import HudContentPage
+from .content.typing import HudContentPage, HudPanelContent
 from random import randint
 
 class LayoutWidget(BaseWidget):
@@ -18,24 +18,30 @@ class LayoutWidget(BaseWidget):
     page_index = 0
     
     def enable(self, persisted=False):
-        if not self.enabled and (not self.panel_content or self.panel_content.content[0]):
-            if self.mouse_enabled:
-                self.mouse_capture_canvas = canvas.Canvas(min(self.x, self.limit_x), min(self.y, self.limit_y), max(self.width, self.limit_width), max(self.height, self.limit_height))            
-                self.mouse_capture_canvas.blocks_mouse = True
-                self.mouse_capture_canvas.register('mouse', self.on_mouse)
-                self.mouse_capture_canvas.freeze()
-            
-            # Copied over from base widget enabled to make sure blocks_mouse setting isn't changed
+        if not self.enabled:
             self.enabled = True
-            self.canvas = canvas.Canvas(min(self.x, self.limit_x), min(self.y, self.limit_y), max(self.width, self.limit_width), max(self.height, self.limit_height))
-            self.canvas.register('draw', self.draw_cycle)
-            self.animation_tick = self.animation_max_duration if self.show_animations else 0
-            self.canvas.resume()
+        
+            if self.panel_content.content[0]:
+                self.generate_canvases()
+            
             if persisted:
                 self.preferences.enabled = True
                 self.preferences.mark_changed = True
                 self.event_dispatch.request_persist_preferences()
             self.cleared = False
+            
+    def generate_canvases(self):
+        if self.mouse_enabled:
+            self.mouse_capture_canvas = canvas.Canvas(min(self.x, self.limit_x), min(self.y, self.limit_y), max(self.width, self.limit_width), max(self.height, self.limit_height))            
+            self.mouse_capture_canvas.blocks_mouse = True
+            self.mouse_capture_canvas.register('mouse', self.on_mouse)
+            self.mouse_capture_canvas.freeze()
+        
+        # Copied over from base widget enabled to make sure blocks_mouse setting isn't changed
+        self.canvas = canvas.Canvas(min(self.x, self.limit_x), min(self.y, self.limit_y), max(self.width, self.limit_width), max(self.height, self.limit_height))
+        self.canvas.register('draw', self.draw_cycle)
+        self.animation_tick = self.animation_max_duration if self.show_animations else 0
+        self.canvas.resume()        
             
     def disable(self, persisted=False):
         if self.enabled:
@@ -47,7 +53,8 @@ class LayoutWidget(BaseWidget):
             # Copied over from base widget disable to make sure blocks_mouse setting isn't changed        
             self.enabled = False
             self.animation_tick = -self.animation_max_duration if self.show_animations else 0
-            self.canvas.resume()
+            if self.canvas:
+                self.canvas.resume()
             
             if persisted:
                 self.preferences.enabled = False
@@ -59,6 +66,12 @@ class LayoutWidget(BaseWidget):
     
     def refresh(self, new_content):
         self.mark_layout_invalid = True
+        
+    def content_handler(self, event) -> bool:
+        if isinstance(event.content, HudPanelContent):
+            return self.update_panel(event.content)
+        else:
+            return super().content_handler(event)
 
     def set_page_index(self, page_index: int):
         self.page_index = max(0, min(page_index, len(self.layout) - 1))
@@ -74,6 +87,9 @@ class LayoutWidget(BaseWidget):
         return HudContentPage(current, total, percent)
         
     def start_setup(self, setup_type, mouse_position = None):
+        if not self.canvas:
+            return    
+    
         self.mark_layout_invalid = True
         
         # Make sure the canvas is still the right size after canceling resizing
@@ -98,6 +114,8 @@ class LayoutWidget(BaseWidget):
             super().start_setup(setup_type, mouse_position)
 
     def setup_move(self, pos):
+        if not self.canvas:
+            return
         self.mark_layout_invalid = True
         super().setup_move(pos)
 
@@ -111,8 +129,11 @@ class LayoutWidget(BaseWidget):
         
         if self.enabled:
             self.panel_content = panel_content
-            self.topic = panel_content.topic            
+            self.topic = panel_content.topic
+            self.current_topics = [panel_content.topic]
             self.mark_layout_invalid = True
+            if not self.canvas:
+                self.generate_canvases()
             self.canvas.resume()
         return self.enabled and self.topic == panel_content.topic
         

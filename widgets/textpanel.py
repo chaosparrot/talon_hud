@@ -1,8 +1,8 @@
 from talon import skia, ui, cron, actions, clip
-from user.talon_hud.layout_widget import LayoutWidget
-from user.talon_hud.widget_preferences import HeadUpDisplayUserWidgetPreferences
-from user.talon_hud.utils import layout_rich_text, remove_tokens_from_rich_text, linear_gradient, hit_test_icon
-from user.talon_hud.content.typing import HudRichTextLine, HudPanelContent, HudButton, HudIcon
+from ..layout_widget import LayoutWidget
+from ..widget_preferences import HeadUpDisplayUserWidgetPreferences
+from ..utils import layout_rich_text, remove_tokens_from_rich_text, linear_gradient, hit_test_icon
+from ..content.typing import HudRichTextLine, HudPanelContent, HudButton, HudIcon
 from talon.types.point import Point2d
 
 icon_radius = 10
@@ -23,6 +23,11 @@ def minimize_toggle_widget(widget):
 class HeadUpTextPanel(LayoutWidget):
     preferences = HeadUpDisplayUserWidgetPreferences(type="text_box", x=1680, y=50, width=200, height=200, limit_x=1580, limit_y=50, limit_width=300, limit_height=400, enabled=False, alignment="left", expand_direction="down", font_size=18)
     mouse_enabled = True
+    
+    # New content topic types
+    topic_types = ["text"]
+    current_topics = []
+    subscriptions = ["*"]
 
     # Top, right, bottom, left, same order as CSS padding
     padding = [3, 20, 10, 8]

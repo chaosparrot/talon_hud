@@ -73,9 +73,10 @@ ctx.lists['user.talon_hud_widget_enabled_voice_commands'] = []
 TALON_HUD_RELEASE_030 = 3 # Walk through version
 TALON_HUD_RELEASE_040 = 4 # Multi-monitor version
 TALON_HUD_RELEASE_050 = 5 # Debugging / screen overlay release
+TALON_HUD_RELEASE_060 = 6 # Persistent content release
 @mod.scope
 def scope():
-    return {"talon_hud_version": TALON_HUD_RELEASE_050}
+    return {"talon_hud_version": TALON_HUD_RELEASE_060}
 
 class HeadUpDisplay:
     enabled = False
@@ -133,6 +134,7 @@ class HeadUpDisplay:
 
         if (self.preferences.prefs['enabled']):
             self.enable()
+                        
             ctx.tags = ['user.talon_hud_available', 'user.talon_hud_visible', 'user.talon_hud_choices_visible']
             
             if self.preferences.prefs['audio_enabled']:
@@ -161,12 +163,13 @@ class HeadUpDisplay:
             for widget in self.widget_manager.widgets:
                 if widget.preferences.enabled and not widget.enabled:
                     widget.enable()
-                    if widget.topic:
-                    	attached_topics.append(widget.topic)
+                    if widget.current_topics:
+                    	attached_topics.extend(widget.current_topics)
 
+            # Automatically start pollers that are connected to widgets
             for topic, poller in self.pollers.items():
-            	if topic in attached_topics:
-                    poller.enable()
+                if topic in attached_topics and (not hasattr(self.pollers[topic], 'enabled') or not self.pollers[topic].enabled):
+                    self.pollers[topic].enable()
 
             # Reload the preferences just in case a screen change happened in between the hidden state
             if persisted:
@@ -362,7 +365,8 @@ class HeadUpDisplay:
         # Automatically enable the poller if it was active on restart        
         else:
             for widget in self.widget_manager.widgets:
-                if widget.topic == topic:
+                if topic in widget.current_topics and widget.enabled and \
+                    (not hasattr(self.pollers[topic], 'enabled') or not self.pollers[topic].enabled):
                     self.pollers[topic].enable()
                     break
         
@@ -414,20 +418,51 @@ class HeadUpDisplay:
             self.disable_poller_job = None
 
     def broadcast_update(self, event: HudContentEvent):
-        for widget in self.widget_manager.widgets:
-            print( event.topic_type )
-            if event.topic_type in widget.topic_types and \
-                (event.topic in widget.subscriptions or \
-                ('*' in widget.subscriptions and "!" + event.topic not in widget.subscriptions)):
+        # Do not force a reopen of Talon HUD without explicit user permission
+        updated = False
+        if not self.enabled:
+            event.show = False
+        
+        # Claim a widget and unregister its pollers
+        if event.claim:
+            topic = event.topic
+            using_fallback = True
+            widget_to_claim = None
+            for widget in self.widget_manager.widgets:
+                if event.topic_type in widget.topic_types and ( topic in widget.subscriptions or ('*' in widget.subscriptions and using_fallback)):
+                    if topic == widget.topic:
+                        widget_to_claim = widget
+                        break
+                    else:
+                        widget_to_claim = widget
+                        if topic in widget.subscriptions:
+                            using_fallback = False
 
-                current_enabled_state = widget.enabled
-                widget.content_handler(event)
-                if widget.enabled != current_enabled_state:
-                    if event.topic in self.pollers and event.topic not in self.keep_alive_pollers:
-                        if widget.enabled:
-                            self.pollers[event.topic].enable()
-                        else:
-                            self.pollers[event.topic].disable()
+            if widget_to_claim:
+                # When a new topic is published it can lay claim to a widget
+                # So old pollers need to be deregistered in that case
+                current_topic = widget_to_claim.topic
+                updated = widget_to_claim.content_handler(event)
+                if updated and current_topic != widget_to_claim.topic:
+                    if current_topic in self.pollers and current_topic not in self.keep_alive_pollers and widget_to_claim.topic in self.pollers:
+                        self.pollers[widget_to_claim.topic].disable()
+        else:
+            for widget in self.widget_manager.widgets:
+                if event.topic_type in widget.topic_types and \
+                    (event.topic in widget.subscriptions or \
+                    ('*' in widget.subscriptions and "!" + event.topic not in widget.subscriptions)):
+
+                    current_enabled_state = widget.enabled
+                    updated = widget.content_handler(event)
+                    if widget.enabled != current_enabled_state:
+                        if event.topic in self.pollers and event.topic not in self.keep_alive_pollers:
+                            if widget.enabled:
+                                self.pollers[event.topic].enable()
+                            else:
+                                self.pollers[event.topic].disable()
+                                
+        if updated:
+            self.update_context()
         
     def content_update(self, data):
         for widget in self.widget_manager.widgets:
@@ -484,8 +519,7 @@ class HeadUpDisplay:
                     self.pollers[widget_to_claim.topic].disable()
             
         if updated:
-            cron.cancel(self.update_context_debouncer)
-            self.update_context_debouncer = cron.after("50ms", self.update_context)
+            self.update_context()
 
     # Determine whether or not we need to have a global mouse poller
     # This poller is needed for setup modes as not all canvases block the mouse

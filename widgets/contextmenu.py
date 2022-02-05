@@ -1,10 +1,10 @@
 from talon import skia, ui, cron, clip, canvas
 from talon.types import Point2d as Point2d
-from user.talon_hud.base_widget import BaseWidget
-from user.talon_hud.layout_widget import LayoutWidget
-from user.talon_hud.widget_preferences import HeadUpDisplayUserWidgetPreferences
-from user.talon_hud.utils import determine_screen_for_pos, layout_rich_text, hit_test_button
-from user.talon_hud.content.typing import HudButton
+from ..base_widget import BaseWidget
+from ..layout_widget import LayoutWidget
+from ..widget_preferences import HeadUpDisplayUserWidgetPreferences
+from ..utils import determine_screen_for_pos, layout_rich_text, hit_test_button
+from ..content.typing import HudButton
 import numpy
 
 def close_widget(widget: BaseWidget):

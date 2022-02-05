@@ -27,7 +27,7 @@ class HeadUpScreenOverlay(BaseWidget):
     
     # New content topic types
     topic_types = ['screen_regions']
-    current_topics = [""]
+    current_topics = []
     subscriptions = ["*"]
     
     regions = None

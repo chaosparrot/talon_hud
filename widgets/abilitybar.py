@@ -24,7 +24,7 @@ class HeadUpAbilityBar(BaseWidget):
     
     # New content topic types
     topic_types = ['ability_icons']
-    current_topics = [""]
+    current_topics = []
     subscriptions = ["*"]
 
     def disable(self, persisted=False):
