@@ -1,6 +1,6 @@
 from talon import skia, ui
 from talon.types.point import Point2d
-from user.talon_hud.content.typing import HudRichText, HudRichTextLine, HudButton, HudIcon
+from .content.typing import HudRichText, HudRichTextLine, HudButton, HudIcon
 from textwrap import wrap
 import math
 import re

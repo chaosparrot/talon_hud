@@ -2,7 +2,7 @@ from talon import actions, cron, scope, Module, ui
 from talon.types.point import Point2d
 from talon_init import TALON_USER
 from talon.scripting import Dispatch
-from user.talon_hud.content.typing import HudPanelContent, HudButton, HudChoice, HudChoices, HudScreenRegion, HudAudioCue, HudDynamicVoiceCommand, HudLogMessage, HudContentEvent
+from .typing import HudPanelContent, HudButton, HudChoice, HudChoices, HudScreenRegion, HudAudioCue, HudDynamicVoiceCommand, HudLogMessage, HudContentEvent, HudAbilityIcon
 import time
 from typing import Callable, Any, Union
 import os
@@ -58,6 +58,7 @@ class HeadUpDisplayContent(Dispatch):
         'text': {},
         'choices': {},
         'status_icons': {},
+        'status_options': {},        
         'ability_icons': {},
         'cursor_regions': {},        
         'screen_regions': {},
@@ -114,6 +115,49 @@ class HeadUpDisplayContent(Dispatch):
         
         if updated:
             self.dispatch("content_update", self.content)
+            
+    # Update a topic type if the content has changed
+    def update_topic_type(self, topic_type, topic, data, send_event = True):
+        updated = False
+        if topic_type in self.topic_types:
+        
+            if not topic in self.topic_types[topic_type]:
+               self.topic_types[topic_type][topic] = None
+               
+            if self.topic_types[topic_type][topic] != data:
+               updated = True
+            self.topic_types[topic_type][topic] = data
+        
+            if updated and send_event:
+               self.dispatch("broadcast_update", HudContentEvent(topic_type, topic, data, 'replace'))
+               
+    # Extend a topic type if the content has changed
+    def extend_topic_type(self, topic_type, topic, data, send_event = True):
+        updated = False    
+    
+        if topic_type in self.topic_types:
+            if topic not in self.topic_types[topic_type]:
+               self.topic_types[topic_type][topic] = []
+            if isinstance(data, list) and len(data) > 0:
+               self.topic_types[topic_type][topic].extend(data)
+               updated = True
+            else:
+               self.topic_types[topic_type][topic].append(data)
+               updated = True
+            
+            if updated and send_event:
+                self.dispatch("broadcast_update", HudContentEvent(topic_type, topic, self.topic_types[topic_type][topic], 'replace'))
+		        
+    # Clears a topic in a topic type if there is content
+    def clear_topic_type(self, topic_type, topic, send_event=True):
+        removed = False
+        if topic_type in self.topic_types:               
+            if topic in self.topic_types[topic_type]:
+               del self.topic_types[topic_type][topic]
+               removed = True
+        
+            if removed and send_event:
+                self.dispatch("broadcast_update", HudContentEvent(topic_type, topic, None, 'remove'))
 
     # Removes a key in the set of content
     def remove_from_set(self, content_key, dict):
@@ -264,23 +308,14 @@ class Actions:
 
     def hud_add_ability(id: str, image: str, colour: str, enabled: int, activated: int, image_offset_x: int = 0, image_offset_y: int = 0):
         """Add a hud ability or update it"""
-        global hud_content
-        hud_content.add_to_set("abilities", {
-            "id": id,
-            "image": image,
-            "colour": colour,
-            "enabled": enabled > 0,
-            "activated": 5 if activated > 0 else 0,
-            "image_offset_x": image_offset_x,
-            "image_offset_y": image_offset_y
-        })
+        global hud_content        
+        ability_icon = HudAbilityIcon(image, colour, enabled > 0, 5 if activated > 0 else 0, image_offset_x, image_offset_y)
+        hud_content.update_topic_type("ability_icons", id, ability_icon)
         
     def hud_remove_ability(id: str):
         """Remove an ability"""
         global hud_content
-        hud_content.remove_from_set("abilities", {
-            "id": id
-        })
+        hud_content.clear_topic_type("ability_icons", id)
                 
     def hud_add_phrase(phrase: str, timestamp: float, time_ms: float, model: str, microphone: str):
         """Add a phrase to the phrase log"""
@@ -328,33 +363,29 @@ class Actions:
         point = Point2d(x + relative_x, y + relative_y)
         return HudScreenRegion(topic, title, icon, colour, rect, point, hover_visibility)
 
-    def hud_publish_screen_regions(type: str, regions: list[HudChoices], clear: Union[bool, int] = False):
+    def hud_publish_screen_regions(type: str, regions: list[HudScreenRegion], clear: Union[bool, int] = False):
         """Publish screen regions to widgets that can handle them, optionally clearing the type"""
-        global hud_content        
+        global hud_content
         if len(regions) > 0:
-            if type not in hud_content.content["screen_regions"]:
-                hud_content.content["screen_regions"][type] = []        
-        
-            if clear:
-                for region in regions:
-                    actions.user.hud_clear_screen_regions(type, region.topic, False)
+            screen_region_type = "cursor_regions" if type == "cursor" else "screen_regions"
+            region_by_topic = {}
+            for region in regions:
+                if region.topic not in region_by_topic:
+                    region_by_topic[region.topic] = []
+                region_by_topic[region.topic].append(region)            
             
-            hud_content.content["screen_regions"][type].extend(regions)
-            hud_content.dispatch("content_update", hud_content.content)
+            if clear:
+                for region_topic in region_by_topic:
+                    hud_content.clear_topic_type(screen_region_type, region_topic, False)
+            
+            for region_topic in region_by_topic:
+                hud_content.extend_topic_type(screen_region_type, region_topic, regions)
         
     def hud_clear_screen_regions(type: str, topic: str = None, update: Union[bool, int] = True):
         """Clear the screen regions in the given type, optionally by topic"""
         global hud_content
-        if type in hud_content.content["screen_regions"]:
-            if topic is not None:
-                regions = hud_content.content["screen_regions"][type]
-                if len(regions) > 0:                
-                    hud_content.content["screen_regions"][type] = [x for x in regions if x.topic != topic]
-            else:
-                hud_content.content["screen_regions"][type] = []
-                
-            if update:
-                hud_content.dispatch("content_update", hud_content.content)
+        screen_region_type = "cursor_regions" if type == "cursor" else "screen_regions"
+        hud_content.clear_topic_type(screen_region_type, topic)
 
     def hud_create_choices(choices_list: list[Any], callback: Callable[[Any], None], multiple: Union[bool, int] = False) -> HudChoices:
         """Creates a list of choices with a single list of dictionaries"""

@@ -106,9 +106,13 @@ class HudContentPage:
     total: float
     percent: float
 
+# These content events will be handled automatically
 CONTENT_EVENT_OPERATION_REPLACE = 'replace' # Used to signal a complete replacement of the given topic
-CONTENT_EVENT_OPERATION_PATCH = 'patch' # Used to signal a partial replacement of the given topic
+CONTENT_EVENT_OPERATION_REMOVE = 'remove' # Used to signal a topic is being cleared
+
+# These content events require manual handling from the widgets themselves
 CONTENT_EVENT_OPERATION_APPEND = 'append' # Used to signal a single item being appended to a collection
+CONTENT_EVENT_OPERATION_PATCH = 'patch' # Used to signal a partial replacement of the given topic
 
 @dataclass
 class HudContentEvent:
@@ -125,3 +129,12 @@ class HudLogMessage:
     type: str
     message: str
     metadata: Any = None
+    
+@dataclass
+class HudAbilityIcon:
+    image: str
+    colour: str
+    enabled: bool
+    activated: bool
+    image_offset_x: float
+    image_offset_y: float

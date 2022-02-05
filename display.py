@@ -5,21 +5,21 @@ import time
 import numpy
 
 from typing import Any, Union
-from user.talon_hud.preferences import HeadUpDisplayUserPreferences
-from user.talon_hud.theme import HeadUpDisplayTheme
-from user.talon_hud.event_dispatch import HeadUpEventDispatch
-from user.talon_hud.widget_manager import HeadUpWidgetManager
-from user.talon_hud.lowvision.audio_manager import HeadUpAudioManager
-from user.talon_hud.content.state import hud_content
-from user.talon_hud.content.status_bar_poller import StatusBarPoller
-from user.talon_hud.content.history_poller import HistoryPoller
-from user.talon_hud.layout_widget import LayoutWidget
-from user.talon_hud.widgets.textpanel import HeadUpTextPanel
-from user.talon_hud.widgets.choicepanel import HeadUpChoicePanel
-from user.talon_hud.widgets.contextmenu import HeadUpContextMenu
-from user.talon_hud.content.typing import HudPanelContent, HudButton, HudContentEvent, HudContentPage
-from user.talon_hud.content.poller import Poller
-from user.talon_hud.utils import string_to_speakable_string
+from .preferences import HeadUpDisplayUserPreferences
+from .theme import HeadUpDisplayTheme
+from .event_dispatch import HeadUpEventDispatch
+from .widget_manager import HeadUpWidgetManager
+from .lowvision.audio_manager import HeadUpAudioManager
+from .content.state import hud_content
+from .content.status_bar_poller import StatusBarPoller
+from .content.history_poller import HistoryPoller
+from .layout_widget import LayoutWidget
+from .widgets.textpanel import HeadUpTextPanel
+from .widgets.choicepanel import HeadUpChoicePanel
+from .widgets.contextmenu import HeadUpContextMenu
+from .content.typing import HudPanelContent, HudButton, HudContentEvent, HudContentPage
+from .content.poller import Poller
+from .utils import string_to_speakable_string
 
 
 # Taken from knausj/code/numbers to make Talon HUD standalone
@@ -130,7 +130,7 @@ class HeadUpDisplay:
     def start(self):
         # Uncomment the line below to add the single click mic toggle by default
         # actions.user.hud_add_single_click_mic_toggle()
-        
+
         if (self.preferences.prefs['enabled']):
             self.enable()
             ctx.tags = ['user.talon_hud_available', 'user.talon_hud_visible', 'user.talon_hud_choices_visible']
@@ -415,6 +415,7 @@ class HeadUpDisplay:
 
     def broadcast_update(self, event: HudContentEvent):
         for widget in self.widget_manager.widgets:
+            print( event.topic_type )
             if event.topic_type in widget.topic_types and \
                 (event.topic in widget.subscriptions or \
                 ('*' in widget.subscriptions and "!" + event.topic not in widget.subscriptions)):

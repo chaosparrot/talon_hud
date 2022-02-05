@@ -2,8 +2,8 @@ from talon import skia, cron, ctrl, scope, canvas, ui
 from talon.types import Point2d
 from abc import ABCMeta
 import numpy
-from user.talon_hud.widget_preferences import HeadUpDisplayUserWidgetPreferences
-from user.talon_hud.content.typing import HudButton
+from .widget_preferences import HeadUpDisplayUserWidgetPreferences
+from .content.partial_content import HudPartialContent
 import copy
 
 class BaseWidget(metaclass=ABCMeta):
@@ -35,6 +35,7 @@ class BaseWidget(metaclass=ABCMeta):
     topic_types = []
     current_topics = ["*"]
     
+    contentv2 = None
     content = {}
         
     animation_tick = 0
@@ -49,6 +50,7 @@ class BaseWidget(metaclass=ABCMeta):
         self.theme = theme
         self.preferences = copy.copy(self.preferences)
         self.event_dispatch = event_dispatch
+        self.contentv2 = HudPartialContent()
         
         self.load(preferences_dict)
         if subscriptions != None:
@@ -106,6 +108,7 @@ class BaseWidget(metaclass=ABCMeta):
             self.animation_tick = self.animation_max_duration if self.show_animations else 0
 
     def content_handler(self, event):
+        self.contentv2.process_event(event)
         self.refresh({"event": event})
         
         if self.enabled and self.canvas:

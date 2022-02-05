@@ -206,13 +206,12 @@ Roadmap
 These are ideas that I want to implement in no specific order and with no specific timeline in mind.
 
 - An image panel with a header and a close icon which displays image content
-- Improved theming experience and more styling options
 - Splitting out or merging topics from widgets into separate widgets
 - Better default image, dimension and font scaling based on physical dimensions of the screen
 
 Known issues
 ---
-- Multiple page walkthrough panel does not work properly with text indices
+- Walkthrough progress styling, and an overview of all the available steps
 - 'Dismiss options' in the context menu makes the HUD go into a state where the next context menu won't respond properly
 
 If any of these ideas seem cool for you to work on, give me a message on the talon slack so we can coordinate stuff.

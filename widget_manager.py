@@ -3,20 +3,20 @@ import numpy
 import copy
 from typing import Dict
 from talon import ui, settings
-from user.talon_hud.preferences import HeadUpDisplayUserPreferences
-from user.talon_hud.base_widget import BaseWidget
-from user.talon_hud.widgets.statusbar import HeadUpStatusBar
-from user.talon_hud.widgets.eventlog import HeadUpEventLog
-from user.talon_hud.widgets.abilitybar import HeadUpAbilityBar
-from user.talon_hud.widgets.textpanel import HeadUpTextPanel
-from user.talon_hud.widgets.choicepanel import HeadUpChoicePanel
-from user.talon_hud.widgets.documentationpanel import HeadUpDocumentationPanel
-from user.talon_hud.widgets.walkthroughpanel import HeadUpWalkThroughPanel
-from user.talon_hud.widgets.contextmenu import HeadUpContextMenu
-from user.talon_hud.widgets.cursortracker import HeadUpCursorTracker
-from user.talon_hud.widgets.screenoverlay import HeadUpScreenOverlay
-from user.talon_hud.theme import HeadUpDisplayTheme
-from user.talon_hud.event_dispatch import HeadUpEventDispatch
+from .preferences import HeadUpDisplayUserPreferences
+from .base_widget import BaseWidget
+from .widgets.statusbar import HeadUpStatusBar
+from .widgets.eventlog import HeadUpEventLog
+from .widgets.abilitybar import HeadUpAbilityBar
+from .widgets.textpanel import HeadUpTextPanel
+from .widgets.choicepanel import HeadUpChoicePanel
+from .widgets.documentationpanel import HeadUpDocumentationPanel
+from .widgets.walkthroughpanel import HeadUpWalkThroughPanel
+from .widgets.contextmenu import HeadUpContextMenu
+from .widgets.cursortracker import HeadUpCursorTracker
+from .widgets.screenoverlay import HeadUpScreenOverlay
+from .theme import HeadUpDisplayTheme
+from .event_dispatch import HeadUpEventDispatch
 
 semantic_directory = os.path.dirname(os.path.abspath(__file__))
 user_preferences_file_dir =  semantic_directory + "/preferences/"

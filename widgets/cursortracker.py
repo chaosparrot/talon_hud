@@ -1,7 +1,7 @@
 from user.talon_hud.base_widget import BaseWidget
 from user.talon_hud.utils import hit_test_rect
 from user.talon_hud.content.typing import HudScreenRegion
-from user.talon_hud.widget_preferences import HeadUpDisplayUserWidgetPreferences
+from ..widget_preferences import HeadUpDisplayUserWidgetPreferences
 from talon import skia, ui, cron, ctrl
 from talon.types.point import Point2d
 import time
@@ -20,17 +20,18 @@ class HeadUpCursorTracker(BaseWidget):
 
     preferences = HeadUpDisplayUserWidgetPreferences(type="cursor_tracker", x=15, y=15, width=15, height=15, enabled=True, sleep_enabled=False)
     subscribed_content = [
-        "mode",
-        "screen_regions"
+        "mode"
     ]
+    
+    # New content topic types
+    topic_types = ['cursor_regions']
+    current_topics = [""]
+    subscriptions = ["*"]
     
     active_icon = None
     cursor_icons = []
     content = {
-        'mode': 'command',
-        "screen_regions": {
-           "cursor": []
-        }
+        'mode': 'command'
     }        
     
     def refresh(self, new_content):
@@ -40,8 +41,8 @@ class HeadUpCursorTracker(BaseWidget):
             else:
                 self.soft_enable()
 
-        if "screen_regions" in new_content and "cursor" in new_content["screen_regions"]:
-            self.update_icons(new_content["screen_regions"]["cursor"])
+        if "event" in new_content and new_content["event"].topic_type == "cursor_regions":
+            self.update_icons()
 
     def enable(self, persist=False):
         if not self.enabled:
@@ -69,8 +70,9 @@ class HeadUpCursorTracker(BaseWidget):
             self.mouse_poller = None
             self.canvas.resume()
             
-    def update_icons(self, cursor_icons: list[HudScreenRegion] = None):
-        soft_enable = False    
+    def update_icons(self):
+        soft_enable = False
+        cursor_icons = self.contentv2.get_topic("cursor_regions")
         if cursor_icons != None:
             new_icons = cursor_icons          
             soft_enable = self.cursor_icons != new_icons and len(new_icons) > 0
@@ -93,7 +95,6 @@ class HeadUpCursorTracker(BaseWidget):
                     self.x = pos[0] + self.limit_x
                     self.y = pos[1] + self.limit_y
                     
-                    print( "POLLING MOUSE POS!" )
                     self.canvas.move(self.x, self.y)
                     
                     self.determine_active_icon(pos)

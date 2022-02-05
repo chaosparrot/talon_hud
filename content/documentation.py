@@ -1,6 +1,6 @@
 from talon import app, actions, Module, cron, fs
 import os
-from user.talon_hud.utils import md_to_richtext_content
+from ..utils import md_to_richtext_content
 
 mod = Module()
 

@@ -1,7 +1,7 @@
 from talon import skia, app
 import os
 import random
-from user.talon_hud.utils import hex_to_ints
+from .utils import hex_to_ints
 
 semantic_directory = os.path.dirname(os.path.abspath(__file__))
 

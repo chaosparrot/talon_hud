@@ -1,7 +1,7 @@
 from talon import canvas, ui
-from user.talon_hud.base_widget import BaseWidget
-from user.talon_hud.utils import layout_rich_text
-from user.talon_hud.content.typing import HudContentPage
+from .base_widget import BaseWidget
+from .utils import layout_rich_text
+from .content.typing import HudContentPage
 from random import randint
 
 class LayoutWidget(BaseWidget):

@@ -1,7 +1,7 @@
 from talon import scope, cron, app, actions, Module, Context
-from user.talon_hud.content.typing import HudAudioCue
-from user.talon_hud.theme import HeadUpDisplayTheme
-from user.talon_hud.preferences import HeadUpDisplayUserPreferences
+from ..content.typing import HudAudioCue
+from ..theme import HeadUpDisplayTheme
+from ..preferences import HeadUpDisplayUserPreferences
 import os
 from ._wav import play_wav, clear_audio
 

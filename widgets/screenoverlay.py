@@ -1,7 +1,7 @@
-from user.talon_hud.base_widget import BaseWidget
-from user.talon_hud.utils import layout_rich_text, hit_test_rect, is_light_colour, hex_to_ints
-from user.talon_hud.content.typing import HudScreenRegion
-from user.talon_hud.widget_preferences import HeadUpDisplayUserWidgetPreferences
+from ..base_widget import BaseWidget
+from ..utils import layout_rich_text, hit_test_rect, is_light_colour, hex_to_ints
+from ..content.typing import HudScreenRegion
+from ..widget_preferences import HeadUpDisplayUserWidgetPreferences
 from talon import skia, ui, cron, ctrl, canvas
 from talon.types.point import Point2d
 import time
@@ -25,14 +25,16 @@ class HeadUpScreenOverlay(BaseWidget):
     ]
     subscribed_topics = ['focus', 'overlay']    
     
+    # New content topic types
+    topic_types = ['screen_regions']
+    current_topics = [""]
+    subscriptions = ["*"]
+    
     regions = None
     active_regions = None
     canvases = None
     content = {
-        'mode': 'command',
-        "screen_regions": {
-           "overlay": []
-        }
+        'mode': 'command'
     }
     
     def __init__(self, id, preferences_dict, theme, subscriptions = None):
@@ -46,8 +48,8 @@ class HeadUpScreenOverlay(BaseWidget):
             if (new_content["mode"] == 'sleep' and self.sleep_enabled == False):
                 self.soft_disable()
 
-        if "screen_regions" in new_content and "overlay" in new_content["screen_regions"]:
-            self.update_regions(new_content["screen_regions"]["overlay"])
+        if "event" in new_content and new_content["event"].topic_type == "screen_regions":
+            self.update_regions()
 
     def enable(self, persisted=False):
         if not self.enabled:
@@ -95,15 +97,17 @@ class HeadUpScreenOverlay(BaseWidget):
             self.regions = []
             self.active_regions = []            
 
-    def update_regions(self, regions: list[HudScreenRegion] = None):
-        self.active_regions = []    
+    def update_regions(self):
+        self.active_regions = []
         if not self.enabled:
-            self.regions = regions
+            self.regions = self.contentv2.get_topic("screen_regions")
             return
         
         soft_enable = False
         indices_to_clear = []
         region_indices_used = []
+        regions = self.contentv2.get_topic("screen_regions")
+        
         if regions is not None:
             new_regions = regions
             for index, canvas_reference in enumerate(self.canvases):
@@ -133,6 +137,8 @@ class HeadUpScreenOverlay(BaseWidget):
             
             soft_enable = ( self.regions != new_regions or not self.soft_enabled ) and len(new_regions) > 0
             self.regions = new_regions
+
+        print( self.regions )
         
         # Clear the canvases in reverse order to make sure the indices stay correct
         indices_to_clear.reverse()

@@ -1,16 +1,15 @@
-from user.talon_hud.base_widget import BaseWidget
+from ..base_widget import BaseWidget
+from ..utils import linear_gradient
+from ..widget_preferences import HeadUpDisplayUserWidgetPreferences
+from ..content.typing import HudButton
 from talon import skia, ui, Module, cron, actions
 import time
 import numpy
-from user.talon_hud.utils import linear_gradient
-from user.talon_hud.widget_preferences import HeadUpDisplayUserWidgetPreferences
-from user.talon_hud.content.typing import HudButton
 
 def add_focus_icon(widget):
     if "focus_indicator" not in widget.subscribed_content:    
         widget.subscribed_content.append("focus_indicator")
     actions.user.hud_toolkit_focus()
-    
 
 class HeadUpStatusBar(BaseWidget):
 
@@ -35,6 +34,11 @@ class HeadUpStatusBar(BaseWidget):
         "status_icons",
     ]
 
+    # New content topic types
+    topic_types = ['status_icons', 'status_options']
+    current_topics = ["mode_icon"]
+    subscriptions = ["*"]
+
     content = {
         'mode': 'command',
         'language': 'en_US', 
@@ -46,7 +50,6 @@ class HeadUpStatusBar(BaseWidget):
     }
     
     animation_max_duration = 60
-    
     
     def refresh(self, new_content):
         if (self.animation_tick == 0 and "mode" in new_content and new_content["mode"] != self.content['mode']):            
