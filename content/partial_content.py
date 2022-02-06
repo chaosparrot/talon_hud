@@ -34,6 +34,15 @@ class HudPartialContent:
         
         if topic in self.topic_types[topic_type]:
             del self.topic_types[topic_type][topic]
+            
+    # Get a unique list of all the current topics on the widget
+    def get_current_topics(self):
+        current_topics = []
+        for topic_type in self.topic_types:
+            for topic in self.topic_types[topic_type]:
+                current_topics.append(topic)
+        
+        return set(current_topics)
 
     # Process an event
     def process_event(self, event: HudContentEvent):

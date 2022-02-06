@@ -266,7 +266,8 @@ class HeadUpDisplay:
             if widget.enabled and widget.id == id:
                 widget.disable(True)
                 for topic, poller in self.pollers.items():
-                    if topic in widget.current_topics and (not hasattr(self.pollers[topic], 'enabled') or self.pollers[topic].enabled):
+                    if topic in widget.current_topics and topic not in self.keep_alive_pollers and \
+                        (not hasattr(self.pollers[topic], 'enabled') or self.pollers[topic].enabled):
                         self.pollers[topic].disable()
                     
                 self.update_context()
@@ -435,11 +436,13 @@ class HeadUpDisplay:
             topic = event.topic
             using_fallback = True
             widget_to_claim = None
+            widgets_with_topic = []
             for widget in self.widget_manager.widgets:
+                if event.topic_type in widget.topic_types and topic in widget.current_topics:
+                    widgets_with_topic.append(widget)
                 if event.topic_type in widget.topic_types and ( topic in widget.subscriptions or ('*' in widget.subscriptions and using_fallback)):
                     if topic == widget.topic:
                         widget_to_claim = widget
-                        break
                     else:
                         widget_to_claim = widget
                         if topic in widget.subscriptions:
@@ -448,11 +451,17 @@ class HeadUpDisplay:
             if widget_to_claim:
                 # When a new topic is published it can lay claim to a widget
                 # So old pollers need to be deregistered in that case
-                current_topic = widget_to_claim.topic
+                for widget in widgets_with_topic:
+                    if widget.id != widget_to_claim.id:
+                        widget.clear_topic(event.topic)
+                
+                previous_topics = widget_to_claim.current_topics[:]
                 updated = widget_to_claim.content_handler(event)
-                if updated and current_topic != widget_to_claim.topic:
-                    if current_topic in self.pollers and current_topic not in self.keep_alive_pollers and widget_to_claim.topic in self.pollers:
-                        self.pollers[widget_to_claim.topic].disable()
+                if updated:
+                    for previous_topic in previous_topics:
+                        if previous_topic not in widget_to_claim.current_topics and \
+                            previous_topic in self.pollers and previous_topic not in self.keep_alive_pollers:
+                            self.pollers[previous_topic].disable()
         else:
             for widget in self.widget_manager.widgets:
                 print( event.topic_type in widget.topic_types, widget.id )

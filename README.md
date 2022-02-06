@@ -206,7 +206,7 @@ Roadmap
 These are ideas that I want to implement in no specific order and with no specific timeline in mind.
 
 - An image panel with a header and a close icon which displays image content
-- Splitting out or merging topics from widgets into separate widgets
+- Splitting out or merging topics from widgets into separate widgets using voice
 - Better default image, dimension and font scaling based on physical dimensions of the screen
 
 Known issues
@@ -215,6 +215,53 @@ Known issues
 - 'Dismiss options' in the context menu makes the HUD go into a state where the next context menu won't respond properly
 
 If any of these ideas seem cool for you to work on, give me a message on the talon slack so we can coordinate stuff.
+
+Content API v2
+---
+
+Currently working on the Content V2 API which will allow content to be automatically listened for during start up and other transitions.
+This is the current status of it
+- [x] Persist changes in subscriptions and current topics so they can be retrieved upon restart 
+- [x] Automatically enable pollers on start up when a widget is listening for it
+- [ ] Connect automatic enabling / disabling to the Talon HUD environment flow
+- [ ] Add a new content builder class to build HUD content with inside of pollers so they do not require actions
+- [ ] Rework all the pollers to not use actions in enable / disable flow and have the content builder inserted
+    - [ ] History poller
+	- [ ] Focus poller
+	- [ ] Speech poller
+	- [ ] Scope poller
+	- [ ] List poller
+	- [ ] Microphone poller
+	- [ ] Walkthrough
+- [ ] Phase out status bar poller in favour of the following:
+	- [ ] Active microphone status icon poller
+	- [ ] Mode icon poller
+		- [ ] Make overrideable action for switching modes
+		- [ ] Make list of modes in preferences for user to change
+	- [ ] Programming language poller
+		- [ ] Make list of languages in preferences for user to change
+		- [ ] Add programming icons
+	- [ ] Language poller
+- [ ] Manage topics on widgets properly so that the poller state can be managed
+- [ ] Remove single widget.topic variable
+- [ ] Rework variables like the 'mode' check to use the new events
+- [ ] Rework all widgets to conform to the new events
+    - [ ] Status bar
+    - [x] Event log
+	- [x] Ability bar
+    - [x] Text panel
+	- [x] Documentation panel
+	- [x] Choice panel
+	- [ ] Walkthrough panel
+	- [x] Screen overlay
+	- [x] Cursor tracker
+- [ ] Phase out references to old API in state.py and display.py
+- [ ] Remove unnecessary refreshing of content
+- [ ] Consistent style
+    - [ ] " quotes instead of '
+    - [ ] Choose one walkthrough definition ( walkthrough or walk through, offer automatic migration )
+	- [ ] Make sure all HUD actions are prefixed with hud_ and keep a list of changes for
+	- [ ] Use only relative paths to make it more flexible where the HUD is located
 
 Acknowledgements
 ---

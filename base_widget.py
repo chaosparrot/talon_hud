@@ -95,6 +95,14 @@ class BaseWidget(metaclass=ABCMeta):
         """
         pass
     
+    # Clear the given topic from the current topics
+    def clear_topic(self, topic: str):
+        for topic_type in self.topic_types:
+            self.contentv2.remove_topic(topic_type, topic)
+        self.preferences.current_topic = self.contentv2.get_current_topics()
+        self.preferences.mark_changed = True
+        self.event_dispatch.request_persist_preferences()
+    
     # Set the topic that has claimed this widget
     def set_topic(self, topic:str):
     	if self.topic != topic:
@@ -103,7 +111,6 @@ class BaseWidget(metaclass=ABCMeta):
             self.preferences.current_topics = [topic]
             self.preferences.mark_changed = True
             self.event_dispatch.request_persist_preferences()
-            
     
     def set_theme(self, theme):
         self.theme = theme
@@ -114,6 +121,15 @@ class BaseWidget(metaclass=ABCMeta):
 
     def content_handler(self, event) -> bool:
         self.contentv2.process_event(event)
+        
+        # Set the new content topics if they have changed
+        new_topics = set(self.contentv2.get_current_topics())
+        if bool(set(new_topics).difference(set(self.current_topics))):
+            self.current_topics = new_topics
+            self.preferences.current_topics = self.current_topics
+            self.preferences.mark_changed = True
+            self.event_dispatch.request_persist_preferences()
+        
         self.refresh({"event": event})
         
         updated = False
