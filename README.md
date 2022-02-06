@@ -260,8 +260,12 @@ This is the current status of it
 - [ ] Consistent style
     - [ ] " quotes instead of '
     - [ ] Choose one walkthrough definition ( walkthrough or walk through, offer automatic migration )
-	- [ ] Make sure all HUD actions are prefixed with hud_ and keep a list of changes for
+	- [ ] Make sure all HUD actions are prefixed with hud_ and keep a list of changes for the release notes
 	- [ ] Use only relative paths to make it more flexible where the HUD is located
+- [ ] Update documentation for status bar icons and options
+- [ ] Update documentation for pollers
+- [ ] Update documentation on mode icons
+- [ ] Update documentation on active microphone
 
 Acknowledgements
 ---
