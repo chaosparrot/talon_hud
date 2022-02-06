@@ -388,27 +388,11 @@ class HeadUpDisplay:
             self.pollers[topic].disable()
     
     def activate_poller(self, topic: str):
-        # Find the widget we need to claim for this topic
-        # Prioritizing specific widgets over the fallback one
-        widget_to_claim = None
-        using_fallback = True
-        if topic not in self.keep_alive_pollers:
-            for widget in self.widget_manager.widgets:
-                if topic in widget.subscriptions or ('*' in widget.subscriptions and using_fallback):
-                    widget_to_claim = widget
-                    if topic in widget.subscriptions:
-                   	    using_fallback = False
-        
-        # Deactivate the topic connected to the widget
-        if widget_to_claim:
-            if widget_to_claim.topic in self.pollers and widget_to_claim.topic not in self.keep_alive_pollers:
-                self.pollers[widget_to_claim.topic].disable()
-            widget_to_claim.set_topic(topic)
-    	
     	# Enable the poller afterwards
-        if topic in self.pollers and not self.pollers[topic].enabled:
+        if topic in self.pollers and \
+            topic not in self.keep_alive_pollers and \
+            (not hasattr(self.pollers[topic], 'enabled') or not self.pollers[topic].enabled):
             self.pollers[topic].enable()
-		
          
     # Check if the widgets are finished unloading, then disable the poller
     # This should only run when we have a state poller
@@ -440,8 +424,9 @@ class HeadUpDisplay:
             for widget in self.widget_manager.widgets:
                 if event.topic_type in widget.topic_types and topic in widget.current_topics:
                     widgets_with_topic.append(widget)
+                
                 if event.topic_type in widget.topic_types and ( topic in widget.subscriptions or ('*' in widget.subscriptions and using_fallback)):
-                    if topic == widget.topic:
+                    if topic in widget.current_topics:
                         widget_to_claim = widget
                     else:
                         widget_to_claim = widget
@@ -495,11 +480,12 @@ class HeadUpDisplay:
                 # If the enabled state has changed because of a content update like a sleep command
                 # Do appropriate poller enabling / disabling
                 if widget.enabled != current_enabled_state:
-                    if widget.topic in self.pollers and widget.topic not in self.keep_alive_pollers:
-                        if widget.enabled: 
-                            self.pollers[widget.topic].enable()
-                        else:
-                            self.pollers[widget.topic].disable()
+                    for topic in widget.current_topics:
+                        if topic in self.pollers and widget.topic not in self.keep_alive_pollers:
+                            if widget.enabled: 
+                                self.pollers[topic].enable()
+                            else:
+                                self.pollers[topic].disable()
 
     def panel_update(self, panel_content: HudPanelContent):
         updated = False

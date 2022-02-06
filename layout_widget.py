@@ -129,13 +129,12 @@ class LayoutWidget(BaseWidget):
         
         if self.enabled:
             self.panel_content = panel_content
-            self.topic = panel_content.topic
             self.current_topics = [panel_content.topic]
             self.mark_layout_invalid = True
             if not self.canvas:
                 self.generate_canvases()
             self.canvas.resume()
-        return self.enabled and self.topic == panel_content.topic
+        return self.enabled and panel_content.topic in self.current_topics
         
 
     def layout_content(self, canvas, paint):

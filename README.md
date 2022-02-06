@@ -243,7 +243,7 @@ This is the current status of it
 		- [ ] Add programming icons
 	- [ ] Language poller
 - [ ] Manage topics on widgets properly so that the poller state can be managed
-- [ ] Remove single widget.topic variable
+- [X] Remove single widget.topic variable
 - [ ] Rework variables like the 'mode' check to use the new events
 - [ ] Rework all widgets to conform to the new events
     - [ ] Status bar

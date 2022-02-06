@@ -26,7 +26,6 @@ class BaseWidget(metaclass=ABCMeta):
     allowed_setup_options = ["position", "dimension", "limit", "font_size"]
     
     subscribed_content = ['mode']
-    topic = ''
     
     # New content topic types
     topic_types = []
@@ -73,10 +72,7 @@ class BaseWidget(metaclass=ABCMeta):
         self.expand_direction = self.preferences.expand_direction
         self.minimized = self.preferences.minimized
         self.subscriptions = self.preferences.subscriptions
-        self.current_topics = self.preferences.current_topics
-        if len(self.current_topics) > 0 and self.current_topics[0] != "":
-            self.topic = self.current_topics[0]
-        
+        self.current_topics = self.preferences.current_topics        
         self.load_extra_preferences()
         
         # For re-enabling or disabling widgets after a reload ( mostly for talon hud environment changes )
@@ -102,15 +98,6 @@ class BaseWidget(metaclass=ABCMeta):
         self.preferences.current_topic = self.contentv2.get_current_topics()
         self.preferences.mark_changed = True
         self.event_dispatch.request_persist_preferences()
-    
-    # Set the topic that has claimed this widget
-    def set_topic(self, topic:str):
-    	if self.topic != topic:
-            self.topic = topic
-            self.current_topics = [topic]
-            self.preferences.current_topics = [topic]
-            self.preferences.mark_changed = True
-            self.event_dispatch.request_persist_preferences()
     
     def set_theme(self, theme):
         self.theme = theme
@@ -161,7 +148,6 @@ class BaseWidget(metaclass=ABCMeta):
         
         if self.enabled:
             self.panel_content = panel_content
-            self.topic = panel_content.topic
             self.canvas.resume()
         return self.enabled and panel_content.topic
     
