@@ -286,85 +286,85 @@ class HeadUpWidgetManager:
     
     def get_default_widgets(self):
         """Load widgets to give an optional default user experience that allows all the options"""
+        default_status_topics = ["mode_icon", "toolkit_option", "mode_option", "microphone_option", "language_option", "programming_option", "focus_option"]
+        
         return [
-            self.load_widget("status_bar", "status_bar"),
-            self.load_widget("event_log", "event_log"),
-            self.load_widget("Text panel", "text_panel", {'topics': ['*']}),
+            self.load_widget("status_bar", "status_bar", ["*"], default_status_topics ),
+            self.load_widget("event_log", "event_log", ["command", "error", "warning", "event", "success"]),
+            self.load_widget("Text panel", "text_panel", ["*"]),
             # Extra text boxes can be defined to be assigned to different topics
-            # self.load_widget("Text box two", "text_panel", {'topics': ['your_topic_here'], 'current_topic': 'your_topic_here'}),
+            # self.load_widget("Text box two", "text_panel", ["scope"], ["scope"]),
 
-            self.load_widget("Documentation", "documentation_panel", {'topics': ['documentation']}),
-            self.load_widget("Choices", "choice_panel", {'topics': ['choice'], 'current_topic': 'choice'}),
-            self.load_widget("ability_bar", "ability_bar"),
-            self.load_widget("walk_through", "walk_through_panel", {'topics': ['walk_through']}),
+            self.load_widget("Documentation", "documentation_panel", ["documentation"]),
+            self.load_widget("Choices", "choice_panel", ["choice"]),
+            self.load_widget("ability_bar", "ability_bar", ["*"]),
+            self.load_widget("walk_through", "walk_through_panel", ["*"]),
             
             # Special widgets that have varying positions            
-            self.load_widget("context_menu", "context_menu"),
-            self.load_widget("cursor_tracker", "cursor_tracker"),
-            self.load_widget("screen_overlay", "screen_overlay"),
+            self.load_widget("context_menu", "context_menu", ["*"]),
+            self.load_widget("cursor_tracker", "cursor_tracker", ["*"]),
+            self.load_widget("screen_overlay", "screen_overlay", ["*"]),
         ]
         
-    def load_widget(self, id: str, type: str, subscriptions = None) -> BaseWidget:
+    def load_widget(self, id: str, type: str, subscriptions = None, current_topics = None) -> BaseWidget:
         """Load a specific widget type with the id"""
         if type == "status_bar":
-            return self.load_status_bar(id, self.preferences.prefs)
+            return self.load_status_bar(id, self.preferences.prefs, subscriptions, current_topics)
         elif type == "ability_bar":
-            return self.load_ability_bar(id, self.preferences.prefs)
+            return self.load_ability_bar(id, self.preferences.prefs, subscriptions, current_topics)
         elif type == "event_log":
-            return self.load_event_log(id, self.preferences.prefs)
+            return self.load_event_log(id, self.preferences.prefs, subscriptions, current_topics)
         elif type == "context_menu":
-            return self.load_context_menu(id, self.preferences.prefs)
+            return self.load_context_menu(id, self.preferences.prefs, subscriptions, current_topics)
         elif type == "cursor_tracker":
-            return self.load_cursor_tracker(id, self.preferences.prefs)
+            return self.load_cursor_tracker(id, self.preferences.prefs, subscriptions, current_topics)
         elif type == "screen_overlay":
-            return self.load_screen_overlay(id, self.preferences.prefs)
-        
-        # All widgets with specific subscriptions tied to them        
+            return self.load_screen_overlay(id, self.preferences.prefs, subscriptions, current_topics)
         elif type == "text_panel":
-            return self.load_text_panel(id, self.preferences.prefs, subscriptions)
+            return self.load_text_panel(id, self.preferences.prefs, subscriptions, current_topics)
         elif type == "documentation_panel":
-            return self.load_documentation_panel(id, self.preferences.prefs, subscriptions)
+            return self.load_documentation_panel(id, self.preferences.prefs, subscriptions, current_topics)
         elif type == "choice_panel":
-            return self.load_choice_panel(id, self.preferences.prefs, subscriptions)
+            return self.load_choice_panel(id, self.preferences.prefs, subscriptions, current_topics)
         elif type == "walk_through_panel":
-            return self.load_walk_through_panel(id, self.preferences.prefs, subscriptions)
+            return self.load_walk_through_panel(id, self.preferences.prefs, subscriptions, current_topics)
             
-    def load_status_bar(self, id, preferences=None):
+    def load_status_bar(self, id, preferences=None, subscriptions = None, current_topics = None):
         """Load a status bar widget with the given preferences"""
-        return HeadUpStatusBar(id, preferences, self.theme, self.event_dispatch)
+        return HeadUpStatusBar(id, preferences, self.theme, self.event_dispatch, subscriptions, current_topics)
 
-    def load_event_log(self, id, preferences=None):
+    def load_event_log(self, id, preferences=None, subscriptions = None, current_topics = None):
         """Load an event log widget with the given preferences"""
-        return HeadUpEventLog(id, preferences, self.theme, self.event_dispatch)
+        return HeadUpEventLog(id, preferences, self.theme, self.event_dispatch, subscriptions, current_topics)
 
-    def load_ability_bar(self, id, preferences=None):
+    def load_ability_bar(self, id, preferences=None, subscriptions = None, current_topics = None):
         """Load an ability bar widget with the given preferences"""
-        return HeadUpAbilityBar(id, preferences, self.theme, self.event_dispatch)
+        return HeadUpAbilityBar(id, preferences, self.theme, self.event_dispatch, subscriptions, current_topics)
         
-    def load_context_menu(self, id, preferences=None):
+    def load_context_menu(self, id, preferences=None, subscriptions = None, current_topics = None):
         """Load a context menu widget with the given preferences"""
-        return HeadUpContextMenu(id, preferences, self.theme, self.event_dispatch)
+        return HeadUpContextMenu(id, preferences, self.theme, self.event_dispatch, subscriptions, current_topics)
         
-    def load_cursor_tracker(self, id, preferences=None):
+    def load_cursor_tracker(self, id, preferences=None, subscriptions = None, current_topics = None):
         """Load a cursor tracker widget with the given preferences"""
-        return HeadUpCursorTracker(id, preferences, self.theme, self.event_dispatch)
+        return HeadUpCursorTracker(id, preferences, self.theme, self.event_dispatch, subscriptions, current_topics)
         
-    def load_screen_overlay(self, id, preferences=None):
+    def load_screen_overlay(self, id, preferences=None, subscriptions = None, current_topics = None):
         """Load a screen overlay widget with the given preferences"""
-        return HeadUpScreenOverlay(id, preferences, self.theme, self.event_dispatch)
+        return HeadUpScreenOverlay(id, preferences, self.theme, self.event_dispatch, subscriptions, current_topics)
 
-    def load_text_panel(self, id, preferences=None, subscriptions=None):
+    def load_text_panel(self, id, preferences=None, subscriptions = None, current_topics = None):
         """Load a text panel widget with the given preferences"""
-        return HeadUpTextPanel(id, preferences, self.theme, self.event_dispatch, subscriptions)
+        return HeadUpTextPanel(id, preferences, self.theme, self.event_dispatch, subscriptions, current_topics)
         
-    def load_documentation_panel(self, id, preferences=None, subscriptions=None):
+    def load_documentation_panel(self, id, preferences=None, subscriptions = None, current_topics = None):
         """Load a documentation panel widget with the given preferences"""
-        return HeadUpDocumentationPanel(id, preferences, self.theme, self.event_dispatch, subscriptions)
+        return HeadUpDocumentationPanel(id, preferences, self.theme, self.event_dispatch, subscriptions, current_topics)
         
-    def load_choice_panel(self, id, preferences=None, subscriptions=None):
+    def load_choice_panel(self, id, preferences=None, subscriptions = None, current_topics = None):
         """Load a choice panel widget with the given preferences"""
-        return HeadUpChoicePanel(id, preferences, self.theme, self.event_dispatch, subscriptions)
+        return HeadUpChoicePanel(id, preferences, self.theme, self.event_dispatch, subscriptions, current_topics)
         
-    def load_walk_through_panel(self, id, preferences=None, subscriptions=None):
+    def load_walk_through_panel(self, id, preferences=None, subscriptions = None, current_topics = None):
         """Load a choice panel widget with the given preferences"""
-        return HeadUpWalkThroughPanel(id, preferences, self.theme, self.event_dispatch, subscriptions)
+        return HeadUpWalkThroughPanel(id, preferences, self.theme, self.event_dispatch, subscriptions, current_topics)

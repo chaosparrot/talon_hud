@@ -45,7 +45,7 @@ class LayoutWidget(BaseWidget):
             
     def disable(self, persisted=False):
         if self.enabled:
-            if self.mouse_enabled:
+            if self.mouse_enabled and self.mouse_capture_canvas:
                 self.mouse_capture_canvas.blocks_mouse = False
                 self.mouse_capture_canvas.unregister('mouse', self.on_mouse)
                 self.mouse_capture_canvas = None

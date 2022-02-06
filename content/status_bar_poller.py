@@ -1,6 +1,7 @@
 from talon import actions, cron, scope, speech_system, ui, app, Module
-from user.talon_hud.content.poller import Poller
-from user.talon_hud.content.state import hud_content
+from .poller import Poller
+from .state import hud_content
+from .typing import HudStatusIcon, HudButton, HudStatusOption
 
 # Polls the current mode state to be displayed in widgets like the status bar
 # Inspired by knausj forced languages
@@ -100,6 +101,19 @@ class StatusBarPoller(Poller):
 def on_ready():
     actions.user.hud_register_audio_cue('Mode change sleep', "Triggers whenever talon enters sleep mode", "sleep_mode")
     actions.user.hud_register_audio_cue('Mode change command', "Triggers whenever talon enters command mode", "command_mode")
-    actions.user.hud_register_audio_cue('Mode change dictation', "Triggers whenever talon enters dictation mode", "pen")        
+    actions.user.hud_register_audio_cue('Mode change dictation', "Triggers whenever talon enters dictation mode", "pen")
+    
+    # Mode icon
+    add_mode_option = HudButton("command_icon", "Add mode indicator", ui.Rect(0,0,0,0), lambda widget: actions.user.activate_statusbar_icon("mode"))
+    remove_mode_option = HudButton("en_US", "Remove mode indicator", ui.Rect(0,0,0,0), lambda widget: actions.user.activate_statusbar_icon("mode"))
+    mode_option = HudStatusOption("mode_option", add_mode_option, remove_mode_option)
+    
+    # Language icon
+    add_language_option = HudButton("en_US", "Add language", ui.Rect(0,0,0,0), lambda widget: actions.user.hud_add_language_toggle())
+    remove_language_option = HudButton("en_US", "Remove language", ui.Rect(0,0,0,0), lambda widget: actions.user.hud_remove_language_toggle())
+    language_option = HudStatusOption("language_option", add_language_option, remove_language_option)
+    
+    actions.user.hud_publish_status_option("mode_option", mode_option)    
+    actions.user.hud_publish_status_option("language_option", language_option)
     
 app.register('ready', on_ready)

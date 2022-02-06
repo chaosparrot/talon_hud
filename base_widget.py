@@ -24,11 +24,8 @@ class BaseWidget(metaclass=ABCMeta):
     buttons = []
     
     allowed_setup_options = ["position", "dimension", "limit", "font_size"]
-    subscribed_topics = []
     
     subscribed_content = ['mode']
-    subscribed_logs = []
-    subscribed_topics = []
     topic = ''
     
     # New content topic types
@@ -45,19 +42,19 @@ class BaseWidget(metaclass=ABCMeta):
     setup_vertical_direction = ""
     setup_horizontal_direction = ""
     
-    def __init__(self, id, preferences_dict, theme, event_dispatch, subscriptions = None):
+    def __init__(self, id, preferences_dict, theme, event_dispatch, subscriptions = None, current_topics = None):
         self.id = id
         self.theme = theme
         self.preferences = copy.copy(self.preferences)
         self.event_dispatch = event_dispatch
         self.contentv2 = HudPartialContent()
-        
-        self.load(preferences_dict)
+
         if subscriptions != None:
-            self.topic = subscriptions['current_topic'] if 'current_topic' in subscriptions else ''
-            self.subscribed_topics = subscriptions['topics'] if 'topics' in subscriptions else self.subscribed_topics
-            self.subscribed_logs = subscriptions['logs'] if 'logs' in subscriptions else self.subscribed_logs
-            
+            self.subscriptions = subscriptions
+        if current_topics != None:
+            self.current_topics = current_topics        
+        self.load(preferences_dict)
+
     # Load the widgets preferences
     def load(self, dict, initialize = True, update_enabled = False):
         self.preferences.load(self.id, dict)        

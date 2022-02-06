@@ -2,7 +2,7 @@ from talon import actions, cron, scope, Module, ui
 from talon.types.point import Point2d
 from talon_init import TALON_USER
 from talon.scripting import Dispatch
-from .typing import HudPanelContent, HudButton, HudChoice, HudChoices, HudScreenRegion, HudAudioCue, HudDynamicVoiceCommand, HudLogMessage, HudContentEvent, HudAbilityIcon
+from .typing import HudPanelContent, HudButton, HudChoice, HudChoices, HudScreenRegion, HudAudioCue, HudDynamicVoiceCommand, HudLogMessage, HudContentEvent, HudAbilityIcon, HudStatusIcon, HudStatusOption
 from typing import Callable, Any, Union
 import time
 import os
@@ -130,7 +130,8 @@ class HeadUpDisplayContent(Dispatch):
             if self.topic_types[topic_type][topic] != data:
                updated = True
             self.topic_types[topic_type][topic] = data
-        
+            
+            print( topic_type, topic, data, updated )
             if updated and send_event:
                self.dispatch("broadcast_update", HudContentEvent(topic_type, topic, data, 'replace'))
                
@@ -282,14 +283,30 @@ class Actions:
         hud_content.show_throttled_logs(sleep_s)
 
     def hud_add_status_icon(id: str, image: str):
-        """Add an icon to the status bar"""
+        """Add an unclickable icon to the status bar"""
         global hud_content
-        hud_content.add_to_set("status_icons", {
-            "id": id,
-            "image": image,
-            "explanation": "",
-            "clickable": False
-        })
+        status_icon = HudStatusIcon(id, image)
+        hud_content.update_topic_type("status_icons", id, status_icon)
+        
+    def hud_publish_status_icon(topic: str, icon: HudStatusIcon):
+        """Publish an icon the status bar"""
+        global hud_content
+        hud_content.update_topic_type("status_icons", topic, status_icon)
+        
+    def hud_remove_status_icon(id: str):
+        """Remove an icon to the status bar"""
+        global hud_content
+        hud_content.clear_topic_type("status_icons", id)
+        
+    def hud_publish_status_option(topic: str, status_option: HudStatusOption):
+        """Add an option entry to the status bar"""
+        global hud_content
+        hud_content.update_topic_type("status_options", topic, status_option)
+        
+    def hud_remove_status_option(topic: str):
+        """Remove an option entry to the status bar"""
+        global hud_content
+        hud_content.clear_topic_type("status_options", topic)
 
     def hud_set_walkthrough_voice_commands(commands: list[str], progress: Any = None):
         """Set the voice commands uttered by the user during the walkthrough step"""
@@ -301,13 +318,6 @@ class Actions:
             dict["walkthrough_progress"] = progress
         
         hud_content.update(dict)
-
-    def hud_remove_status_icon(id: str):
-        """Remove an icon to the status bar"""
-        global hud_content
-        hud_content.remove_from_set("status_icons", {
-            "id": id
-        })
 
     def hud_add_ability(id: str, image: str, colour: str, enabled: int, activated: int, image_offset_x: int = 0, image_offset_y: int = 0):
         """Add a hud ability or update it"""

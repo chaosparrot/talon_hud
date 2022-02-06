@@ -115,6 +115,7 @@ class HeadUpDisplay:
         self.widget_manager = HeadUpWidgetManager(self.preferences, self.theme, self.event_dispatch)
         
         self.audio_manager = HeadUpAudioManager(self.preferences, self.theme)
+        self.display_state.register('broadcast_update', self.broadcast_update)
         self.display_state.register('register_audio_cue', self.register_cue)
         self.display_state.register('unregister_audio_cue', self.unregister_cue)
         
@@ -133,6 +134,8 @@ class HeadUpDisplay:
         # actions.user.hud_add_single_click_mic_toggle()
 
         if (self.preferences.prefs['enabled']):
+            # Temporarily disable broadcast updates that were captured with the previous handler in the init
+            self.display_state.unregister('broadcast_update', self.broadcast_update)        
             self.enable()
                         
             ctx.tags = ['user.talon_hud_available', 'user.talon_hud_visible', 'user.talon_hud_choices_visible']
@@ -146,6 +149,7 @@ class HeadUpDisplay:
     def enable(self, persisted=False):
         if not self.enabled:
             self.enabled = True
+            self.display_state.register('broadcast_update', self.broadcast_update)            
                         
             # Only reset the talon HUD environment after a user action
             # And only set the visible tag
@@ -175,7 +179,6 @@ class HeadUpDisplay:
             if persisted:
                 self.reload_preferences()
 
-            self.display_state.register('broadcast_update', self.broadcast_update)
             self.display_state.register('content_update', self.content_update)
             self.display_state.register('panel_update', self.panel_update)            
             self.display_state.register('trigger_audio_cue', self.audio_manager.trigger_cue)
@@ -250,20 +253,24 @@ class HeadUpDisplay:
     
         for widget in self.widget_manager.widgets:
             if not widget.enabled and widget.id == id:
-                widget.enable(True)
-                if widget.topic in self.pollers and not self.pollers[widget.topic].enabled:
-                	self.pollers[widget.topic].enable()
+                widget.enable(True)                
+                for topic, poller in self.pollers.items():
+                    if topic in widget.current_topics and (not hasattr(self.pollers[topic], 'enabled') or not self.pollers[topic].enabled):
+                        self.pollers[topic].enable()
                     
                 self.update_context()
+                break
                 
     def disable_id(self, id):
         for widget in self.widget_manager.widgets:
             if widget.enabled and widget.id == id:
                 widget.disable(True)
-                if widget.topic in self.pollers and widget.topic not in self.keep_alive_pollers:
-                	self.pollers[widget.topic].disable()
+                for topic, poller in self.pollers.items():
+                    if topic in widget.current_topics and (not hasattr(self.pollers[topic], 'enabled') or self.pollers[topic].enabled):
+                        self.pollers[topic].disable()
                     
                 self.update_context()
+                break
         self.determine_active_setup_mouse()
         
     def subscribe_content_id(self, id, content_key):
@@ -386,9 +393,9 @@ class HeadUpDisplay:
         using_fallback = True
         if topic not in self.keep_alive_pollers:
             for widget in self.widget_manager.widgets:
-                if topic in widget.subscribed_topics or ('*' in widget.subscribed_topics and using_fallback):
+                if topic in widget.subscriptions or ('*' in widget.subscriptions and using_fallback):
                     widget_to_claim = widget
-                    if topic in widget.subscribed_topics:
+                    if topic in widget.subscriptions:
                    	    using_fallback = False
         
         # Deactivate the topic connected to the widget
@@ -422,7 +429,7 @@ class HeadUpDisplay:
         updated = False
         if not self.enabled:
             event.show = False
-        
+                
         # Claim a widget and unregister its pollers
         if event.claim:
             topic = event.topic
@@ -448,6 +455,7 @@ class HeadUpDisplay:
                         self.pollers[widget_to_claim.topic].disable()
         else:
             for widget in self.widget_manager.widgets:
+                print( event.topic_type in widget.topic_types, widget.id )
                 if event.topic_type in widget.topic_types and \
                     (event.topic in widget.subscriptions or \
                     ('*' in widget.subscriptions and "!" + event.topic not in widget.subscriptions)):
@@ -500,13 +508,13 @@ class HeadUpDisplay:
         # And lastly the fallback widget
         if topic not in self.keep_alive_pollers:
             for widget in self.widget_manager.widgets:
-                if topic in widget.subscribed_topics or ('*' in widget.subscribed_topics and using_fallback):
+                if topic in widget.subscriptions or ('*' in widget.subscriptions and using_fallback):
                     if topic == widget.topic:
                         widget_to_claim = widget
                         break
                     else:
                         widget_to_claim = widget
-                        if topic in widget.subscribed_topics:
+                        if topic in widget.subscriptions:
                             using_fallback = False
 
         if widget_to_claim:

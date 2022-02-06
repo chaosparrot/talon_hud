@@ -1,7 +1,7 @@
 from ..base_widget import BaseWidget
 from ..utils import linear_gradient
 from ..widget_preferences import HeadUpDisplayUserWidgetPreferences
-from ..content.typing import HudButton
+from ..content.typing import HudButton, HudStatusOption, HudStatusIcon
 from talon import skia, ui, Module, cron, actions
 import time
 import numpy
@@ -29,14 +29,14 @@ class HeadUpStatusBar(BaseWidget):
     icon_positions = []
     icons = []
     subscribed_content = [
-        "mode",
-        "programming_language",
-        "status_icons",
+        "mode"
     ]
+    
+    subscribed_topics = []
 
     # New content topic types
     topic_types = ['status_icons', 'status_options']
-    current_topics = ["mode_icon"]
+    current_topics = []
     subscriptions = ["*"]
 
     content = {
@@ -45,8 +45,7 @@ class HeadUpStatusBar(BaseWidget):
         'programming_language': {
             'ext': None,
             'forced': False
-        },
-        "status_icons": []
+        }
     }
     
     animation_max_duration = 60
@@ -70,35 +69,36 @@ class HeadUpStatusBar(BaseWidget):
                 self.background_colour[2] - self.blink_colour[2]
             ]
         
-            self.blink_state = 100 if self.show_animations else 0        
-        self.update_icons(new_content)
+            self.blink_state = 100 if self.show_animations else 0
+        self.update_icons()
         self.update_buttons()
+        if self.canvas:
+            self.canvas.resume()
     
     def update_buttons(self):
         buttons = []
         buttons.append(HudButton("", "Content toolkit", ui.Rect(0,0,0,0), lambda widget: actions.user.hud_toolkit_options()))
-        buttons.append(HudButton("microphone_on", "Add microphone", ui.Rect(0,0,0,0), lambda widget: actions.user.hud_add_single_click_mic_toggle()))
-        buttons.append(HudButton("en_US", "Add language", ui.Rect(0,0,0,0), lambda widget: actions.user.hud_add_language_toggle()))        
-        buttons.append(HudButton("focus", "Add focus indicator", ui.Rect(0,0,0,0), lambda widget: actions.user.hud_add_focus_toggle()))
+        status_options = self.contentv2.get_topic("status_options")
+        for status_option in status_options:
+            if status_option.icon_topic in self.current_topics:
+                if status_option.activated_option:
+                    buttons.append( status_option.activated_option )
+            else:
+                if status_option.default_option:
+                    buttons.append( status_option.default_option )                
         
-        if "active_microphone" in self.subscribed_content:
-            buttons[1].text = "Remove microphone"
-            buttons[1].callback = lambda widget: actions.user.hud_remove_single_click_mic_toggle()
-            
-        if "language" in self.subscribed_content:
-            buttons[2].text = "Remove language"
-            buttons[2].callback = lambda widget: actions.user.hud_remove_language_toggle()
-
-        if "focus_indicator" in self.subscribed_content:
-            buttons[3].text = "Remove focus indicator"
-            buttons[3].callback = lambda widget: actions.user.hud_remove_focus_toggle()
+        #buttons.append(HudButton("microphone_on", "Add microphone", ui.Rect(0,0,0,0), lambda widget: actions.user.hud_add_single_click_mic_toggle()))
+        #buttons.append(HudButton("en_US", "Add language", ui.Rect(0,0,0,0), lambda widget: actions.user.hud_add_language_toggle()))        
+        #buttons.append(HudButton("focus", "Add focus indicator", ui.Rect(0,0,0,0), lambda widget: actions.user.hud_add_focus_toggle()))
         
         self.buttons = buttons
     
-    def update_icons(self, new_content):
-        mode = self.content["mode"] if "mode" not in new_content else new_content["mode"]
-    
-        self.icons = [{
+    def update_icons(self):        
+        self.icons = self.contentv2.get_topic("status_icons")
+        return
+        
+        mode = self.content["mode"] if "mode" not in new_content else new_content["mode"]        
+        self.icons = status_icons[{
             "id": "mode",
             "image": mode + "_icon",
             "clickable": mode != "sleep"
@@ -138,7 +138,7 @@ class HeadUpStatusBar(BaseWidget):
         # Hit detection of buttons        
         hover_index = -1
         for index, icon in enumerate(self.icon_positions):
-            if (numpy.linalg.norm(pos - numpy.array([icon['center_x'], icon['center_y']])) < icon['radius']):
+            if icon['icon'].callback and (numpy.linalg.norm(pos - numpy.array([icon['center_x'], icon['center_y']])) < icon['radius']):
                 hover_index = index
                 break
         
@@ -162,13 +162,14 @@ class HeadUpStatusBar(BaseWidget):
             
     def activate_icon(self):    
         if self.icon_hover_index < len(self.icon_positions) and self.icon_hover_index > -1:
-            actions.user.activate_statusbar_icon(self.icon_positions[self.icon_hover_index]['icon']['id'])
+            icon = self.icon_positions[self.icon_hover_index]['icon']
+            icon.callback(self, icon)
         self.icon_hover_index = -1
                 
     def enable(self, persist=False):
         if not self.enabled:
             self.reset_blink()
-            self.update_icons({})
+            self.update_icons()
             self.update_buttons()
             super().enable(persist)
     
@@ -219,14 +220,14 @@ class HeadUpStatusBar(BaseWidget):
 
         # Draw icons
         for index, icon in enumerate(self.icons):
-            if (not icon['clickable']):
+            if (not icon.callback):
                 paint.shader = background_shader
             else:
                 button_colour = self.theme.get_colour('button_hover_colour') if self.icon_hover_index == index else self.theme.get_colour('button_colour')
                 paint.shader = linear_gradient(self.x, self.y, self.x, self.y + element_height, (self.theme.get_colour('button_colour'), button_colour))
             
             # Do not draw icons or buttons without a valid image
-            if icon['image'] is not None and self.theme.get_image(icon['image']) is not None:
+            if icon.image is not None and self.theme.get_image(icon.image) is not None:
                 self.draw_icon(canvas, self.x + stroke_width + circle_margin + ( index * icon_diameter ) + ( index * circle_margin ), self.y + circle_margin, icon_diameter, paint, icon)
 
         height_center = self.y + element_height + ( circle_margin / 2 ) - ( element_height / 2 )
@@ -248,7 +249,8 @@ class HeadUpStatusBar(BaseWidget):
         close_colour = self.theme.get_colour('close_icon_hover_colour') if self.icon_hover_index == len(self.icons) else self.theme.get_colour('close_icon_accent_colour')
         paint.shader = linear_gradient(self.x, self.y, self.x, self.y + element_height, (self.theme.get_colour('close_icon_colour'), close_colour))
         close_icon_diameter = icon_diameter / 2
-        self.draw_icon(canvas, self.x + element_width - close_icon_diameter - close_icon_diameter / 2 - stroke_width, height_center - close_icon_diameter / 2, close_icon_diameter, paint, {'id': 'close', 'image': None})
+        close_status_icon = HudStatusIcon("close", None, None, "Close Head up display", lambda widget, icon: actions.user.disable_hud())
+        self.draw_icon(canvas, self.x + element_width - close_icon_diameter - close_icon_diameter / 2 - stroke_width, height_center - close_icon_diameter / 2, close_icon_diameter, paint, close_status_icon)
 
         # Reset the blink colour when the blink is finished
         if not continue_drawing:
@@ -304,10 +306,10 @@ class HeadUpStatusBar(BaseWidget):
     def draw_icon(self, canvas, origin_x, origin_y, diameter, paint, icon ):
         radius = diameter / 2
         canvas.draw_circle( origin_x + radius, origin_y + radius, radius, paint)
-        if (icon['image'] is not None and self.theme.get_image(icon['image']) is not None ):
-            image = self.theme.get_image(icon['image'], diameter, diameter)
+        if (icon.image is not None and self.theme.get_image(icon.image) is not None ):
+            image = self.theme.get_image(icon.image, diameter, diameter)
             canvas.draw_image(image, origin_x + radius - image.width / 2, origin_y + radius - image.height / 2 )
-                
+            
         self.icon_positions.append({'icon': icon, 'center_x': origin_x + radius, 'center_y': origin_y + radius, 'radius': radius})
         
     def reset_blink(self):

@@ -74,21 +74,6 @@ class HudScreenRegion:
     hover_visibility: int = HOVER_VISIBILITY_OFF
     text_colour: str = None
     vertical_centered: bool = True
-
-@dataclass
-class HudWalkThroughStep:
-    content: str = ''
-    context_hint: str = ''
-    tags: list[str] = None
-    modes: list[str] = None
-    app: str = ''
-    voice_commands: list[str] = None
-    restore_callback: Callable[[Any, Any], None] = None
-
-@dataclass    
-class HudWalkThrough:
-    title: str
-    steps: list[HudWalkThroughStep]
     
 @dataclass
 class HudAudioCue:
@@ -105,6 +90,23 @@ class HudContentPage:
     current: float
     total: float
     percent: float
+    
+@dataclass
+class HudWalkThroughStep:
+    content: str = ''
+    context_hint: str = ''
+    tags: list[str] = None
+    modes: list[str] = None
+    app: str = ''
+    voice_commands: list[str] = None
+    restore_callback: Callable[[Any, Any], None] = None
+    said_walkthrough_commands: list[str] = None
+    progress: HudContentPage = None    
+
+@dataclass    
+class HudWalkThrough:
+    title: str
+    steps: list[HudWalkThroughStep]
 
 # These content events will be handled automatically
 CONTENT_EVENT_OPERATION_REPLACE = 'replace' # Used to signal a complete replacement of the given topic
@@ -138,3 +140,17 @@ class HudAbilityIcon:
     activated: bool
     image_offset_x: float
     image_offset_y: float
+
+@dataclass
+class HudStatusOption:
+    icon_topic: str
+    default_option: HudButton
+    activated_option: HudButton
+
+@dataclass
+class HudStatusIcon:
+    topic: str
+    image: str
+    text: str = None
+    accessible_text: str = None
+    callback: Callable[[Any, Any], None] = None
