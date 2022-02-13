@@ -10,11 +10,11 @@ class HudContentBuilder():
     def __init__(self, content: HeadUpDisplayContent):
         self.connect(content)
 
-    def create_status_icon(self, topic: str, image: str, colour: str = None, accessible_name: str = "Status icon", callback: Any = None) -> HudStatusIcon:
+    def create_status_icon(self, topic: str, image: str, text: str = None, accessible_name: str = "Status icon", callback: Any = None) -> HudStatusIcon:
         """Create a status bar icon to be displayed in the status bar widget in the Talon HUD"""
         if callback == None:
             callback = lambda widget, icon: None
-        return HudStatusIcon(topic, image, colour, accessible_name, callback)
+        return HudStatusIcon(topic, image, text, accessible_name, callback)
 
     def create_status_option(self, icon_topic: str, default_option: HudButton, activated_option: HudButton ) -> HudStatusOption:
         """Create a status bar icon to be displayed in the status bar widget in the Talon HUD"""

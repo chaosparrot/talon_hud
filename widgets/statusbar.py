@@ -219,16 +219,20 @@ class HeadUpStatusBar(BaseWidget):
         self.draw_background(canvas, self.x + stroke_width, self.y + stroke_width, element_width - stroke_width * 2, element_height, paint)
 
         # Draw icons
+        icon_offset = 0
         for index, icon in enumerate(self.icons):
+            # Do not draw icons or buttons without a valid image
+            if icon.image is None or self.theme.get_image(icon.image) is None:
+                continue
+
             if (not icon.callback):
                 paint.shader = background_shader
             else:
                 button_colour = self.theme.get_colour('button_hover_colour') if self.icon_hover_index == index else self.theme.get_colour('button_colour')
                 paint.shader = linear_gradient(self.x, self.y, self.x, self.y + element_height, (self.theme.get_colour('button_colour'), button_colour))
             
-            # Do not draw icons or buttons without a valid image
-            if icon.image is not None and self.theme.get_image(icon.image) is not None:
-                self.draw_icon(canvas, self.x + stroke_width + circle_margin + ( index * icon_diameter ) + ( index * circle_margin ), self.y + circle_margin, icon_diameter, paint, icon)
+            self.draw_icon(canvas, self.x + stroke_width + circle_margin + icon_offset, self.y + circle_margin, icon_diameter, paint, icon)
+            icon_offset += icon_diameter + circle_margin
 
         height_center = self.y + element_height + ( circle_margin / 2 ) - ( element_height / 2 )
 

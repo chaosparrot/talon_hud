@@ -245,10 +245,12 @@ This is the current status of it
 	- [ ] Programming language poller
 		- [ ] Make list of languages in preferences for user to change
 		- [ ] Add programming icons
-	- [ ] Language poller
+	- [x] Language poller
 	- [x] Focus icon
 - [ ] Manage topics on widgets properly so that the poller state can be managed
     - [ ] Fix inconsistent topic registering / deregistering for single topic widgets vs multitopic widgets
+	- [ ] Fix topic deregistering if no content is available for it
+	- [ ] Fix ordering of topics properly
 - [X] Remove single widget.topic variable
 - [ ] Rework variables like the 'mode' check to use the new events
 - [ ] Rework all widgets to conform to the new events
