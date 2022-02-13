@@ -380,11 +380,9 @@ class HeadUpDisplay:
         # Automatically enable the poller if it was active on restart        
         else:
             for widget in self.widget_manager.widgets:
-                print( "ON REGISTER!!!", topic )
                 if topic in widget.current_topics and widget.enabled and \
                     (not hasattr(self.pollers[topic], "enabled") or not self.pollers[topic].enabled):
                     self.pollers[topic].enable()
-                    print( "ENABLE" )
                     break
         
     def remove_poller(self, topic: str):
@@ -452,7 +450,7 @@ class HeadUpDisplay:
                     if widget.id != widget_to_claim.id:
                         widget.clear_topic(event.topic)
                 
-                previous_topics = widget_to_claim.current_topics[:]
+                previous_topics = list(widget_to_claim.current_topics)[:]
                 updated = widget_to_claim.content_handler(event)
                 if updated:
                     for previous_topic in previous_topics:

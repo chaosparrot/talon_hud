@@ -22,7 +22,8 @@ class FocusPoller(Poller):
             ui.unregister("win_focus", self.update_focus_indicator)
             ui.unregister("win_resize", self.update_focus_indicator)
             ui.unregister("win_move", self.move_focus_indicator)        
-            self.content.publish_event("screen_regions", "overlay", "remove")
+            self.content.publish_event("screen_regions", "focus", "remove")
+            self.content.publish_event("status_icons", "focus_toggle", "remove")
         cron.cancel(self.move_indicator_job)
         
     def update_focus_indicator(self, window = None):
@@ -39,7 +40,10 @@ class FocusPoller(Poller):
                 regions = [self.content.create_screen_region("focus", focus_colour, "", "<*" + app.name, -1, active_window.rect.x, active_window.rect.y, active_window.rect.width, active_window.rect.height )]
                 regions[0].text_colour = focus_text_colour
                 regions[0].vertical_centered = False
-                self.content.publish_event("screen_regions", "overlay", "replace", regions, True)
+                self.content.publish_event("screen_regions", "focus", "replace", regions, True)
+
+                status_icon = self.content.create_status_icon("focus_toggle", "focus", None, app.name, lambda _, _2: actions.user.hud_deactivate_poller("focus") )
+                self.content.publish_event("status_icons", status_icon.topic, "replace", status_icon, False)
 
     def move_focus_indicator(self, window):
         cron.cancel(self.move_indicator_job)
@@ -50,6 +54,13 @@ class FocusPoller(Poller):
         
 def append_poller():
     actions.user.hud_add_poller("focus", FocusPoller())
+    
+    # Add the toggles to the status bar
+    default_option = actions.user.hud_create_button("Add focus indicator", lambda _: actions.user.hud_activate_poller("focus"), "focus")
+    activated_option = actions.user.hud_create_button("Remove focus indicator", lambda _: actions.user.hud_deactivate_poller("focus"), "focus")
+    status_option = actions.user.hud_create_status_option("focus_toggle", default_option, activated_option)
+    actions.user.hud_publish_status_option("focus_toggle_option", status_option)
+
 app.register("ready", append_poller)
 
 mod = Module()
@@ -58,10 +69,9 @@ class Actions:
 
     def hud_add_focus_indicator():
         """Start debugging the focus state in the Talon HUD"""
-        actions.user.hud_add_poller("focus", FocusPoller())
         actions.user.hud_activate_poller("focus")
         
     def hud_remove_focus_indicator():
         """Stop debugging the focus state in the Talon HUD"""
         actions.user.hud_deactivate_poller("focus")
-        actions.user.hud_clear_screen_regions("overlay", "focus")
+        actions.user.hud_remove_status_icon("focus_toggle")

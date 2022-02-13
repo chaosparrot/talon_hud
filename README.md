@@ -240,13 +240,13 @@ This is the current status of it
 - [ ] Phase out status bar poller in favour of the following:
 	- [x] Active microphone status icon poller
 	- [ ] Mode icon poller
+	    - [ ] Make overrideable action for determining modes
 		- [ ] Make overrideable action for switching modes
-		- [ ] Make list of modes in preferences for user to change
 	- [ ] Programming language poller
 		- [ ] Make list of languages in preferences for user to change
 		- [ ] Add programming icons
 	- [ ] Language poller
-	- [ ] Focus icon
+	- [x] Focus icon
 - [ ] Manage topics on widgets properly so that the poller state can be managed
     - [ ] Fix inconsistent topic registering / deregistering for single topic widgets vs multitopic widgets
 - [X] Remove single widget.topic variable

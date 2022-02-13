@@ -1,7 +1,7 @@
 from typing import Callable, Any
 from talon import app, Module, actions, Context, speech_system, cron, scope, fs
 from .typing import HudWalkThrough, HudWalkThroughStep
-from ...utils import retrieve_available_voice_commands, md_to_richtext_content
+from ..utils import retrieve_available_voice_commands, md_to_richtext_content
 import os
 import json
 import copy

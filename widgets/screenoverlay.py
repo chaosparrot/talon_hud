@@ -135,8 +135,6 @@ class HeadUpScreenOverlay(BaseWidget):
             
             soft_enable = ( self.regions != new_regions or not self.soft_enabled ) and len(new_regions) > 0
             self.regions = new_regions
-
-        print( self.regions )
         
         # Clear the canvases in reverse order to make sure the indices stay correct
         indices_to_clear.reverse()
