@@ -10,6 +10,7 @@ from .theme import HeadUpDisplayTheme
 from .event_dispatch import HeadUpEventDispatch
 from .widget_manager import HeadUpWidgetManager
 from .lowvision.audio_manager import HeadUpAudioManager
+from .content.content_builder import HudContentBuilder
 from .content.state import hud_content
 from .content.status_bar_poller import StatusBarPoller
 from .content.history_poller import HistoryPoller
@@ -23,7 +24,7 @@ from .utils import string_to_speakable_string
 
 
 # Taken from knausj/code/numbers to make Talon HUD standalone
-# The numbers should realistically stay very low for choices, because you don't want choice overload for the user, up to 100
+# The numbers should realistically stay very low for choices, because you don"t want choice overload for the user, up to 100
 digits = "zero one two three four five six seven eight nine".split()
 teens = "ten eleven twelve thirteen fourteen fifteen sixteen seventeen eighteen nineteen".split()
 tens = "twenty thirty forty fifty sixty seventy eighty ninety".split()
@@ -63,11 +64,11 @@ mod.tag("talon_hud_visible", desc="Tag that shows that the Talon HUD is visible"
 mod.tag("talon_hud_choices_visible", desc="Tag that shows there are choices available on screen that can be chosen")
 mod.setting("talon_hud_environment", type="string", desc="Which environment to set the HUD in - Useful for setting up a HUD for screen recording or other tasks")
 
-ctx.tags = ['user.talon_hud_available']
-ctx.settings['user.talon_hud_environment'] = ""
-ctx.lists['user.talon_hud_volume_number'] = numerical_choice_index_map.keys()
-ctx.lists['user.talon_hud_audio_cue'] = []
-ctx.lists['user.talon_hud_widget_enabled_voice_commands'] = []
+ctx.tags = ["user.talon_hud_available"]
+ctx.settings["user.talon_hud_environment"] = ""
+ctx.lists["user.talon_hud_volume_number"] = numerical_choice_index_map.keys()
+ctx.lists["user.talon_hud_audio_cue"] = []
+ctx.lists["user.talon_hud_widget_enabled_voice_commands"] = []
 
 # A list of Talon HUD versions that can be used to check for in other packages
 TALON_HUD_RELEASE_030 = 3 # Walk through version
@@ -109,59 +110,61 @@ class HeadUpDisplay:
         self.preferences = preferences
         self.pollers = {}
         self.disable_poller_job = None
-        self.theme = HeadUpDisplayTheme(self.preferences.prefs['theme_name'])
+        self.theme = HeadUpDisplayTheme(self.preferences.prefs["theme_name"])
         self.event_dispatch = HeadUpEventDispatch()
-        self.show_animations = self.preferences.prefs['show_animations']
+        self.show_animations = self.preferences.prefs["show_animations"]
         self.widget_manager = HeadUpWidgetManager(self.preferences, self.theme, self.event_dispatch)
         
         self.audio_manager = HeadUpAudioManager(self.preferences, self.theme)
-        self.display_state.register('broadcast_update', self.broadcast_update)
-        self.display_state.register('register_audio_cue', self.register_cue)
-        self.display_state.register('unregister_audio_cue', self.unregister_cue)
+        self.display_state.register("broadcast_update", self.broadcast_update)
+        self.display_state.register("register_audio_cue", self.register_cue)
+        self.display_state.register("unregister_audio_cue", self.unregister_cue)
         
         # These pollers should always be active and available when reloading Talon HUD
         self.pollers = {
-            'status': StatusBarPoller(),
-            'history': HistoryPoller()
+            "status": StatusBarPoller(),
+            "history": HistoryPoller()
         }
-        self.keep_alive_pollers = ['status', 'history']
+        self.pollers["status"].content = HudContentBuilder(self.display_state)
+        self.pollers["history"].content = HudContentBuilder(self.display_state)
+        self.keep_alive_pollers = ["status", "history"]
         
         # Uncomment the line below to add language icons by default
-        # self.subscribe_content_id('status_bar', 'language')       
+        # self.subscribe_content_id("status_bar", "language")       
 
     def start(self):
         # Uncomment the line below to add the single click mic toggle by default
         # actions.user.hud_add_single_click_mic_toggle()
 
-        if (self.preferences.prefs['enabled']):
+        if (self.preferences.prefs["enabled"]):
             # Temporarily disable broadcast updates that were captured with the previous handler in the init
-            self.display_state.unregister('broadcast_update', self.broadcast_update)        
+            self.display_state.unregister("broadcast_update", self.broadcast_update)        
             self.enable()
                         
-            ctx.tags = ['user.talon_hud_available', 'user.talon_hud_visible', 'user.talon_hud_choices_visible']
+            ctx.tags = ["user.talon_hud_available", "user.talon_hud_visible", "user.talon_hud_choices_visible"]
             
-            if self.preferences.prefs['audio_enabled']:
+            if self.preferences.prefs["audio_enabled"]:
                 self.audio_manager.enable()
                 
             if actions.sound.active_microphone() == "None":
-                actions.user.hud_add_log("warning", "Microphone is set to 'None'!\n\nNo voice commands will be registered.")
+                actions.user.hud_add_log("warning", "Microphone is set to \"None\"!\n\nNo voice commands will be registered.")
     
     def enable(self, persisted=False):
         if not self.enabled:
             self.enabled = True
-            self.display_state.register('broadcast_update', self.broadcast_update)            
+            self.display_state.register("broadcast_update", self.broadcast_update)            
                         
             # Only reset the talon HUD environment after a user action
             # And only set the visible tag
             if persisted:
-                ctx.tags = ['user.talon_hud_available', 'user.talon_hud_visible', 'user.talon_hud_choices_visible']
+                ctx.tags = ["user.talon_hud_available", "user.talon_hud_visible", "user.talon_hud_choices_visible"]
                 self.current_talon_hud_environment = settings.get("user.talon_hud_environment")
             
             # Connect the events relating to non-content communication
-            self.event_dispatch.register('persist_preferences', self.debounce_widget_preferences)
-            self.event_dispatch.register('hide_context_menu', self.hide_context_menu)
-            self.event_dispatch.register('deactivate_poller', self.deactivate_poller)
-            self.event_dispatch.register('show_context_menu', self.move_context_menu)
+            self.event_dispatch.register("persist_preferences", self.debounce_widget_preferences)
+            self.event_dispatch.register("hide_context_menu", self.hide_context_menu)
+            self.event_dispatch.register("deactivate_poller", self.deactivate_poller)
+            self.event_dispatch.register("show_context_menu", self.move_context_menu)
             
             attached_topics = list(self.keep_alive_pollers)
             for widget in self.widget_manager.widgets:
@@ -172,31 +175,31 @@ class HeadUpDisplay:
 
             # Automatically start pollers that are connected to widgets
             for topic, poller in self.pollers.items():
-                if topic in attached_topics and (not hasattr(self.pollers[topic], 'enabled') or not self.pollers[topic].enabled):
+                if topic in attached_topics and (not hasattr(self.pollers[topic], "enabled") or not self.pollers[topic].enabled):
                     self.pollers[topic].enable()
 
             # Reload the preferences just in case a screen change happened in between the hidden state
             if persisted:
                 self.reload_preferences()
 
-            self.display_state.register('content_update', self.content_update)
-            self.display_state.register('panel_update', self.panel_update)            
-            self.display_state.register('trigger_audio_cue', self.audio_manager.trigger_cue)
+            self.display_state.register("content_update", self.content_update)
+            self.display_state.register("panel_update", self.panel_update)            
+            self.display_state.register("trigger_audio_cue", self.audio_manager.trigger_cue)
             
-            ui.register('screen_change', self.reload_preferences)
+            ui.register("screen_change", self.reload_preferences)
             settings.register("user.talon_hud_environment", self.hud_environment_change)
             self.determine_active_setup_mouse()
             if persisted:
-                self.preferences.persist_preferences({'enabled': True})
+                self.preferences.persist_preferences({"enabled": True})
                 
             # TODO SHOULD PROBABLY FIX THIS FLOW TO MAKE SURE THE CONTENT IS PROPERLY REUSED IN THE WIDGETS INSTEAD
             actions.user.hud_refresh_content()
             
-            # Make sure context isn't updated in this thread because of automatic reloads
+            # Make sure context isn"t updated in this thread because of automatic reloads
             cron.cancel(self.update_context_debouncer)
             self.update_context_debouncer = cron.after("50ms", self.update_context)
             
-            if self.preferences.prefs['audio_enabled']:
+            if self.preferences.prefs["audio_enabled"]:
                 self.audio_manager.enable()            
 
     def disable(self, persisted=False):
@@ -209,26 +212,26 @@ class HeadUpDisplay:
                     widget.disable()
             
             # Disconnect the events relating to non-content communication
-            self.event_dispatch.unregister('persist_preferences', self.debounce_widget_preferences)
-            self.event_dispatch.unregister('hide_context_menu', self.hide_context_menu)
-            self.event_dispatch.unregister('deactivate_poller', self.deactivate_poller)
-            self.event_dispatch.unregister('show_context_menu', self.move_context_menu)            
+            self.event_dispatch.unregister("persist_preferences", self.debounce_widget_preferences)
+            self.event_dispatch.unregister("hide_context_menu", self.hide_context_menu)
+            self.event_dispatch.unregister("deactivate_poller", self.deactivate_poller)
+            self.event_dispatch.unregister("show_context_menu", self.move_context_menu)            
             
-            self.disable_poller_job = cron.interval('30ms', self.disable_poller_check)
-            self.display_state.unregister('broadcast_update', self.broadcast_update)
-            self.display_state.unregister('content_update', self.content_update)
-            self.display_state.unregister('panel_update', self.panel_update)
-            self.display_state.unregister('trigger_audio_cue', self.audio_manager.trigger_cue)            
-            ui.unregister('screen_change', self.reload_preferences)
+            self.disable_poller_job = cron.interval("30ms", self.disable_poller_check)
+            self.display_state.unregister("broadcast_update", self.broadcast_update)
+            self.display_state.unregister("content_update", self.content_update)
+            self.display_state.unregister("panel_update", self.panel_update)
+            self.display_state.unregister("trigger_audio_cue", self.audio_manager.trigger_cue)            
+            ui.unregister("screen_change", self.reload_preferences)
             settings.unregister("user.talon_hud_environment", self.hud_environment_change)            
             self.determine_active_setup_mouse()
             
             # Only change the tags upon a user action - No automatic flow should set tags to prevent cascades
             if persisted:
-                ctx.tags = ['user.talon_hud_available']
-                self.preferences.persist_preferences({'enabled': False})
+                ctx.tags = ["user.talon_hud_available"]
+                self.preferences.persist_preferences({"enabled": False})
                 
-            # Make sure context isn't updated in this thread because of automatic reloads
+            # Make sure context isn"t updated in this thread because of automatic reloads
             cron.cancel(self.update_context_debouncer)
             self.update_context_debouncer = cron.after("50ms", self.update_context)
             
@@ -255,7 +258,7 @@ class HeadUpDisplay:
             if not widget.enabled and widget.id == id:
                 widget.enable(True)                
                 for topic, poller in self.pollers.items():
-                    if topic in widget.current_topics and (not hasattr(self.pollers[topic], 'enabled') or not self.pollers[topic].enabled):
+                    if topic in widget.current_topics and (not hasattr(self.pollers[topic], "enabled") or not self.pollers[topic].enabled):
                         self.pollers[topic].enable()
                     
                 self.update_context()
@@ -267,7 +270,7 @@ class HeadUpDisplay:
                 widget.disable(True)
                 for topic, poller in self.pollers.items():
                     if topic in widget.current_topics and topic not in self.keep_alive_pollers and \
-                        (not hasattr(self.pollers[topic], 'enabled') or self.pollers[topic].enabled):
+                        (not hasattr(self.pollers[topic], "enabled") or self.pollers[topic].enabled):
                         self.pollers[topic].disable()
                     
                 self.update_context()
@@ -296,7 +299,7 @@ class HeadUpDisplay:
         if os.path.exists(theme_dir):
             self.custom_themes[theme_name] = theme_dir
         else:
-            app.notify("Invalid directory for '" + theme_name + "': " + theme_dir)
+            app.notify("Invalid directory for "" + theme_name + "": " + theme_dir)
 
     def switch_theme(self, theme_name, disable_animation = False, forced = False):
         if self.theme.name != theme_name or forced:
@@ -318,7 +321,7 @@ class HeadUpDisplay:
             if should_reset_watch:
                 self.watch_directories()
             
-            self.preferences.persist_preferences({'theme_name': theme_name})
+            self.preferences.persist_preferences({"theme_name": theme_name})
 
     def reload_theme(self, name=None, flags=None):
         self.theme = HeadUpDisplayTheme(self.theme.name, self.theme.theme_dir)
@@ -366,6 +369,10 @@ class HeadUpDisplay:
         self.remove_poller(topic)
         self.pollers[topic] = poller
         
+        # Add a content builder to the poller
+        if hasattr(self.pollers[topic], "content"):
+            poller.content = HudContentBuilder(self.display_state)
+        
         # Keep the poller alive even if no widgets have subscribed to its topic
         if keep_alive and not self.pollers[topic].enabled:
             self.keep_alive_pollers.append(topic)
@@ -373,13 +380,18 @@ class HeadUpDisplay:
         # Automatically enable the poller if it was active on restart        
         else:
             for widget in self.widget_manager.widgets:
+                print( "ON REGISTER!!!", topic )
                 if topic in widget.current_topics and widget.enabled and \
-                    (not hasattr(self.pollers[topic], 'enabled') or not self.pollers[topic].enabled):
+                    (not hasattr(self.pollers[topic], "enabled") or not self.pollers[topic].enabled):
                     self.pollers[topic].enable()
+                    print( "ENABLE" )
                     break
         
     def remove_poller(self, topic: str):
         if topic in self.pollers:
+            if hasattr(self.pollers[topic], "content"):
+                self.pollers[topic].content.content = None
+                self.pollers[topic].content = None
             self.pollers[topic].disable()
             del self.pollers[topic]
             
@@ -391,7 +403,7 @@ class HeadUpDisplay:
     	# Enable the poller afterwards
         if topic in self.pollers and \
             topic not in self.keep_alive_pollers and \
-            (not hasattr(self.pollers[topic], 'enabled') or not self.pollers[topic].enabled):
+            (not hasattr(self.pollers[topic], "enabled") or not self.pollers[topic].enabled):
             self.pollers[topic].enable()
          
     # Check if the widgets are finished unloading, then disable the poller
@@ -425,7 +437,7 @@ class HeadUpDisplay:
                 if event.topic_type in widget.topic_types and topic in widget.current_topics:
                     widgets_with_topic.append(widget)
                 
-                if event.topic_type in widget.topic_types and ( topic in widget.subscriptions or ('*' in widget.subscriptions and using_fallback)):
+                if event.topic_type in widget.topic_types and ( topic in widget.subscriptions or ("*" in widget.subscriptions and using_fallback)):
                     if topic in widget.current_topics:
                         widget_to_claim = widget
                     else:
@@ -452,7 +464,7 @@ class HeadUpDisplay:
                 print( event.topic_type in widget.topic_types, widget.id )
                 if event.topic_type in widget.topic_types and \
                     (event.topic in widget.subscriptions or \
-                    ('*' in widget.subscriptions and "!" + event.topic not in widget.subscriptions)):
+                    ("*" in widget.subscriptions and "!" + event.topic not in widget.subscriptions)):
 
                     current_enabled_state = widget.enabled
                     updated = widget.content_handler(event)
@@ -503,7 +515,7 @@ class HeadUpDisplay:
         # And lastly the fallback widget
         if topic not in self.keep_alive_pollers:
             for widget in self.widget_manager.widgets:
-                if topic in widget.subscriptions or ('*' in widget.subscriptions and using_fallback):
+                if topic in widget.subscriptions or ("*" in widget.subscriptions and using_fallback):
                     if topic == widget.topic:
                         widget_to_claim = widget
                         break
@@ -534,7 +546,7 @@ class HeadUpDisplay:
                 break
     
         if has_setup_modes and not self.mouse_poller:
-            self.mouse_poller = cron.interval('16ms', self.poll_mouse_pos_for_setup)
+            self.mouse_poller = cron.interval("16ms", self.poll_mouse_pos_for_setup)
         if not has_setup_modes and self.mouse_poller:
             cron.cancel(self.mouse_poller)
             self.mouse_poller = None
@@ -576,7 +588,7 @@ class HeadUpDisplay:
         for widget in self.widget_manager.widgets:
             if widget.enabled and widget.id == widget_id:
                 connected_widget = widget
-            elif widget.id == 'context_menu':      
+            elif widget.id == "context_menu":      
                 context_menu_widget = widget
         if connected_widget and context_menu_widget:
             context_menu_widget.connect_widget(connected_widget, pos.x, pos.y, buttons)
@@ -589,7 +601,7 @@ class HeadUpDisplay:
         for widget in self.widget_manager.widgets:
             if widget.enabled and widget.id == widget_id:
                 connected_widget = widget
-            elif widget.id == 'context_menu':      
+            elif widget.id == "context_menu":      
                 context_menu_widget = widget
         
         buttons = []
@@ -607,7 +619,7 @@ class HeadUpDisplay:
     def hide_context_menu(self, _ = None):
         context_menu_widget = None    
         for widget in self.widget_manager.widgets:
-            if widget.id == 'context_menu' and widget.enabled:      
+            if widget.id == "context_menu" and widget.enabled:      
                 context_menu_widget = widget
                 break
         
@@ -691,14 +703,14 @@ class HeadUpDisplay:
                 if widget.panel_content.choices and widget.panel_content.choices.multiple:
                     choices["confirm"] = widget.id + "|" + str(index + 1)
 
-        ctx.lists['user.talon_hud_numerical_choices'] = numerical_choices
-        ctx.lists['user.talon_hud_widget_names'] = widget_names
-        ctx.lists['user.talon_hud_choices'] = choices
-        ctx.lists['user.talon_hud_quick_choices'] = quick_choices
-        ctx.lists['user.talon_hud_themes'] = themes
+        ctx.lists["user.talon_hud_numerical_choices"] = numerical_choices
+        ctx.lists["user.talon_hud_widget_names"] = widget_names
+        ctx.lists["user.talon_hud_choices"] = choices
+        ctx.lists["user.talon_hud_quick_choices"] = quick_choices
+        ctx.lists["user.talon_hud_themes"] = themes
         
         self.enabled_voice_commands = enabled_voice_commands
-        ctx.lists['user.talon_hud_widget_enabled_voice_commands'] = enabled_voice_commands.keys()
+        ctx.lists["user.talon_hud_widget_enabled_voice_commands"] = enabled_voice_commands.keys()
 
     def hud_environment_change(self, hud_environment: str):
         if self.current_talon_hud_environment != hud_environment:
@@ -722,14 +734,14 @@ class HeadUpDisplay:
         
         # Debounce the updating of the cues to prevent to many context values changing in rapid succession
         cron.cancel(self.update_cue_context_debouncer)
-        self.update_cue_context_debouncer = cron.after('100ms', self.update_cue_context)
+        self.update_cue_context_debouncer = cron.after("100ms", self.update_cue_context)
         
     def unregister_cue(self, cue):
         self.audio_manager.unregister_cue(cue)
         
         # Debounce the updating of the cues to prevent to many context values changing in rapid succession
         cron.cancel(self.update_cue_context_debouncer)
-        self.update_cue_context_debouncer = cron.after('100ms', self.update_cue_context)
+        self.update_cue_context_debouncer = cron.after("100ms", self.update_cue_context)
     
     def update_cue_context(self):
         cue_list = {}
@@ -740,14 +752,14 @@ class HeadUpDisplay:
     def audio_enable(self, id = None, trigger_automatically = True):
         if not id:
             self.audio_manager.enable(True)
-            self.display_state.register('trigger_audio_cue', self.audio_manager.trigger_cue)
+            self.display_state.register("trigger_audio_cue", self.audio_manager.trigger_cue)
         else:
             self.audio_manager.enable_id(id, trigger_automatically)
         
     def audio_disable(self, id = None):
         if not id:
             self.audio_manager.disable(True)
-            self.display_state.unregister('trigger_audio_cue', self.audio_manager.trigger_cue)            
+            self.display_state.unregister("trigger_audio_cue", self.audio_manager.trigger_cue)            
         else:
             self.audio_manager.disable_id(id)
         
@@ -761,7 +773,7 @@ def hud_start():
     global hud    
     hud.start()
 
-app.register('ready', hud_start)
+app.register("ready", hud_start)
 
 @mod.action_class
 class Actions:

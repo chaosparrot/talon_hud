@@ -111,7 +111,7 @@ def on_ready():
     # Language icon
     add_language_option = HudButton("en_US", "Add language", ui.Rect(0,0,0,0), lambda widget: actions.user.hud_add_language_toggle())
     remove_language_option = HudButton("en_US", "Remove language", ui.Rect(0,0,0,0), lambda widget: actions.user.hud_remove_language_toggle())
-    language_option = HudStatusOption("language_option", add_language_option, remove_language_option)
+    language_option = HudStatusOption("language_icon", add_language_option, remove_language_option)
     
     actions.user.hud_publish_status_option("mode_option", mode_option)    
     actions.user.hud_publish_status_option("language_option", language_option)

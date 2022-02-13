@@ -4,9 +4,14 @@ from .typing import HudContentEvent
 class HudPartialContent:
 
     topic_types = None
+    persisted_topics = None
 	
     def __init__(self):
         self.topic_types = {}
+        self.persisted_topics = []
+    
+    def set_persisted_topics(self, topics: list[str]):
+        self.persisted_topics = list(set(topics))
     
     # Get a specific topic from the known topic types
     def get_topic(self, topic_type: str, topic = None) -> list:
@@ -31,6 +36,11 @@ class HudPartialContent:
     def remove_topic(self, topic_type, topic):
         if topic_type not in self.topic_types:
             self.topic_types[topic_type] = {}
+            
+        # Make sure the persisted topics are altered only when the actual topic is removed
+        # To properly ensure the topics survive a full reload where content is publishing continuously
+        if topic in self.persisted_topics:
+            self.persisted_topics.remove(topic)
         
         if topic in self.topic_types[topic_type]:
             del self.topic_types[topic_type][topic]
@@ -42,12 +52,12 @@ class HudPartialContent:
             for topic in self.topic_types[topic_type]:
                 current_topics.append(topic)
         
-        return set(current_topics)
+        return set(current_topics + self.persisted_topics)
 
     # Process an event
     def process_event(self, event: HudContentEvent):
-        if event.operation == 'replace':
+        if event.operation == "replace":
             self.set_topic(event.topic_type, event.topic, event.content)
-        elif event.operation == 'remove':
+        elif event.operation == "remove":
             self.remove_topic(event.topic_type, event.topic)
         # Other types of content events need manual changing ( patch and append for example )

@@ -1,5 +1,5 @@
 from talon import actions, cron, scope, speech_system, ui, app, Module
-from user.talon_hud.content.state import hud_content
+from .state import hud_content
 
 def pick_toolkit_option(data):
     if data["text"] == "Debugging":

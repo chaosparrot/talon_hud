@@ -20,11 +20,11 @@ class HeadUpDisplayContent(Dispatch):
 
     # Default content to be displayed
     content = {
-        'mode': 'command',
-        'language': 'en_US',
-        'programming_language': {
-            'ext': '',
-            'forced': False
+        "mode": "command",
+        "language": "en_US",
+        "programming_language": {
+            "ext": "",
+            "forced": False
         },
         "status_icons": [],
         "log": [],
@@ -33,7 +33,7 @@ class HeadUpDisplayContent(Dispatch):
         "walkthrough_voice_commands": [],
         "walkthrough_progress": {"current": 0, "total": 0, "progress": 0},
         "topics": {
-            'debug': HudPanelContent('debug', '', 'Debug panel', [], 0, False),
+            "debug": HudPanelContent("debug", "", "Debug panel", [], 0, False),
         },
         "screen_regions": {
            "cursor": []
@@ -41,38 +41,42 @@ class HeadUpDisplayContent(Dispatch):
     }
     
     topic_types = {
-        'variables': {
-            'mode': 'command'
+        "variables": {
+            "mode": "command"
         },
-        'log_messages': {
-            'command': [],
-            'error': [],
-            'event': [],
-            'warning': [],
-            'success': [],
-            'phrase': [],
-            'announcer': []
+        "log_messages": {
+            "command": [],
+            "error": [],
+            "event": [],
+            "warning": [],
+            "success": [],
+            "phrase": [],
+            "announcer": []
         },
-        'walkthrough': {},
-        'text': {},
-        'choices': {},
-        'status_icons': {},
-        'status_options': {},        
-        'ability_icons': {},
-        'cursor_regions': {},        
-        'screen_regions': {},
+        "walkthrough": {},
+        "text": {},
+        "choices": {},
+        "status_icons": {},
+        "status_options": {},        
+        "ability_icons": {},
+        "cursor_regions": {},        
+        "screen_regions": {},
     }
     
     # Publish content meant for text boxes and other panels
     def publish(self, panel_content: HudPanelContent):
         topic = panel_content.topic
 
-        self.content['topics'][topic] = panel_content
-        self.dispatch('panel_update', panel_content)
+        self.content["topics"][topic] = panel_content
+        self.dispatch("panel_update", panel_content)
         
     # Publish content meant for text boxes and other panels - V2!
     def publishv2(self, topic_type, panel_content: HudPanelContent):
-        self.dispatch('broadcast_update', HudContentEvent(topic_type, panel_content.topic, panel_content, 'replace', True, panel_content.show ))
+        self.dispatch("broadcast_update", HudContentEvent(topic_type, panel_content.topic, panel_content, "replace", True, panel_content.show ))
+    
+    # Publish content directly through the event system
+    def publish_event(self, topic_type, topic, data, operation, show = False, claim = False):
+        self.dispatch("broadcast_update", HudContentEvent(topic_type, topic, data, operation, show, claim))
     
     # Update the content and sends an event if the state has changed
     def update(self, dict):
@@ -106,7 +110,7 @@ class HeadUpDisplayContent(Dispatch):
         if content_key in self.content and isinstance(self.content[content_key], list):
             found = False
             for index, item in enumerate(self.content[content_key]):
-                if item['id'] == dict['id']:
+                if item["id"] == dict["id"]:
                     found = True
                     updated = item != dict
                     self.content[content_key][index] = dict
@@ -131,9 +135,8 @@ class HeadUpDisplayContent(Dispatch):
                updated = True
             self.topic_types[topic_type][topic] = data
             
-            print( topic_type, topic, data, updated )
             if updated and send_event:
-               self.dispatch("broadcast_update", HudContentEvent(topic_type, topic, data, 'replace'))
+               self.dispatch("broadcast_update", HudContentEvent(topic_type, topic, data, "replace"))
                
     # Extend a topic type if the content has changed
     def extend_topic_type(self, topic_type, topic, data, send_event = True):
@@ -150,7 +153,7 @@ class HeadUpDisplayContent(Dispatch):
                updated = True
             
             if updated and send_event:
-                self.dispatch("broadcast_update", HudContentEvent(topic_type, topic, self.topic_types[topic_type][topic], 'replace'))
+                self.dispatch("broadcast_update", HudContentEvent(topic_type, topic, self.topic_types[topic_type][topic], "replace"))
 		        
     # Clears a topic in a topic type if there is content
     def clear_topic_type(self, topic_type, topic, send_event=True):
@@ -161,13 +164,13 @@ class HeadUpDisplayContent(Dispatch):
                removed = True
         
             if removed and send_event:
-                self.dispatch("broadcast_update", HudContentEvent(topic_type, topic, None, 'remove'))
+                self.dispatch("broadcast_update", HudContentEvent(topic_type, topic, None, "remove"))
 
     # Removes a key in the set of content
     def remove_from_set(self, content_key, dict):
         updated = False        
         if content_key in self.content and isinstance(self.content[content_key], list):
-            new_set = list(filter(lambda item, item_to_remove=dict: item['id'] != item_to_remove['id'], self.content[content_key]))
+            new_set = list(filter(lambda item, item_to_remove=dict: item["id"] != item_to_remove["id"], self.content[content_key]))
             if len(new_set) != len(self.content[content_key]):
                 updated = True
                 self.content[content_key] = new_set
@@ -176,22 +179,22 @@ class HeadUpDisplayContent(Dispatch):
             self.dispatch("content_update", self.content)
 
     def append_to_phrases(self, phrase_data):
-        self.content['phrases'].append(phrase_data)
-        self.content['phrases'][-max_log_length:]
+        self.content["phrases"].append(phrase_data)
+        self.content["phrases"][-max_log_length:]
         self.dispatch("content_update", self.content)
 
     # NEW CONTENT API
     def append_to_log_messages(self, topic, log_message, timestamp = None, metadata = None):    
         log_message = HudLogMessage(timestamp if timestamp else time.monotonic(), topic, log_message, metadata)
-        if topic not in self.topic_types['log_messages']:
-            self.topic_types['log_messages'][topic] = []
-        self.topic_types['log_messages'][topic].append(log_message)
-        self.topic_types['log_messages'][topic][-max_log_length:]
+        if topic not in self.topic_types["log_messages"]:
+            self.topic_types["log_messages"][topic] = []
+        self.topic_types["log_messages"][topic].append(log_message)
+        self.topic_types["log_messages"][topic][-max_log_length:]
         
         if self.queued_log_splits:
             self.revise_log(True)
         else:
-            self.dispatch("broadcast_update", HudContentEvent('log_messages', topic, log_message, 'append'))
+            self.dispatch("broadcast_update", HudContentEvent("log_messages", topic, log_message, "append"))
 
     def show_throttled_logs(self, sleep_s: float = 0):
         if sleep_s:
@@ -199,45 +202,45 @@ class HeadUpDisplayContent(Dispatch):
         
         if self.throttled_logs:
             for log_message in self.throttled_logs:
-                self.topic_types['log_messages'][log_message.type].append(log_message)
-                self.topic_types['log_messages'][log_message.type][-max_log_length:]
+                self.topic_types["log_messages"][log_message.type].append(log_message)
+                self.topic_types["log_messages"][log_message.type][-max_log_length:]
                 if self.queued_log_splits:
                     self.revise_log(True)
                 else:
-                    self.dispatch("broadcast_update", HudContentEvent('log_messages', log_message.type, log_message, 'append'))
+                    self.dispatch("broadcast_update", HudContentEvent("log_messages", log_message.type, log_message, "append"))
             self.throttled_logs = []
 
     def revise_log(self, send_update = False):
         revised_indecis = []
         updated_logs = []
         for queue_index, queued_log in enumerate(self.queued_log_splits):
-            type = queued_log['type']
-            prefix = queued_log['prefix']
-            discard_remaining = queued_log['discard_remaining']
-            throttled = queued_log['throttled']
+            type = queued_log["type"]
+            prefix = queued_log["prefix"]
+            discard_remaining = queued_log["discard_remaining"]
+            throttled = queued_log["throttled"]
             
-            log_amount = len(self.topic_types['log_messages'][type])
+            log_amount = len(self.topic_types["log_messages"][type])
             if log_amount > 0:
                 
                 index = log_amount - 1
-                log = self.topic_types['log_messages'][type][index] if index != -1 and index < log_amount else None
+                log = self.topic_types["log_messages"][type][index] if index != -1 and index < log_amount else None
                 
                 if index != -1 and log is not None and log.message.startswith(prefix):
                     revised_indecis.append( queue_index )
                     remaining = log.message[len(prefix):].lstrip()
                     if remaining:
-                        self.topic_types['log_messages'][type][index].message = prefix.strip()
+                        self.topic_types["log_messages"][type][index].message = prefix.strip()
                                
-                        revised_logs = [self.topic_types['log_messages'][type][index]]
+                        revised_logs = [self.topic_types["log_messages"][type][index]]
                         if not discard_remaining:
                             remainder_log = HudLogMessage(log.time, type, remaining)
                             
                             if not throttled:
                                 revised_logs.append(remainder_log)
                                 if index >= log_amount or index == 1:
-                                    self.topic_types['log_messages'][type].append(remainder_log)
+                                    self.topic_types["log_messages"][type].append(remainder_log)
                                 else:
-                                    self.topic_types['log_messages'][type].insert(index, remainder_log)
+                                    self.topic_types["log_messages"][type].insert(index, remainder_log)
                             else:
                                 self.throttled_logs.append(remainder_log)
                         
@@ -261,7 +264,7 @@ class HeadUpDisplayContent(Dispatch):
         self.queued_log_splits.append({"type": type, "prefix": prefix, 
             "discard_remaining": discard_remaining, "throttled": throttled})
         self.revise_log()
-        
+
 hud_content = HeadUpDisplayContent()
 
 @mod.action_class
@@ -342,14 +345,14 @@ class Actions:
         }
         
         hud_content.append_to_phrases(metadata)
-        hud_content.append_to_log_messages('phrase', phrase, timestamp, metadata)
+        hud_content.append_to_log_messages("phrase", phrase, timestamp, metadata)
     
     def hud_refresh_content():
         """Sends a refresh event to all the widgets where the content has changed"""
         global hud_content
         hud_content.dispatch("content_update", hud_content.content)
         
-    def hud_publish_content(content: str, topic: str = '', title:str = '', show: Union[bool, int] = True, buttons: list[HudButton] = None, voice_commands: Any = None):
+    def hud_publish_content(content: str, topic: str = "", title:str = "", show: Union[bool, int] = True, buttons: list[HudButton] = None, voice_commands: Any = None):
         """Publish a specific piece of content to a topic"""            
         if buttons == None:
             buttons = []
@@ -366,9 +369,13 @@ class Actions:
         global hud_content
         hud_content.publishv2("text", content)
         
-    def hud_create_button(text: str, callback: Callable[[], None], image: str = ''):
+    def hud_create_button(text: str, callback: Callable[[], None], image: str = ""):
         """Create a button used in the Talon HUD"""
         return HudButton(image, text, ui.Rect(0,0,0,0), callback)
+        
+    def hud_create_status_option(icon_topic: str, default_option: HudButton, activated_option: HudButton):
+        """Create an option entry to show in the options in the status bar"""
+        return HudStatusOption(icon_topic, default_option, activated_option)
         
     def hud_create_screen_region(topic: str, colour: str = None, icon: str = None, title: str = None, hover_visibility: Union[bool, int] = False, x: int = 0, y: int = 0, width: int = 0, height: int = 0, relative_x: int = 0, relative_y: int = 0):
         """Create a HUD screen region, where by default it is active all over the available space and it is visible only on a hover"""
@@ -404,11 +411,11 @@ class Actions:
         """Creates a list of choices with a single list of dictionaries"""
         choices = []
         for index, choice_data in enumerate(choices_list):
-            image = choice_data['image'] if 'image' in choice_data else ''
-            choices.append(HudChoice(image, choice_data['text'], choice_data, "selected" in choice_data and choice_data["selected"], ui.Rect(0,0,0,0)))
+            image = choice_data["image"] if "image" in choice_data else ""
+            choices.append(HudChoice(image, choice_data["text"], choice_data, "selected" in choice_data and choice_data["selected"], ui.Rect(0,0,0,0)))
         return HudChoices(choices, callback, multiple)
         
-    def hud_publish_choices(choices: HudChoices, title: str = '', content:str = ''):
+    def hud_publish_choices(choices: HudChoices, title: str = "", content:str = ""):
         """Publish choices to a choice panel"""
         if title == "":
             title = "Choices"

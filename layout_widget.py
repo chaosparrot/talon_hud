@@ -6,14 +6,14 @@ from random import randint
 
 class LayoutWidget(BaseWidget):
     """This widget has a layout pass and changes the mouse capture area based on the content
-    The extra canvas is used to make sure the drawing doesn't flicker when the content changes
+    The extra canvas is used to make sure the drawing doesn"t flicker when the content changes
     """
     
     default_buttons = []
     buttons = []
     
     mark_layout_invalid = True
-    mouse_capture_canvas: canvas.Canvas
+    mouse_capture_canvas: canvas.Canvas = None
     layout = []
     page_index = 0
     
@@ -34,23 +34,23 @@ class LayoutWidget(BaseWidget):
         if self.mouse_enabled:
             self.mouse_capture_canvas = canvas.Canvas(min(self.x, self.limit_x), min(self.y, self.limit_y), max(self.width, self.limit_width), max(self.height, self.limit_height))            
             self.mouse_capture_canvas.blocks_mouse = True
-            self.mouse_capture_canvas.register('mouse', self.on_mouse)
+            self.mouse_capture_canvas.register("mouse", self.on_mouse)
             self.mouse_capture_canvas.freeze()
         
-        # Copied over from base widget enabled to make sure blocks_mouse setting isn't changed
+        # Copied over from base widget enabled to make sure blocks_mouse setting isn"t changed
         self.canvas = canvas.Canvas(min(self.x, self.limit_x), min(self.y, self.limit_y), max(self.width, self.limit_width), max(self.height, self.limit_height))
-        self.canvas.register('draw', self.draw_cycle)
+        self.canvas.register("draw", self.draw_cycle)
         self.animation_tick = self.animation_max_duration if self.show_animations else 0
-        self.canvas.resume()        
+        self.canvas.resume()
             
     def disable(self, persisted=False):
         if self.enabled:
             if self.mouse_enabled and self.mouse_capture_canvas:
                 self.mouse_capture_canvas.blocks_mouse = False
-                self.mouse_capture_canvas.unregister('mouse', self.on_mouse)
+                self.mouse_capture_canvas.unregister("mouse", self.on_mouse)
                 self.mouse_capture_canvas = None
         
-            # Copied over from base widget disable to make sure blocks_mouse setting isn't changed        
+            # Copied over from base widget disable to make sure blocks_mouse setting isn"t changed        
             self.enabled = False
             self.animation_tick = -self.animation_max_duration if self.show_animations else 0
             if self.canvas:
@@ -88,7 +88,7 @@ class LayoutWidget(BaseWidget):
         
     def start_setup(self, setup_type, mouse_position = None):
         if not self.canvas:
-            return    
+            return
     
         self.mark_layout_invalid = True
         
@@ -180,10 +180,10 @@ class LayoutWidget(BaseWidget):
     def draw_rich_text(self, canvas, paint, rich_text, x, y, line_padding, single_line=False):
         # Draw text line by line
         text_colour = paint.color
-        error_colour = self.theme.get_colour('error_colour', 'AA0000')
-        warning_colour = self.theme.get_colour('warning_colour', 'F75B00')
-        success_colour = self.theme.get_colour('success_colour', '00CC00')
-        info_colour = self.theme.get_colour('info_colour', '30AD9E')
+        error_colour = self.theme.get_colour("error_colour", "AA0000")
+        warning_colour = self.theme.get_colour("warning_colour", "F75B00")
+        success_colour = self.theme.get_colour("success_colour", "00CC00")
+        info_colour = self.theme.get_colour("info_colour", "30AD9E")
     
         current_line = -1
         for index, text in enumerate(rich_text):
@@ -221,8 +221,8 @@ class LayoutWidget(BaseWidget):
         green = randint(180, 255)
         blue = randint(180, 255)
         
-        red_hex = '0' + format(red, 'x') if red <= 15 else format(red, 'x')
-        green_hex = '0' + format(green, 'x') if green <= 15 else format(green, 'x')
-        blue_hex = '0' + format(blue, 'x') if blue <= 15 else format(blue, 'x')
+        red_hex = "0" + format(red, "x") if red <= 15 else format(red, "x")
+        green_hex = "0" + format(green, "x") if green <= 15 else format(green, "x")
+        blue_hex = "0" + format(blue, "x") if blue <= 15 else format(blue, "x")
         return red_hex + green_hex + blue_hex
         

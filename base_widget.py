@@ -46,17 +46,18 @@ class BaseWidget(metaclass=ABCMeta):
         self.theme = theme
         self.preferences = copy.copy(self.preferences)
         self.event_dispatch = event_dispatch
-        self.contentv2 = HudPartialContent()
 
         if subscriptions != None:
             self.subscriptions = subscriptions
         if current_topics != None:
             self.current_topics = current_topics        
+            
+        self.contentv2 = HudPartialContent()
         self.load(preferences_dict)
 
     # Load the widgets preferences
     def load(self, dict, initialize = True, update_enabled = False):
-        self.preferences.load(self.id, dict)        
+        self.preferences.load(self.id, dict)
         self.sleep_enabled = self.preferences.sleep_enabled
         self.show_animations = self.preferences.show_animations
         self.x = self.preferences.x
@@ -72,7 +73,8 @@ class BaseWidget(metaclass=ABCMeta):
         self.expand_direction = self.preferences.expand_direction
         self.minimized = self.preferences.minimized
         self.subscriptions = self.preferences.subscriptions
-        self.current_topics = self.preferences.current_topics        
+        self.current_topics = self.preferences.current_topics
+        self.contentv2.set_persisted_topics(self.preferences.current_topics)
         self.load_extra_preferences()
         
         # For re-enabling or disabling widgets after a reload ( mostly for talon hud environment changes )
@@ -103,7 +105,8 @@ class BaseWidget(metaclass=ABCMeta):
         self.theme = theme
         self.load_theme_values()        
         if self.enabled:
-            self.canvas.resume()
+            if self.canvas:
+                self.canvas.resume()
             self.animation_tick = self.animation_max_duration if self.show_animations else 0
 
     def content_handler(self, event) -> bool:
@@ -111,7 +114,7 @@ class BaseWidget(metaclass=ABCMeta):
         
         # Set the new content topics if they have changed
         new_topics = set(self.contentv2.get_current_topics())
-        if bool(set(new_topics).difference(set(self.current_topics))):
+        if len(new_topics) != len(self.current_topics) or len(set(new_topics) - set(self.current_topics)) > 0:
             self.current_topics = new_topics
             self.preferences.current_topics = self.current_topics
             self.preferences.mark_changed = True
@@ -157,8 +160,8 @@ class BaseWidget(metaclass=ABCMeta):
             self.canvas = canvas.Canvas(min(self.x, self.limit_x), min(self.y, self.limit_y), max(self.width, self.limit_width), max(self.height, self.limit_height))
             if self.mouse_enabled:
                 self.canvas.blocks_mouse = True
-                self.canvas.register('mouse', self.on_mouse)
-            self.canvas.register('draw', self.draw_cycle)
+                self.canvas.register("mouse", self.on_mouse)
+            self.canvas.register("draw", self.draw_cycle)
             self.animation_tick = self.animation_max_duration if self.show_animations else 0
             self.canvas.resume()
             
@@ -171,7 +174,7 @@ class BaseWidget(metaclass=ABCMeta):
     def disable(self, persisted=False):
         if self.enabled:
             if self.mouse_enabled:
-                self.canvas.unregister('mouse', self.on_mouse)
+                self.canvas.unregister("mouse", self.on_mouse)
         
             self.enabled = False
             self.animation_tick = -self.animation_max_duration if self.show_animations else 0
@@ -199,7 +202,7 @@ class BaseWidget(metaclass=ABCMeta):
     # Clear up all the resources after a disabling
     def clear(self):
         if (self.canvas is not None):
-            self.canvas.unregister('draw', self.draw_cycle)
+            self.canvas.unregister("draw", self.draw_cycle)
             self.canvas.close()
             self.canvas = None
             self.cleared = True
@@ -234,7 +237,7 @@ class BaseWidget(metaclass=ABCMeta):
         if self.setup_type in ["dimension", "limit", "position"]:
             # Colours blue and red chosen for contrast and decreased possibility of colour blindness making it difficult
             # To make out the width and the limit lines
-            paint.color = '0000AA'
+            paint.color = "0000AA"
             resize_margin = 2
             leftmost = self.x + resize_margin
             rightmost = self.x + self.width - resize_margin
@@ -245,7 +248,7 @@ class BaseWidget(metaclass=ABCMeta):
             canvas.draw_line(rightmost, bottommost, leftmost, bottommost)
             canvas.draw_line(leftmost, bottommost, leftmost, topmost)
             
-            paint.color = 'FF0000'
+            paint.color = "FF0000"
             resize_margin = 0
             leftmost = self.limit_x + resize_margin
             rightmost = self.limit_x + self.limit_width - resize_margin

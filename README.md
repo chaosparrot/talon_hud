@@ -224,17 +224,21 @@ This is the current status of it
 - [x] Persist changes in subscriptions and current topics so they can be retrieved upon restart 
 - [x] Automatically enable pollers on start up when a widget is listening for it
 - [ ] Connect automatic enabling / disabling to the Talon HUD environment flow
-- [ ] Add a new content builder class to build HUD content with inside of pollers so they do not require actions
+- [x] Add a new content builder class to build HUD content with inside of pollers so they do not require actions
 - [ ] Rework all the pollers to not use actions in enable / disable flow and have the content builder inserted
-    - [ ] History poller
-	- [ ] Focus poller
-	- [ ] Speech poller
-	- [ ] Scope poller
-	- [ ] List poller
-	- [ ] Microphone poller
+    - [x] History poller
+	- [x] Focus poller
+	- [x] Speech poller
+	- [x] Scope poller
+	- [x] List poller
+	- [x] Microphone poller
 	- [ ] Walkthrough
+- [ ] Add a settings file persisting thingie specifically for content like walkthrough pollers and the favourite microphone
+    - [ ] Persist walkthrough
+	- [ ] Persist favourite microphone
+	- [ ] Persist debug list 
 - [ ] Phase out status bar poller in favour of the following:
-	- [ ] Active microphone status icon poller
+	- [x] Active microphone status icon poller
 	- [ ] Mode icon poller
 		- [ ] Make overrideable action for switching modes
 		- [ ] Make list of modes in preferences for user to change
@@ -242,11 +246,13 @@ This is the current status of it
 		- [ ] Make list of languages in preferences for user to change
 		- [ ] Add programming icons
 	- [ ] Language poller
+	- [ ] Focus icon
 - [ ] Manage topics on widgets properly so that the poller state can be managed
+    - [ ] Fix inconsistent topic registering / deregistering for single topic widgets vs multitopic widgets
 - [X] Remove single widget.topic variable
 - [ ] Rework variables like the 'mode' check to use the new events
 - [ ] Rework all widgets to conform to the new events
-    - [ ] Status bar
+    - [x] Status bar
     - [x] Event log
 	- [x] Ability bar
     - [x] Text panel
@@ -261,7 +267,7 @@ This is the current status of it
     - [ ] " quotes instead of '
     - [ ] Choose one walkthrough definition ( walkthrough or walk through, offer automatic migration )
 	- [ ] Make sure all HUD actions are prefixed with hud_ and keep a list of changes for the release notes
-	- [ ] Use only relative paths to make it more flexible where the HUD is located
+	- [x] Use only relative paths to make it more flexible where the HUD is located
 - [ ] Update documentation for status bar icons and options
 - [ ] Update documentation for pollers
 - [ ] Update documentation on mode icons

@@ -18,23 +18,24 @@ class HeadUpDisplayUserPreferences:
     
     monitor_file_path = None
     default_prefs = {
-        'show_animations': True,
-        'enabled': False,
-        'theme_name': 'light',
-        'audio_enabled': False,
-        'audio_cue_volume': '75'
+        "show_animations": True,
+        "enabled": False,
+        "theme_name": "light",
+        "audio_enabled": False,
+        "audio_cue_volume": "75"
     }
     
     # Keep the base preferences available as well
     # To make sure we can keep HUD environments as specific as possible
     base_prefs = {}
     prefs = {}
+    content_prefs = {}
 
     monitor_related_pref_endings = ("_x", "_y", "_width", "_height",
         "_limit_x", "_limit_y", "_limit_width", "_limit_height",
         "_font_size", "_alignment", "_expand_direction")
     
-    boolean_keys = ['enabled', 'show_animations', 'audio_enabled']
+    boolean_keys = ["enabled", "show_animations", "audio_enabled"]
     hud_environment = ""
     
     def __init__(self, hud_environment = ""):
@@ -99,7 +100,7 @@ class HeadUpDisplayUserPreferences:
             
             # Override defaults with file values
             for index,line in enumerate(lines):
-                split_line = line.strip('\n').split(',', 1)
+                split_line = line.strip("\n").split(",", 1)
                 key = split_line[0]
                 value = split_line[1]
                 if (key in self.boolean_keys):
@@ -132,7 +133,7 @@ class HeadUpDisplayUserPreferences:
         
         # Override defaults with file values
         for index,line in enumerate(lines):
-            split_line = line.strip('\n').split(',', 1)
+            split_line = line.strip("\n").split(",", 1)
             key = split_line[0]
             value = split_line[1]
             if (key in self.boolean_keys):
@@ -186,7 +187,7 @@ class HeadUpDisplayUserPreferences:
                 
                 value = self.prefs[key]
                 transformed_value = value
-                line = key + ','
+                line = key + ","
                 if (key in self.boolean_keys):
                     transformed_value = "1" if value else "0"
                 elif value is None:
@@ -195,7 +196,7 @@ class HeadUpDisplayUserPreferences:
                 
                 # Only add new lines to non-final rows
                 if index + 1 != len(self.prefs):
-                    line = line + '\n'
+                    line = line + "\n"
                 lines.append(line)
 
         if len(lines) > 0:

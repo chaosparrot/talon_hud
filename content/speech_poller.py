@@ -1,35 +1,42 @@
 from talon import actions, cron, scope, ui, app, Module, settings
 from talon_init import TALON_HOME
-from user.talon_hud.content.poller import Poller
-from user.talon_hud.content.state import hud_content
+from .poller import Poller
 import datetime
 import os
 import platform
 import subprocess
 
 class SpeechPoller(Poller):
+    content = None
+    enabled = False
     last_phrase_time = 0
 
     def enable(self):
     	if not self.enabled:
             self.enabled = True
-            hud_content.register("content_update", self.on_phrase_data)
+            if self.content is None or self.content._content is None or self.content._content.topic_types is None:
+                return
+
+            self.content._content.register("broadcast_update", self.on_broadcast_update)
             self.generate_phrase_debug_content()
 
     def disable(self):
-        self.enabled = False    
-        hud_content.unregister("content_update", self.on_phrase_data)
-        
-    def on_phrase_data(self, content):
-        if "phrases" in content and content["phrases"][len(content["phrases"]) - 1]["timestamp"] != self.last_phrase_time:
-            self.last_phrase_time = content["phrases"][len(content["phrases"]) - 1]["timestamp"]
-            self.generate_phrase_debug_content(content["phrases"])
+        if self.enabled:
+            self.enabled = False
+            if self.content is None or self.content._content is None or self.content._content.topic_types is None:
+                return
             
-    def generate_phrase_debug_content(self, phrases = None):
-        show = False
-        if phrases is None:
-            phrases = hud_content.content["phrases"]
-            show = True
+            self.content._content.unregister("broadcast_update", self.on_broadcast_update)
+        
+    def on_broadcast_update(self, event):
+        if event.topic_type == "log_messages" and event.topic == "phrase":
+            self.generate_phrase_debug_content()
+            
+    def generate_phrase_debug_content(self):
+        if self.content is None or self.content._content is None or self.content._content.topic_types is None:
+            return
+    
+        phrases = self.content._content.topic_types["log_messages"]["phrase"] if "phrase" in self.content._content.topic_types["log_messages"] else []
 
         last_mic = ""
         last_model = ""
@@ -37,7 +44,7 @@ class SpeechPoller(Poller):
         if len(phrases) == 0:
             content = "No speech data collected yet"
         else:
-            last_phrase = phrases[len(phrases) - 1]
+            last_phrase = phrases[len(phrases) - 1].metadata
             content += "<*" + last_phrase["phrase"] + "/> (" + self.format_time_ms(last_phrase["time_ms"]) + ")\n"
             content += "[<+<*" + last_phrase["microphone"]
             content += "/>/> with <@<*" + last_phrase["model"] + "]/>/>\n------------\n"
@@ -46,8 +53,9 @@ class SpeechPoller(Poller):
             
         last_time_str = ""
         for phrase in phrases:
+            phrase = phrase.metadata
             metadata = []
-            time_str = datetime.datetime.fromtimestamp(int(phrase["timestamp"])).strftime('%H:%M')
+            time_str = datetime.datetime.fromtimestamp(int(phrase["timestamp"])).strftime("%H:%M")
             if time_str != last_time_str:
                metadata.append(time_str)
                last_time_str = time_str
@@ -68,21 +76,21 @@ class SpeechPoller(Poller):
             if time_s:
                content += " (" + time_s + ")"
             
-            content += "\n"        
+            content += "\n"
 
-        buttons = []        
-        buttons.append(actions.user.hud_create_button("Show recordings", self.open_recordings))        
-        actions.user.hud_publish_content(content, "speech", "Toolkit speech", show, buttons)
-        
+        buttons = []
+        buttons.append(self.content.create_button("Show recordings", self.open_recordings))
+        panel_content = self.content.create_panel_content(content, "speech", "Toolkit speech", True, buttons)
+        self.content.publish_event("text", panel_content.topic, "replace", panel_content, True, True)
         
     def open_recordings(self, data):
-        if settings.get('speech.record_all', False) == False:
+        if settings.get("speech.record_all", False) == False:
             actions.user.hud_add_log("warning", "Recordings aren't currently enabled!\n" + \
             "Enable them in the talon menu to create recordings")
             
         if not os.path.exists(str(TALON_HOME) + "/recordings"):
             actions.user.hud_add_log("error", "No recordings have been made yet!")        
-        else:        
+        else:
             recordings_folder = str(TALON_HOME)
             recordings_folder += "/recordings"            
             if platform.system() == "Windows":
@@ -108,12 +116,16 @@ class SpeechPoller(Poller):
             content += "/>"
         return content
 
+
+def register_poller():
+    actions.user.hud_add_poller("speech", SpeechPoller())
+
+app.register("ready", register_poller)
+
 mod = Module()
 @mod.action_class
 class Action:
 
     def hud_toolkit_speech():
         """Start displaying the phrase debugging tools"""
-        actions.user.hud_add_poller("speech", SpeechPoller())
         actions.user.hud_activate_poller("speech")
- 
