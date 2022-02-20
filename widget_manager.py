@@ -11,17 +11,16 @@ from .widgets.abilitybar import HeadUpAbilityBar
 from .widgets.textpanel import HeadUpTextPanel
 from .widgets.choicepanel import HeadUpChoicePanel
 from .widgets.documentationpanel import HeadUpDocumentationPanel
-from .widgets.walkthroughpanel import HeadUpWalkThroughPanel
+from .widgets.walkthroughpanel import HeadUpWalkthroughPanel
 from .widgets.contextmenu import HeadUpContextMenu
 from .widgets.cursortracker import HeadUpCursorTracker
 from .widgets.screenoverlay import HeadUpScreenOverlay
 from .theme import HeadUpDisplayTheme
 from .event_dispatch import HeadUpEventDispatch
+from ._configuration import hud_get_configuration
 
-semantic_directory = os.path.dirname(os.path.abspath(__file__))
-user_preferences_file_dir =  semantic_directory + "/preferences/"
-old_user_preferences_file_location = user_preferences_file_dir + "preferences.csv"
-user_preferences_file_location = user_preferences_file_dir + "widget_settings.csv"
+user_preferences_file_dir = hud_get_configuration("user_preferences_folder")
+user_preferences_file_location = os.path.join(user_preferences_file_dir, "widget_settings.csv")
 
 class HeadUpWidgetManager:
     """Manages widgets and their positioning in relation to the available screens"""
@@ -75,28 +74,6 @@ class HeadUpWidgetManager:
     
     def initial_load_preferences(self):
         user_preferences_screen_file_path = self.preferences.get_screen_preferences_filepath(ui.screens())
-        
-        # Migration from old preferences file to new split files
-        # Remove in a few months to allow user to migrate?
-        if not os.path.exists(user_preferences_file_location) and os.path.exists(old_user_preferences_file_location):
-            fh = open(old_user_preferences_file_location, 'r')
-            lines = fh.readlines()
-            fh.close()
-            
-            monitor_lines = list(filter(lambda line: [line for ext in self.preferences.monitor_related_pref_endings if(ext in line)], lines))
-            screen_file_path = user_preferences_screen_file_path
-            fh = open(screen_file_path, 'w')
-            fh.write("".join(monitor_lines))
-            fh.close()
-            
-            setting_lines = list(filter(lambda line: line not in monitor_lines, lines))            
-            fh = open(user_preferences_file_location, 'w')
-            fh.write("".join(setting_lines))
-            fh.close()            
-            
-            # Remove the old preferences file
-            os.remove(old_user_preferences_file_location)
-        
         if not os.path.exists(user_preferences_file_location):
             self.preferences.persist_preferences(self.preferences.default_prefs, True)
                 
@@ -118,7 +95,7 @@ class HeadUpWidgetManager:
         dimensions_changed = dimensions_changed or len(current_screen_rects) != len(self.previous_screen_rects)
 
         # Reload the main preferences in case the Talon HUD mode changed
-        new_theme = self.preferences.prefs['theme_name']
+        new_theme = self.preferences.prefs["theme_name"]
         environment_changed = current_hud_environment != self.previous_talon_hud_environment
         if environment_changed:
             self.preferences.set_hud_environment(current_hud_environment)
@@ -150,11 +127,11 @@ class HeadUpWidgetManager:
                 self.preferences.load_preferences( screen_preferences_file )
                 
         if environment_changed:
-            new_theme = self.preferences.prefs['theme_name']            
+            new_theme = self.preferences.prefs["theme_name"]            
         
         # Apply the new preferences to the widgets directly
         for widget in self.widgets:
-            # First cancel any set up to make sure there won't be some weird collision going on with persistence
+            # First cancel any set up to make sure there won"t be some weird collision going on with persistence
             if widget.setup_type != "":
                 widget.start_setup("cancel")
             widget.load(self.preferences.prefs, False, True)
@@ -298,7 +275,7 @@ class HeadUpWidgetManager:
             self.load_widget("Documentation", "documentation_panel", ["documentation"]),
             self.load_widget("Choices", "choice_panel", ["choice"]),
             self.load_widget("ability_bar", "ability_bar", ["*"]),
-            self.load_widget("walk_through", "walk_through_panel", ["*"]),
+            self.load_widget("walkthrough", "walkthrough_panel", ["*"]),
             
             # Special widgets that have varying positions            
             self.load_widget("context_menu", "context_menu", ["*"]),
@@ -326,8 +303,8 @@ class HeadUpWidgetManager:
             return self.load_documentation_panel(id, self.preferences.prefs, subscriptions, current_topics)
         elif type == "choice_panel":
             return self.load_choice_panel(id, self.preferences.prefs, subscriptions, current_topics)
-        elif type == "walk_through_panel":
-            return self.load_walk_through_panel(id, self.preferences.prefs, subscriptions, current_topics)
+        elif type == "walkthrough_panel":
+            return self.load_walkthrough_panel(id, self.preferences.prefs, subscriptions, current_topics)
             
     def load_status_bar(self, id, preferences=None, subscriptions = None, current_topics = None):
         """Load a status bar widget with the given preferences"""
@@ -365,6 +342,6 @@ class HeadUpWidgetManager:
         """Load a choice panel widget with the given preferences"""
         return HeadUpChoicePanel(id, preferences, self.theme, self.event_dispatch, subscriptions, current_topics)
         
-    def load_walk_through_panel(self, id, preferences=None, subscriptions = None, current_topics = None):
+    def load_walkthrough_panel(self, id, preferences=None, subscriptions = None, current_topics = None):
         """Load a choice panel widget with the given preferences"""
-        return HeadUpWalkThroughPanel(id, preferences, self.theme, self.event_dispatch, subscriptions, current_topics)
+        return HeadUpWalkthroughPanel(id, preferences, self.theme, self.event_dispatch, subscriptions, current_topics)

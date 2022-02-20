@@ -9,12 +9,6 @@ from copy import copy
 
 class HeadUpAbilityBar(BaseWidget):
 
-    subscribed_content = ["mode", "abilities"]
-    content = {
-        'mode': 'command',
-        "abilities": [            
-        ]
-    }
     allowed_setup_options = ["position", "dimension", "limit"]
 
     # By default - This widget sits to the left side of the status bar
@@ -23,7 +17,7 @@ class HeadUpAbilityBar(BaseWidget):
     ttl_poller = None
     
     # New content topic types
-    topic_types = ['ability_icons']
+    topic_types = ["ability_icons"]
     current_topics = []
     subscriptions = ["*"]
 
@@ -41,7 +35,7 @@ class HeadUpAbilityBar(BaseWidget):
         paint = self.draw_setup_mode(canvas)
         
         diameter = self.height / 2
-        abilities = self.contentv2.get_topic('ability_icons')
+        abilities = self.contentv2.get_topic("ability_icons")
         if self.alignment == "right":
             abilities.reverse()
         margin = 4
@@ -57,11 +51,11 @@ class HeadUpAbilityBar(BaseWidget):
         radius = diameter / 2
         animating = False
                 
-        opacity = int('FF' if ability.colour is None or len(ability.colour) < 8 else ability.colour[-2:], 16) / 255
+        opacity = int("FF" if ability.colour is None or len(ability.colour) < 8 else ability.colour[-2:], 16) / 255
         if ability.activated:
             opacity = 1
         opacity_value = int(opacity / 6 * 255) if ability.enabled == False else int(opacity * 255)
-        opacity_hex = '0' + format(opacity_value, 'x') if opacity_value <= 15 else format(opacity_value, 'x')        
+        opacity_hex = "0" + format(opacity_value, "x") if opacity_value <= 15 else format(opacity_value, "x")        
         
         if ability.colour is not None:
             colour = list( self.theme.get_colour(ability.colour, ability.colour) )
@@ -86,4 +80,4 @@ class HeadUpAbilityBar(BaseWidget):
         return animating
 
     def draw_animation(self, canvas, animation_tick):
-        return len(self.contentv2.get_topic('ability_icons')) > 0
+        return len(self.contentv2.get_topic("ability_icons")) > 0

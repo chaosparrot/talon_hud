@@ -1,6 +1,6 @@
-from user.talon_hud.base_widget import BaseWidget
-from user.talon_hud.utils import hit_test_rect
-from user.talon_hud.content.typing import HudScreenRegion
+from ..base_widget import BaseWidget
+from ..utils import hit_test_rect
+from ..content.typing import HudScreenRegion
 from ..widget_preferences import HeadUpDisplayUserWidgetPreferences
 from talon import skia, ui, cron, ctrl
 from talon.types.point import Point2d
@@ -19,24 +19,18 @@ class HeadUpCursorTracker(BaseWidget):
     smooth_mode = True
 
     preferences = HeadUpDisplayUserWidgetPreferences(type="cursor_tracker", x=15, y=15, width=15, height=15, enabled=True, sleep_enabled=False)
-    subscribed_content = [
-        "mode"
-    ]
     
     # New content topic types
-    topic_types = ['cursor_regions']
+    topic_types = ["cursor_regions"]
     current_topics = []
     subscriptions = ["*"]
-    
+
     active_icon = None
     cursor_icons = []
-    content = {
-        'mode': 'command'
-    }        
-    
+
     def refresh(self, new_content):
-        if ("mode" in new_content and new_content["mode"] != self.content['mode']):
-            if (new_content["mode"] == 'sleep'):
+        if not self.sleep_enabled and "event" in new_content and new_content["event"].topic_type == "variable" and new_content["event"].topic == "mode":
+            if new_content["event"].content == "sleep":
                 self.soft_disable()
             else:
                 self.soft_enable()
@@ -60,15 +54,17 @@ class HeadUpCursorTracker(BaseWidget):
     def soft_enable(self):
         if not self.soft_enabled:
             self.soft_enabled = True
-            self.mouse_poller = cron.interval('30ms', self.poll_mouse_pos)
-            self.canvas.resume()
+            self.mouse_poller = cron.interval("30ms", self.poll_mouse_pos)
+            if self.canvas:
+                self.canvas.resume()
             
     def soft_disable(self):
         if self.soft_enabled:
             self.soft_enabled = False
             cron.cancel(self.mouse_poller)
             self.mouse_poller = None
-            self.canvas.resume()
+            if self.canvas:
+                self.canvas.resume()
             
     def update_icons(self):
         soft_enable = False

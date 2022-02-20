@@ -7,22 +7,22 @@ import re
 import numpy
 
 rich_text_delims_dict = {
-    '/>': 'end', # GENERAL STYLE END - We only use a single token for this to not have to deal with issues where nested styles get changed out of order
-    '<*': 'bold', # BOLD STYLE
-    '</': 'italic', # ITALIC STYLE
-    '<+': 'success', # COLOUR
-    '<!!': 'error', # COLOUR
-    '<!': 'warning', # COLOUR
-    '<@': 'notice', # COLOUR
+    "/>": "end", # GENERAL STYLE END - We only use a single token for this to not have to deal with issues where nested styles get changed out of order
+    "<*": "bold", # BOLD STYLE
+    "</": "italic", # ITALIC STYLE
+    "<+": "success", # COLOUR
+    "<!!": "error", # COLOUR
+    "<!": "warning", # COLOUR
+    "<@": "notice", # COLOUR
     
     # Semantic information
-    '<cmd@': 'command_available', # Voice command available
+    "<cmd@": "command_available", # Voice command available
 }
 rich_text_delims = rich_text_delims_dict.keys()
-rich_text_delims_regex = r'(/>|<\*|</|<\+|<\!\!|<\!|<@|<cmd@)'
+rich_text_delims_regex = r"(/>|<\*|</|<\+|<\!\!|<\!|<@|<cmd@)"
 
 def remove_tokens_from_rich_text(text:str):
-    return re.sub(rich_text_delims_regex, '', text)
+    return re.sub(rich_text_delims_regex, "", text)
     
 def retrieve_available_voice_commands(text: str):
     voice_commands = []
@@ -33,7 +33,7 @@ def retrieve_available_voice_commands(text: str):
     styles = []
     for token in tokened_text:
         if token in rich_text_delims:
-            if token == '/>':
+            if token == "/>":
                 if len(styles) > 0:
                     in_voice_command = "command_available" in styles
                     styles.pop()
@@ -94,7 +94,7 @@ def layout_rich_text(paint:skia.Paint, text:str, width:int = 1920, height:int = 
                     current_line_bounds.width = 0
                     current_line_bounds.height = 0
                 words_to_use = []
-                if token == '/>':
+                if token == "/>":
                     if len(styles) > 0:
                         styles.pop()
                         
@@ -254,12 +254,12 @@ def calculate_words_bounds(words: list[str], paint, space_text_bounds) -> ui.Rec
     if len(words) == 1 and words[0] == "":
         current_line_bounds = space_text_bounds
     else:
-        leading_spaces_count = len(current_words_joined) - len(current_words_joined.lstrip(' '))
-        trailing_spaces_count = len(current_words_joined) - len(current_words_joined.rstrip(' '))
+        leading_spaces_count = len(current_words_joined) - len(current_words_joined.lstrip(" "))
+        trailing_spaces_count = len(current_words_joined) - len(current_words_joined.rstrip(" "))
         extra_spaces_count = leading_spaces_count + trailing_spaces_count
         
         # Edge case - Spaces only
-        if len(current_words_joined.lstrip(' ')) == 0:
+        if len(current_words_joined.lstrip(" ")) == 0:
             extra_spaces_count = leading_spaces_count
         current_line_bounds.width += extra_spaces_count * space_text_bounds.width
 
@@ -271,18 +271,18 @@ def hex_to_ints(hex: str) -> list[int]:
     
 def lighten_hex_colour(hex: str, percent: int) -> str:
     ints = hex_to_ints(hex)
-    new_hex = ''
+    new_hex = ""
     for index, value in enumerate(ints):
         # Skip the opacity channel
         if index <= 2:
             if value < 80:
                 value = 80
             value = int(min(255, value * ( 100 + percent ) / 100))
-        new_hex += '0' + format(value, 'x') if value <= 15 else format(value, 'x')
+        new_hex += "0" + format(value, "x") if value <= 15 else format(value, "x")
     return new_hex
     
 def string_to_speakable_string(str: str) -> str:
-    return re.sub(r'([!?-_\,\.])', ' ', str.lower()).strip()
+    return re.sub(r"([!?-_\,\.])", " ", str.lower()).strip()
     
 def determine_screen_for_pos(pos) -> ui.Screen:
     for index, screen in enumerate(ui.screen.screens()):

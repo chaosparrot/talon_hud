@@ -1,4 +1,5 @@
 from .typing import HudContentEvent
+from typing import Any
 
 # Class for managing a part of the HUD content
 class HudPartialContent:
@@ -25,6 +26,12 @@ class HudPartialContent:
                         topic_contents.append(self.topic_types[topic_type][known_topic])
                         
         return topic_contents
+        
+    def get_variable(self, topic:str, default: Any) -> Any:
+        if "variable" in self.topic_types and topic in self.topic_types["variable"]:
+            return self.topic_types["variable"][topic]
+        else:
+            return default
         
     # Override a specific topic from the known topic types
     def set_topic(self, topic_type, topic, content):

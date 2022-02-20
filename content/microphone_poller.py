@@ -1,5 +1,9 @@
 from talon import actions, cron, scope, speech_system, ui, app, Module
 from .poller import Poller
+from .._configuration import hud_get_configuration
+import os
+prefered_microphone = None
+
 
 # Polls the current microphone state
 class MicrophonePoller(Poller):
@@ -9,7 +13,7 @@ class MicrophonePoller(Poller):
     def register(self, name, callback):
         current_callback_amount = len(self.callbacks.values())
         self.callbacks[name] = callback
-        if (current_callback_amount == 0):
+        if current_callback_amount == 0:
             self.job = cron.interval("300ms", self.state_check)
 
     def unregister(self, name):
@@ -17,7 +21,7 @@ class MicrophonePoller(Poller):
             del self.callbacks[name]
             
         current_callback_amount = len(self.callbacks.values())
-        if (current_callback_amount == 0):
+        if current_callback_amount == 0:
             cron.cancel(self.job)
             self.job = None
 
@@ -25,26 +29,46 @@ class MicrophonePoller(Poller):
         active_mic = actions.sound.active_microphone()
         microphones = actions.sound.microphones() if "microphone_list" in self.callbacks else []
         
-        callbacks = self.callbacks.values()
+        callbacks = list(self.callbacks.values())[:]
         for callback in callbacks:
             callback(active_mic, microphones)
 
+previous_mic_file = os.path.join(hud_get_configuration("content_preferences_folder"), "hud_prefered_microphone.txt")
+def set_prefered_microphone(microphone):
+    global prefered_microphone
+    global previous_mic_file
+    prefered_microphone = microphone
+    with open(previous_mic_file, "w") as f:
+        f.write(microphone)
 
-previous_microphone = None # TODO PROPER PERSISTING AND FAVORITING OF MICROPHONE SELECTION
+def get_prefered_microphone():
+    previous_mic_file
+    prefered_microphone = "System Default"
+    if not os.path.exists(previous_mic_file):
+        set_prefered_microphone(prefered_microphone)
+
+    with open(previous_mic_file, "r") as file:
+        lines = file.readlines()
+        if len(lines) > 0:
+            prefered_microphone = lines[0]
+    return prefered_microphone
+prefered_microphone = get_prefered_microphone()
+
 def toggle_microphone(self, _ = None):
-    global previous_microphone
+    global prefered_microphone
     current_microphone = actions.sound.active_microphone()
     if current_microphone != "None":
         actions.sound.set_microphone("None")
-        previous_microphone = current_microphone
     else:
-        if previous_microphone == "None":
-            previous_microphone = "System Default"
-        actions.sound.set_microphone(previous_microphone)
+        if prefered_microphone in actions.sound.microphones():
+            actions.sound.set_microphone(prefered_microphone)
+        else:
+            actions.user.hud_add_log("warning", "Could not find " + prefered_microphone + ".\nUsing system default")
+            actions.sound.set_microphone("System Default")
         
 def select_microphone(choice):
+    set_prefered_microphone(choice["text"])
     actions.sound.set_microphone(choice["text"])
-    # TODO PROPER PERSISTING AND FAVORITING OF MICROPHONE SELECTION
     actions.user.hud_deactivate_poller("microphone_list")
 
 class PartialMicrophonePoller(Poller):
@@ -61,6 +85,7 @@ class PartialMicrophonePoller(Poller):
     def enable(self):
         if not self.enabled:
             self.enabled = True
+            self.current_microphone = None
             self.poller.register(self.type, self.update_microphone)
     
     def update_microphone(self, active_microphone, microphones):

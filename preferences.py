@@ -2,13 +2,9 @@
 import os
 from talon import ui
 import copy
+from ._configuration import hud_get_configuration
 
-preferences_dir = os.path.dirname(os.path.abspath(__file__)) # default
-user_preferences_file_dir =  os.path.join(preferences_dir, "preferences") # default
-#from talon_init import TALON_USER # custom
-#user_preferences_file_dir = os.path.join(TALON_USER, "test", "") # custom
-
-old_user_preferences_file_location = os.path.join(user_preferences_file_dir, "preferences.csv")
+user_preferences_file_dir = hud_get_configuration("user_preferences_folder")
 widget_settings_file_ending = "widget_settings.csv"
 user_preferences_file_location = os.path.join(user_preferences_file_dir, widget_settings_file_ending)
 
@@ -38,9 +34,10 @@ class HeadUpDisplayUserPreferences:
     boolean_keys = ["enabled", "show_animations", "audio_enabled"]
     hud_environment = ""
     
-    def __init__(self, hud_environment = ""):
+    def __init__(self, hud_environment = "", hud_version = 5):
         self.hud_environment = hud_environment
         self.load_preferences(self.get_screen_preferences_filepath(ui.screens()))
+        self.hud_version = hud_version
     
     def set_hud_environment(self, hud_environment):
         self.hud_environment = hud_environment
@@ -97,7 +94,7 @@ class HeadUpDisplayUserPreferences:
             preferences = {}
             for key, value in self.default_prefs.items():
                 preferences[key] = value
-            
+
             # Override defaults with file values
             for index,line in enumerate(lines):
                 split_line = line.strip("\n").split(",", 1)
@@ -202,4 +199,4 @@ class HeadUpDisplayUserPreferences:
         if len(lines) > 0:
             fh = open(filename, "w")
             fh.write("".join(lines))
-            fh.close()        
+            fh.close()

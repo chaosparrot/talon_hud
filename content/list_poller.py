@@ -5,12 +5,12 @@ from .poller import Poller
 class ListPoller(Poller):
     content = None
     job = None
-    previous_list_state = ''
+    previous_list_state = ""
     list = None
     should_open = False
 
     def enable(self):
-       if (self.job is None):
+       if self.job is None and self.list is not None:
             self.enabled = True
             self.should_open = True
             self.job = cron.interval("200ms", self.list_check)

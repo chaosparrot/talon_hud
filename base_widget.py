@@ -25,14 +25,10 @@ class BaseWidget(metaclass=ABCMeta):
     
     allowed_setup_options = ["position", "dimension", "limit", "font_size"]
     
-    subscribed_content = ['mode']
-    
     # New content topic types
     topic_types = []
-    current_topics = []
-    
+    current_topics = []    
     contentv2 = None
-    content = {}
         
     animation_tick = 0
     animation_max_duration = 100
@@ -120,6 +116,12 @@ class BaseWidget(metaclass=ABCMeta):
             self.preferences.mark_changed = True
             self.event_dispatch.request_persist_preferences()
         
+        if not self.sleep_enabled and event.topic_type == "variable" and event.topic == "mode":
+            if (event.content == "sleep"):
+                self.disable()
+            elif self.preferences.enabled == True:
+                self.enable()
+        
         self.refresh({"event": event})
         
         updated = False
@@ -127,21 +129,7 @@ class BaseWidget(metaclass=ABCMeta):
             self.canvas.resume()
             updated = True
         return updated
-    
-    def update_content(self, content):
-        if not self.sleep_enabled and "mode" in content:
-            if (content["mode"] == "sleep"):
-                self.disable()
-            elif self.preferences.enabled == True:
-                self.enable()
-    
-        self.refresh(content)
-        for key in content:
-            self.content[key] = content[key]
-        
-        if self.enabled and self.canvas:
-            self.canvas.resume()
-            
+
     def update_panel(self, panel_content) -> bool:
         if not panel_content.content[0] and self.enabled:
             self.disable()

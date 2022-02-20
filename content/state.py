@@ -17,31 +17,9 @@ class HeadUpDisplayContent(Dispatch):
 
     queued_log_splits = None
     throttled_logs = None
-
-    # Default content to be displayed
-    content = {
-        "mode": "command",
-        "language": "en_US",
-        "programming_language": {
-            "ext": "",
-            "forced": False
-        },
-        "status_icons": [],
-        "log": [],
-        "phrases": [],        
-        "abilities": [],
-        "walkthrough_voice_commands": [],
-        "walkthrough_progress": {"current": 0, "total": 0, "progress": 0},
-        "topics": {
-            "debug": HudPanelContent("debug", "", "Debug panel", [], 0, False),
-        },
-        "screen_regions": {
-           "cursor": []
-        },
-    }
     
     topic_types = {
-        "variables": {
+        "variable": {
             "mode": "command"
         },
         "log_messages": {
@@ -53,46 +31,31 @@ class HeadUpDisplayContent(Dispatch):
             "phrase": [],
             "announcer": []
         },
-        "walkthrough": {},
+        "walkthrough_step": {},
         "text": {},
-        "choices": {},
+        "choice": {},
         "status_icons": {},
         "status_options": {},        
         "ability_icons": {},
         "cursor_regions": {},        
         "screen_regions": {},
     }
-    
+            
     # Publish content meant for text boxes and other panels
-    def publish(self, panel_content: HudPanelContent):
-        topic = panel_content.topic
-
-        self.content["topics"][topic] = panel_content
-        self.dispatch("panel_update", panel_content)
-        
-    # Publish content meant for text boxes and other panels - V2!
-    def publishv2(self, topic_type, panel_content: HudPanelContent):
+    def publish(self, topic_type, panel_content: HudPanelContent):
+        if not topic_type in self.topic_types:
+            self.topic_types[topic_type] = {}
+        self.topic_types[topic_type][panel_content.topic] = panel_content
         self.dispatch("broadcast_update", HudContentEvent(topic_type, panel_content.topic, panel_content, "replace", True, panel_content.show ))
     
     # Publish content directly through the event system
     def publish_event(self, topic_type, topic, data, operation, show = False, claim = False):
-        self.dispatch("broadcast_update", HudContentEvent(topic_type, topic, data, operation, show, claim))
-    
-    # Update the content and sends an event if the state has changed
-    def update(self, dict):
-        updated = False
-        for key in dict:
-            if (key in self.content):
-                if not updated and self.content[key] != dict[key]:
-                    updated = True
-                self.content[key] = dict[key]
-            
-            if (key not in self.content):
-                updated = True
-                self.content[key] = dict[key]
+        if operation == "replace":
+            self.update_topic_type(topic_type, topic, data, False)
+        elif operation == "remove":
+            self.clear_topic_type(topic_type, topic, False)
         
-        if updated:
-            self.dispatch("content_update", self.content)
+        self.dispatch("broadcast_update", HudContentEvent(topic_type, topic, data, operation, show, claim))
 
     def register_cue(self, cue: HudAudioCue):
         self.dispatch("register_audio_cue", cue)
@@ -102,32 +65,12 @@ class HeadUpDisplayContent(Dispatch):
         
     def trigger_audio_cue(self, cue_title):
         cue_id = cue_title.lower().replace(" ", "_")    
-        self.dispatch("trigger_audio_cue", cue_id)        
-            
-    # Update a specific list in the content and make sure they are unique
-    def add_to_set(self, content_key, dict):
-        updated = False        
-        if content_key in self.content and isinstance(self.content[content_key], list):
-            found = False
-            for index, item in enumerate(self.content[content_key]):
-                if item["id"] == dict["id"]:
-                    found = True
-                    updated = item != dict
-                    self.content[content_key][index] = dict
-                    break
-            
-            if not found:
-                updated = True
-                self.content[content_key].append(dict)
-        
-        if updated:
-            self.dispatch("content_update", self.content)
-            
+        self.dispatch("trigger_audio_cue", cue_id)
+
     # Update a topic type if the content has changed
-    def update_topic_type(self, topic_type, topic, data, send_event = True):
+    def update_topic_type(self, topic_type, topic, data, send_event = True) -> bool:
         updated = False
         if topic_type in self.topic_types:
-        
             if not topic in self.topic_types[topic_type]:
                self.topic_types[topic_type][topic] = None
                
@@ -137,6 +80,7 @@ class HeadUpDisplayContent(Dispatch):
             
             if updated and send_event:
                self.dispatch("broadcast_update", HudContentEvent(topic_type, topic, data, "replace"))
+        return updated
                
     # Extend a topic type if the content has changed
     def extend_topic_type(self, topic_type, topic, data, send_event = True):
@@ -156,34 +100,16 @@ class HeadUpDisplayContent(Dispatch):
                 self.dispatch("broadcast_update", HudContentEvent(topic_type, topic, self.topic_types[topic_type][topic], "replace"))
 		        
     # Clears a topic in a topic type if there is content
-    def clear_topic_type(self, topic_type, topic, send_event=True):
+    def clear_topic_type(self, topic_type, topic, send_event=True) -> bool:
         removed = False
-        if topic_type in self.topic_types:               
+        if topic_type in self.topic_types:
             if topic in self.topic_types[topic_type]:
                del self.topic_types[topic_type][topic]
                removed = True
-        
             if removed and send_event:
                 self.dispatch("broadcast_update", HudContentEvent(topic_type, topic, None, "remove"))
+        return removed
 
-    # Removes a key in the set of content
-    def remove_from_set(self, content_key, dict):
-        updated = False        
-        if content_key in self.content and isinstance(self.content[content_key], list):
-            new_set = list(filter(lambda item, item_to_remove=dict: item["id"] != item_to_remove["id"], self.content[content_key]))
-            if len(new_set) != len(self.content[content_key]):
-                updated = True
-                self.content[content_key] = new_set
-        
-        if updated:
-            self.dispatch("content_update", self.content)
-
-    def append_to_phrases(self, phrase_data):
-        self.content["phrases"].append(phrase_data)
-        self.content["phrases"][-max_log_length:]
-        self.dispatch("content_update", self.content)
-
-    # NEW CONTENT API
     def append_to_log_messages(self, topic, log_message, timestamp = None, metadata = None):    
         log_message = HudLogMessage(timestamp if timestamp else time.monotonic(), topic, log_message, metadata)
         if topic not in self.topic_types["log_messages"]:
@@ -311,17 +237,6 @@ class Actions:
         global hud_content
         hud_content.clear_topic_type("status_options", topic)
 
-    def hud_set_walkthrough_voice_commands(commands: list[str], progress: Any = None):
-        """Set the voice commands uttered by the user during the walkthrough step"""
-        global hud_content
-        dict = {
-            "walkthrough_said_voice_commands": commands,
-        }
-        if progress is not None:
-            dict["walkthrough_progress"] = progress
-        
-        hud_content.update(dict)
-
     def hud_add_ability(id: str, image: str, colour: str, enabled: int, activated: int, image_offset_x: int = 0, image_offset_y: int = 0):
         """Add a hud ability or update it"""
         global hud_content        
@@ -332,26 +247,12 @@ class Actions:
         """Remove an ability"""
         global hud_content
         hud_content.clear_topic_type("ability_icons", id)
-                
-    def hud_add_phrase(phrase: str, timestamp: float, time_ms: float, model: str, microphone: str):
-        """Add a phrase to the phrase log"""
-        global hud_content
-        metadata = {
-            "phrase": phrase,
-            "time_ms": time_ms,
-            "timestamp": timestamp,
-            "model": model,
-            "microphone": microphone
-        }
-        
-        hud_content.append_to_phrases(metadata)
-        hud_content.append_to_log_messages("phrase", phrase, timestamp, metadata)
-    
+
     def hud_refresh_content():
         """Sends a refresh event to all the widgets where the content has changed"""
         global hud_content
-        hud_content.dispatch("content_update", hud_content.content)
-        
+        print( "ASKING FOR A REFRESH? >:( TODO!" )
+
     def hud_publish_content(content: str, topic: str = "", title:str = "", show: Union[bool, int] = True, buttons: list[HudButton] = None, voice_commands: Any = None):
         """Publish a specific piece of content to a topic"""            
         if buttons == None:
@@ -367,7 +268,7 @@ class Actions:
         content = HudPanelContent(topic, title, [content], buttons, time.time(), show, voice_commands=commands)
         
         global hud_content
-        hud_content.publishv2("text", content)
+        hud_content.publish("text", content)
         
     def hud_create_button(text: str, callback: Callable[[], None], image: str = ""):
         """Create a button used in the Talon HUD"""
@@ -400,7 +301,7 @@ class Actions:
             
             for region_topic in region_by_topic:
                 hud_content.extend_topic_type(screen_region_type, region_topic, regions)
-        
+
     def hud_clear_screen_regions(type: str, topic: str = None, update: Union[bool, int] = True):
         """Clear the screen regions in the given type, optionally by topic"""
         global hud_content
@@ -424,12 +325,12 @@ class Actions:
         
         content = HudPanelContent("choice", title, [content], [], time.time(), True, choices)
         global hud_content
-        hud_content.publishv2("choice", content)
+        hud_content.publish("choice", content)
         
     def hud_register_audio_cue(title: str, description: str, file: str, enabled: Union[bool, int] = True):
         """Register an audio cue which may be triggered by a poller"""
         cue_id = title.lower().replace(" ", "_")
-        global hud_content        
+        global hud_content
         hud_content.register_cue(HudAudioCue(cue_id, title, description, file, 75, enabled > 0))
         
     def hud_unregister_audio_cue(title: str):

@@ -93,15 +93,16 @@ class HudContentPage:
     
 @dataclass
 class HudWalkThroughStep:
-    content: str = ''
-    context_hint: str = ''
+    content: str = ""
+    context_hint: str = ""
     tags: list[str] = None
     modes: list[str] = None
-    app: str = ''
+    app: str = ""
     voice_commands: list[str] = None
     restore_callback: Callable[[Any, Any], None] = None
     said_walkthrough_commands: list[str] = None
     progress: HudContentPage = None    
+    show_context_hint: bool = False
 
 @dataclass    
 class HudWalkThrough:
@@ -109,19 +110,19 @@ class HudWalkThrough:
     steps: list[HudWalkThroughStep]
 
 # These content events will be handled automatically
-CONTENT_EVENT_OPERATION_REPLACE = 'replace' # Used to signal a complete replacement of the given topic
-CONTENT_EVENT_OPERATION_REMOVE = 'remove' # Used to signal a topic is being cleared
+CONTENT_EVENT_OPERATION_REPLACE = "replace" # Used to signal a complete replacement of the given topic
+CONTENT_EVENT_OPERATION_REMOVE = "remove" # Used to signal a topic is being cleared
 
 # These content events require manual handling from the widgets themselves
-CONTENT_EVENT_OPERATION_APPEND = 'append' # Used to signal a single item being appended to a collection
-CONTENT_EVENT_OPERATION_PATCH = 'patch' # Used to signal a partial replacement of the given topic
+CONTENT_EVENT_OPERATION_APPEND = "append" # Used to signal a single item being appended to a collection
+CONTENT_EVENT_OPERATION_PATCH = "patch" # Used to signal a partial replacement of the given topic
 
 @dataclass
 class HudContentEvent:
     topic_type: str
     topic: str
     content: Any
-    operation: str = 'replace'
+    operation: str = "replace"
     claim: bool = False
     show: bool = False
     

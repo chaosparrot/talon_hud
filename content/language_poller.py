@@ -9,7 +9,7 @@ class LanguagePoller(Poller):
     
     def enable(self):
         if (self.job is None):
-            self.job = cron.interval('200ms', self.language_check)
+            self.job = cron.interval("200ms", self.language_check)
     
     def disable(self):
         if self.enabled:
@@ -18,7 +18,7 @@ class LanguagePoller(Poller):
             self.job = None
             
     def language_check(self):
-        language = scope.get('language')
+        language = scope.get("language")
         if self.current_language != language:
             self.current_language = language
             status_icon = self.content.create_status_icon("language_toggle", language if language != "en_US" else None, None, "Language " + language, lambda _, _2: toggle_language)
@@ -26,7 +26,7 @@ class LanguagePoller(Poller):
 
 def toggle_language():
     # TODO THIS NO LONGER SEEMS TO WORK?
-    actions.speech.switch_language('en_US')
+    actions.speech.switch_language("en_US")
 
 def add_statusbar_language_icon(_ = None):
     actions.user.hud_activate_poller("language_toggle")

@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Callable, Dict, TypeVar
 
-T = TypeVar('T')
+T = TypeVar("T")
 
 @dataclass
 class ExtraPreference:
@@ -94,26 +94,26 @@ class HeadUpDisplayUserWidgetPreferences:
     # Exports the widgets preferences as a dict useful for persisting
     def export(self, id:str) -> Dict[str, str]:
         dict = {}
-        dict[id + '_type'] = self.type
-        dict[id + '_enabled'] = "1" if self.enabled else "0"
-        dict[id + '_sleep_enabled'] = "1" if self.sleep_enabled else "0"
-        dict[id + '_show_animations'] = "1" if self.show_animations else "0"
+        dict[id + "_type"] = self.type
+        dict[id + "_enabled"] = "1" if self.enabled else "0"
+        dict[id + "_sleep_enabled"] = "1" if self.sleep_enabled else "0"
+        dict[id + "_show_animations"] = "1" if self.show_animations else "0"
         
-        dict[id + '_x'] = str(self.x)
-        dict[id + '_y'] = str(self.y)
-        dict[id + '_width'] = str(self.width)
-        dict[id + '_height'] = str(self.height)
-        dict[id + '_limit_x'] = str(self.limit_x)
-        dict[id + '_limit_y'] = str(self.limit_y)
-        dict[id + '_limit_width'] = str(max(self.width, self.limit_width))
-        dict[id + '_limit_height'] = str(max(self.height, self.limit_height))
-        dict[id + '_font_size'] = str(self.font_size)
-        dict[id + '_alignment'] = self.alignment
-        dict[id + '_expand_direction'] = self.expand_direction
-        dict[id + '_minimized'] = "1" if self.minimized else "0"
+        dict[id + "_x"] = str(self.x)
+        dict[id + "_y"] = str(self.y)
+        dict[id + "_width"] = str(self.width)
+        dict[id + "_height"] = str(self.height)
+        dict[id + "_limit_x"] = str(self.limit_x)
+        dict[id + "_limit_y"] = str(self.limit_y)
+        dict[id + "_limit_width"] = str(max(self.width, self.limit_width))
+        dict[id + "_limit_height"] = str(max(self.height, self.limit_height))
+        dict[id + "_font_size"] = str(self.font_size)
+        dict[id + "_alignment"] = self.alignment
+        dict[id + "_expand_direction"] = self.expand_direction
+        dict[id + "_minimized"] = "1" if self.minimized else "0"
         
-        dict[id + '_current_topics'] = ",".join(self.current_topics)
-        dict[id + '_subscriptions'] = ",".join(self.subscriptions)        
+        dict[id + "_current_topics"] = ",".join(self.current_topics)
+        dict[id + "_subscriptions"] = ",".join(self.subscriptions)        
         
         for extra_preference in self.extra_preferences:
             if hasattr(self, extra_preference.name):

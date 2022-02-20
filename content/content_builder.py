@@ -1,6 +1,7 @@
 from .state import HeadUpDisplayContent
 from .typing import *
 from typing import Union, Any, Callable
+from ..utils import retrieve_available_voice_commands
 import time
 
 # Class for managing a part of the HUD content
@@ -58,7 +59,10 @@ class HudContentBuilder():
 
     def create_walkthrough_step(self, content: str, context_hint: str = "", tags: list[str] = None, modes: list[str] = None, app: str = "", restore_callback: Callable[[str], None] = None) -> HudWalkThroughStep:
         """Create a walkthrough step used inside of a walkthrough in the Talon HUD"""
-        return HudWalkThroughStep(content, context_hint, tags, modes, app, None, restore_callback)
+        voice_commands = retrieve_available_voice_commands(content)
+        tags = [] if tags is None else tags
+        modes = [] if modes is None else modes
+        return HudWalkThroughStep(content, context_hint, tags, modes, app, voice_commands, restore_callback)
     
     def create_walkthrough(self, title, walkthrough_steps: list[HudWalkThroughStep]) -> HudWalkThrough:
         """Create a walkthrough for the Talon HUD"""

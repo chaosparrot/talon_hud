@@ -21,7 +21,7 @@ class LayoutWidget(BaseWidget):
         if not self.enabled:
             self.enabled = True
         
-            if self.panel_content.content[0]:
+            if self.should_enable():
                 self.generate_canvases()
             
             if persisted:
@@ -29,7 +29,10 @@ class LayoutWidget(BaseWidget):
                 self.preferences.mark_changed = True
                 self.event_dispatch.request_persist_preferences()
             self.cleared = False
-            
+    
+    def should_enable(self):
+        return self.panel_content.content[0]
+    
     def generate_canvases(self):
         if self.mouse_enabled:
             self.mouse_capture_canvas = canvas.Canvas(min(self.x, self.limit_x), min(self.y, self.limit_y), max(self.width, self.limit_width), max(self.height, self.limit_height))            
@@ -152,7 +155,7 @@ class LayoutWidget(BaseWidget):
             self.layout = self.layout_content(canvas, paint)
             
         if self.page_index > len(self.layout) - 1:
-            self.page_index = len(self.layout) -1
+            self.page_index = max(0, len(self.layout) -1)
         content_dimensions = self.layout[self.page_index]
         
         # Debug layout size / position

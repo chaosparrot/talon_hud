@@ -42,7 +42,7 @@ class HeadUpDisplayTheme:
             fh = open(theme_config_file, "r")
             lines = fh.readlines()
             for index,line in enumerate(lines):
-                split_line = line.strip('\n').split(',')
+                split_line = line.strip("\n").split(",")
                 self.values[split_line[0]] = split_line[1]
             fh.close()
 
@@ -141,7 +141,7 @@ class HeadUpDisplayTheme:
         
         return image.reshape(int(width), int(height))
 
-    def get_colour(self, colour, default_colour='000000'):
+    def get_colour(self, colour, default_colour="000000"):
         if (colour in self.values):
             return self.values[colour]
         else:

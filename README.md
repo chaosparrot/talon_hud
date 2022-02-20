@@ -211,8 +211,10 @@ These are ideas that I want to implement in no specific order and with no specif
 
 Known issues
 ---
-- Walkthrough progress styling, and an overview of all the available steps
 - 'Dismiss options' in the context menu makes the HUD go into a state where the next context menu won't respond properly
+- Walkthrough text clipping
+- Walkthrough animations not registering all the time
+- Walkthrough voice commands not activating animation
 
 If any of these ideas seem cool for you to work on, give me a message on the talon slack so we can coordinate stuff.
 
@@ -225,55 +227,56 @@ This is the current status of it
 - [x] Automatically enable pollers on start up when a widget is listening for it
 - [ ] Connect automatic enabling / disabling to the Talon HUD environment flow
 - [x] Add a new content builder class to build HUD content with inside of pollers so they do not require actions
-- [ ] Rework all the pollers to not use actions in enable / disable flow and have the content builder inserted
+- [x] Rework all the pollers to not use actions in enable / disable flow and have the content builder inserted
     - [x] History poller
 	- [x] Focus poller
 	- [x] Speech poller
 	- [x] Scope poller
 	- [x] List poller
 	- [x] Microphone poller
-	- [ ] Walkthrough
-- [ ] Add a settings file persisting thingie specifically for content like walkthrough pollers and the favourite microphone
-    - [ ] Persist walkthrough
-	- [ ] Persist favourite microphone
-	- [ ] Persist debug list 
-- [ ] Phase out status bar poller in favour of the following:
+	- [x] Walkthrough
+- [x] Add a settings file persisting mechanism specifically for content like walkthrough pollers and the favourite microphone
+    - [x] Persist walkthrough
+	- [x] Persist favourite microphone
+- [x] Phase out status bar poller in favour of the following:
 	- [x] Active microphone status icon poller
-	- [ ] Mode icon poller
-	    - [ ] Make overrideable action for determining modes
-		- [ ] Make overrideable action for switching modes
-	- [ ] Programming language poller
-		- [ ] Make list of languages in preferences for user to change
-		- [ ] Add programming icons
+	- [x] Mode icon poller
+	    - [x] Make overrideable action for determining modes
+		- [x] Make overrideable action for switching modes
+	- [x] Programming language poller
+		- [x] Make list of languages in preferences for user to change
+		- [x] Add programming icons
 	- [x] Language poller
 	- [x] Focus icon
+	- [ ] Draw text in status bar again if no icon is found for programming language
+	- [ ] Fix initial status bar animation
 - [ ] Manage topics on widgets properly so that the poller state can be managed
     - [ ] Fix inconsistent topic registering / deregistering for single topic widgets vs multitopic widgets
 	- [ ] Fix topic deregistering if no content is available for it
 	- [ ] Fix ordering of topics properly
-- [X] Remove single widget.topic variable
-- [ ] Rework variables like the 'mode' check to use the new events
-- [ ] Rework all widgets to conform to the new events
+- [x] Remove single widget.topic variable
+- [ ] Make the HUD sort of reloadable by reattaching pollers, content etc
+- [x] Rework variables like the 'mode' check to use the new events
+- [x] Rework all widgets to conform to the new events
     - [x] Status bar
     - [x] Event log
 	- [x] Ability bar
     - [x] Text panel
 	- [x] Documentation panel
 	- [x] Choice panel
-	- [ ] Walkthrough panel
+	- [x] Walkthrough panel
 	- [x] Screen overlay
 	- [x] Cursor tracker
-- [ ] Phase out references to old API in state.py and display.py
-- [ ] Remove unnecessary refreshing of content
+- [x] Phase out references to old API in state.py and display.py
+- [x] Remove unnecessary refreshing of content
 - [ ] Consistent style
-    - [ ] " quotes instead of '
-    - [ ] Choose one walkthrough definition ( walkthrough or walk through, offer automatic migration )
+    - [x] " quotes instead of '
+    - [x] Choose one walkthrough definition
+    - [ ] Clear context and walk_through options - Migration version in preferences?
 	- [ ] Make sure all HUD actions are prefixed with hud_ and keep a list of changes for the release notes
 	- [x] Use only relative paths to make it more flexible where the HUD is located
-- [ ] Update documentation for status bar icons and options
-- [ ] Update documentation for pollers
-- [ ] Update documentation on mode icons
-- [ ] Update documentation on active microphone
+- [ ] Redo documentation for all content / widgets etc
+- [ ] Clean up Audio stuff - This is for the next release
 
 Acknowledgements
 ---
@@ -283,3 +286,5 @@ Some of the icons like the copy icon are taken from fontawesome.
 
 The language icons are made by https://www.freepik.com hosted on https://www.flaticon.com/.  
 If your language isn't in the themes, you can download icons for free with attribution of freepik.com and change their size to 35x35 before saving them as a .png file in your theme.
+
+The programming language icons are taken from various icon packs, including Pictonic Icons, Material design, File by John Gardner and LibreICONS Black by DiemenDesign

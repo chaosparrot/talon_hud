@@ -42,3 +42,9 @@ class HistoryPoller(Poller):
         }
         
         self.content.add_log("phrase", command, timestamp, metadata)
+        
+def on_ready():
+    # This poller needs to be kept alive so that the phrases are properly registered
+    actions.user.hud_add_poller("history", HistoryPoller(), True)
+
+app.register("ready", on_ready)

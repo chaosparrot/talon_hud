@@ -18,22 +18,16 @@ class HeadUpScreenOverlay(BaseWidget):
     prev_mouse_pos = None
     smooth_mode = True
 
-    preferences = HeadUpDisplayUserWidgetPreferences(type="screen_overlay", x=0, y=0, width=300, height=30, font_size=12, enabled=True, alignment='center', expand_direction='down', sleep_enabled=False)
-    subscribed_content = [
-        "mode"
-    ]
+    preferences = HeadUpDisplayUserWidgetPreferences(type="screen_overlay", x=0, y=0, width=300, height=30, font_size=12, enabled=True, alignment="center", expand_direction="down", sleep_enabled=False)
     
     # New content topic types
-    topic_types = ['screen_regions']
+    topic_types = ["screen_regions"]
     current_topics = []
     subscriptions = ["*"]
     
     regions = None
     active_regions = None
     canvases = None
-    content = {
-        "mode": "command"
-    }
     
     def __init__(self, id, preferences_dict, theme, event_dispatch, subscriptions = None, current_topics = None):
         super().__init__(id, preferences_dict, theme, event_dispatch, subscriptions, current_topics)
@@ -42,12 +36,13 @@ class HeadUpScreenOverlay(BaseWidget):
         self.canvases = []
     
     def refresh(self, new_content):
-        if ("mode" in new_content and new_content["mode"] != self.content["mode"]):
-            if (new_content["mode"] == "sleep" and self.sleep_enabled == False):
-                self.soft_disable()
-
         if "event" in new_content and new_content["event"].topic_type == "screen_regions":
             self.update_regions()
+        elif "event" in new_content and new_content["event"].topic_type == "variable" and new_content["event"].topic == "mode":
+            if (new_content["event"].content == "sleep" and self.sleep_enabled == False):
+                self.soft_disable()
+            else:
+                self.soft_enable()
 
     def enable(self, persisted=False):
         if not self.enabled:
