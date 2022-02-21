@@ -83,7 +83,17 @@ class StatusBarPoller(Poller):
             return lang if lang else ""
         
     def determine_language(self):
-        return scope.get('language')
+        language = scope.get('language')
+        
+        if isinstance(language, str):
+            return language
+        elif isinstance(language, set) or isinstance(language, list):
+            for lang in language:
+                if "_" in lang:
+                    return lang
+        
+        # If no language is detected, just assume English
+        return "en_US"
         
     def get_lang_extension(self, language):
         if (language in self.language_to_ext):
