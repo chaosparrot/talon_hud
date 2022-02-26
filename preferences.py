@@ -12,8 +12,11 @@ user_preferences_file_location = os.path.join(user_preferences_file_dir, widget_
 # To keep the display state consistent across sessions
 class HeadUpDisplayUserPreferences:
     
+    persisting_enabled = True
+    
     monitor_file_path = None
     default_prefs = {
+        "version": "0.6",
         "show_animations": True,
         "enabled": False,
         "theme_name": "light",
@@ -35,12 +38,19 @@ class HeadUpDisplayUserPreferences:
     hud_environment = ""
     
     def __init__(self, hud_environment = "", hud_version = 5):
+        self.persisting_enabled = True
         self.hud_environment = hud_environment
         self.load_preferences(self.get_screen_preferences_filepath(ui.screens()))
         self.hud_version = hud_version
     
     def set_hud_environment(self, hud_environment):
         self.hud_environment = hud_environment
+        
+    def enable(self):
+        self.persisting_enabled = True
+        
+    def disable(self):
+        self.persisting_enabled = False
         
     def get_watch_directories(self):
         screens = ui.screens()
@@ -95,10 +105,16 @@ class HeadUpDisplayUserPreferences:
             for key, value in self.default_prefs.items():
                 preferences[key] = value
 
+            # Clear context_menu and walk_through stuff so the new sizes can be applied
+            migrate_v05 = False
+
             # Override defaults with file values
             for index,line in enumerate(lines):
                 split_line = line.strip("\n").split(",", 1)
                 key = split_line[0]
+                if not migrate_v05 and key.startswith("walk_through"):
+                    migrate_v05 = True
+
                 value = split_line[1]
                 if (key in self.boolean_keys):
                     preferences[key] = True if int(value) > 0 else False
@@ -106,6 +122,12 @@ class HeadUpDisplayUserPreferences:
                     preferences[key] = value
             
             self.hud_environment = real_hud_environment
+            if migrate_v05:
+                keys = list(preferences.keys())
+                for key in keys:
+                    if key.startswith("context_menu") or key.startswith("walk_through"):
+                        del preferences[key]
+            
             self.base_prefs = preferences
             
         return copy.copy(preferences)
@@ -127,16 +149,28 @@ class HeadUpDisplayUserPreferences:
                fh = open(monitor_file_path, "r")
                lines.extend(fh.readlines())
                fh.close()
+
+        # Clear context_menu and walk_through stuff so the new sizes can be applied
+        migrate_v05 = False
         
         # Override defaults with file values
         for index,line in enumerate(lines):
             split_line = line.strip("\n").split(",", 1)
             key = split_line[0]
+            if not migrate_v05 and key.startswith("walk_through"):
+                migrate_v05 = True
+
             value = split_line[1]
             if (key in self.boolean_keys):
                 preferences[key] = True if int(value) > 0 else False
             elif value is not None:
                 preferences[key] = value
+
+        if migrate_v05:
+            keys = list(preferences.keys())
+            for key in keys:
+                if key.startswith("context_menu") or key.startswith("walk_through"):
+                    del preferences[key]
 
         self.prefs = preferences
         if self.hud_environment == "":
@@ -145,6 +179,9 @@ class HeadUpDisplayUserPreferences:
     # Persist the preferences as a CSV for reloading between Talon sessions later
     # But only when the new preferences have changed
     def persist_preferences(self, new_preferences, force=False):
+        if not self.persisting_enabled:
+            return
+
         preferences_changed = False
         monitor_changed = False
         
@@ -179,7 +216,8 @@ class HeadUpDisplayUserPreferences:
                 
                 # Skip values that are the same in the base environment preferences
                 # To keep the changes as specific as possible to each environment
-                if self.hud_environment != "" and key in self.base_prefs and self.base_prefs[key] == self.prefs[key]:
+                # Unless they are content related
+                if self.hud_environment != "" and not key.endswith("_current_topics") and key in self.base_prefs and self.base_prefs[key] == self.prefs[key]:
                     continue
                 
                 value = self.prefs[key]

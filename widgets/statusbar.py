@@ -57,7 +57,7 @@ class HeadUpStatusBar(BaseWidget):
     def update_buttons(self):
         buttons = []
         buttons.append(HudButton("", "Content toolkit", ui.Rect(0,0,0,0), lambda widget: actions.user.hud_toolkit_options()))
-        status_options = self.contentv2.get_topic("status_options")
+        status_options = self.content.get_topic("status_options")
         for status_option in status_options:
             if status_option.icon_topic in self.current_topics:
                 if status_option.activated_option:
@@ -69,7 +69,7 @@ class HeadUpStatusBar(BaseWidget):
         self.buttons = buttons
     
     def update_icons(self):        
-        self.icons = self.contentv2.get_topic("status_icons")
+        self.icons = self.content.get_topic("status_icons")
         
     def on_mouse(self, event):
         pos = numpy.array(event.gpos)
@@ -149,7 +149,7 @@ class HeadUpStatusBar(BaseWidget):
         green_hex = "0" + format(green, "x") if green <= 15 else format(green, "x")
         blue_hex = "0" + format(blue, "x") if blue <= 15 else format(blue, "x")
         
-        mode = self.contentv2.get_variable("mode", "command")
+        mode = self.content.get_variable("mode", "command")
         
         # Draw the background based on the state
         accent_colour = red_hex + green_hex + blue_hex
@@ -158,12 +158,15 @@ class HeadUpStatusBar(BaseWidget):
         paint.shader = background_shader
         self.draw_background(canvas, self.x + stroke_width, self.y + stroke_width, element_width - stroke_width * 2, element_height, paint)
 
+        icon_texts = []
+
         # Draw icons
         icon_offset = 0
         hover_index = 0
         for index, icon in enumerate(self.icons):
-            # Do not draw icons or buttons without a valid image
             if icon.image is None or self.theme.get_image(icon.image) is None:
+                if icon.text is not None:
+                    icon_texts.append(icon.text)
                 continue
 
             if (not icon.callback or (mode == "sleep" and self.icon_hover_index != hover_index)):
@@ -179,16 +182,16 @@ class HeadUpStatusBar(BaseWidget):
         height_center = self.y + element_height + ( circle_margin / 2 ) - ( element_height / 2 )
 
         # Draw selected programming language
-        # TODO - FAKE BOLD until I find out how to properly use font style
-        if (mode == "dictation"):
+        text_value = " ".join(icon_texts)
+        if len(text_value) > 0:
             text_colour = self.theme.get_colour("text_colour")
             paint.shader = linear_gradient(self.x, self.y, self.x, self.y + element_height, (text_colour, text_colour))
             paint.style = paint.Style.STROKE
             paint.textsize = self.font_size
-            text_x = self.x + circle_margin * 2 + ( len(self.icons) * ( icon_diameter + circle_margin ) )
-            canvas.draw_text("" if mode == "command" else "Dictate", text_x , height_center - circle_margin + paint.textsize / 2)
+            text_x = self.x + stroke_width + circle_margin + icon_offset
+            canvas.draw_text(text_value, text_x , height_center - circle_margin + paint.textsize / 2)
             paint.style = paint.Style.FILL
-            canvas.draw_text("" if mode == "command" else "Dictate", text_x, height_center - circle_margin + paint.textsize / 2)
+            canvas.draw_text(text_value, text_x, height_center - circle_margin + paint.textsize / 2)
 
         # Draw closing icon
         paint.style = paint.Style.FILL
@@ -261,6 +264,15 @@ class HeadUpStatusBar(BaseWidget):
     def reset_blink(self):
         self.blink_state = 0
         self.blink_colour = [0, 0, 0]
+        
+        mode = self.content.get_variable("mode", "command")
+        if mode == "command":
+            self.blink_colour = self.command_blink_colour
+        elif mode == "dictation":
+            self.blink_colour = self.dictation_blink_colour
+        elif mode == "sleep":
+            self.blink_colour = self.sleep_blink_colour
+
         self.blink_difference = [
             self.intro_animation_end_colour[0] - self.intro_animation_start_colour[0],
             self.intro_animation_end_colour[1] - self.intro_animation_start_colour[1],

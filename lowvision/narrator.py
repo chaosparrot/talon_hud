@@ -18,16 +18,16 @@ class Actions:
         webbrowser.open("file://" + os.path.join(narrator_directory, "index.html"))
         
 # Specific HUD voice commands when the user is in the narrator context
-@ctx_narrator.action_class("user")
-class NarratorActions:
-        
-    def enable_hud_id(id: str):
-        """Enables a specific HUD element"""
-        global hud
-        hud.enable_id(id)
-        narrator_url = "file://" + os.path.join(narrator_directory, "index.html") + "#" + id
-        actions.browser.focus_address()
-        time.sleep(0.1)
-        actions.insert(narrator_url)
-        actions.key("enter")
-        actions.key("tab")
+#@ctx_narrator.action_class("user")
+#class NarratorActions:
+#        
+#    def hud_enable_id(id: str):
+#        """Enables a specific HUD element"""
+#        global hud
+#        hud.enable_id(id)
+#        narrator_url = "file://" + os.path.join(narrator_directory, "index.html") + "#" + id
+#        actions.browser.focus_address()
+#        time.sleep(0.1)
+#        actions.insert(narrator_url)
+#        actions.key("enter")
+#        actions.key("tab")

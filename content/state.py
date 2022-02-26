@@ -1,4 +1,4 @@
-from talon import actions, cron, scope, Module, ui
+from talon import actions, Module, ui
 from talon.types.point import Point2d
 from talon_init import TALON_USER
 from talon.scripting import Dispatch
@@ -9,6 +9,10 @@ import os
 
 max_log_length = 50
 mod = Module()
+
+CLAIM_BROADCAST = 0 # Broadcast to any widget that listens for this topic type
+CLAIM_WIDGET = 1 # Claim a single widget and send the content towards it
+CLAIM_WIDGET_TOPIC_TYPE = 2 # Claim a single widget and clear out the topic type attached to it
 
 # Contains the state of the content inside of the head up display
 # Widget data like hover states are contained within the widget
@@ -46,16 +50,16 @@ class HeadUpDisplayContent(Dispatch):
         if not topic_type in self.topic_types:
             self.topic_types[topic_type] = {}
         self.topic_types[topic_type][panel_content.topic] = panel_content
-        self.dispatch("broadcast_update", HudContentEvent(topic_type, panel_content.topic, panel_content, "replace", True, panel_content.show ))
+        self.dispatch("broadcast_update", HudContentEvent(topic_type, panel_content.topic, panel_content, "replace", CLAIM_WIDGET_TOPIC_TYPE, panel_content.show ))
     
     # Publish content directly through the event system
-    def publish_event(self, topic_type, topic, data, operation, show = False, claim = False):
+    def publish_event(self, topic_type, topic, data, operation, show = False, claim = 0):
         if operation == "replace":
             self.update_topic_type(topic_type, topic, data, False)
         elif operation == "remove":
             self.clear_topic_type(topic_type, topic, False)
         
-        self.dispatch("broadcast_update", HudContentEvent(topic_type, topic, data, operation, show, claim))
+        self.dispatch("broadcast_update", HudContentEvent(topic_type, topic, data, operation, claim, show))
 
     def register_cue(self, cue: HudAudioCue):
         self.dispatch("register_audio_cue", cue)
@@ -248,11 +252,6 @@ class Actions:
         global hud_content
         hud_content.clear_topic_type("ability_icons", id)
 
-    def hud_refresh_content():
-        """Sends a refresh event to all the widgets where the content has changed"""
-        global hud_content
-        print( "ASKING FOR A REFRESH? >:( TODO!" )
-
     def hud_publish_content(content: str, topic: str = "", title:str = "", show: Union[bool, int] = True, buttons: list[HudButton] = None, voice_commands: Any = None):
         """Publish a specific piece of content to a topic"""            
         if buttons == None:
@@ -302,7 +301,7 @@ class Actions:
             for region_topic in region_by_topic:
                 hud_content.extend_topic_type(screen_region_type, region_topic, regions)
 
-    def hud_clear_screen_regions(type: str, topic: str = None, update: Union[bool, int] = True):
+    def hud_clear_screen_regions(type: str, topic: str = None, _deprecated_update: Union[bool, int] = True):
         """Clear the screen regions in the given type, optionally by topic"""
         global hud_content
         screen_region_type = "cursor_regions" if type == "cursor" else "screen_regions"

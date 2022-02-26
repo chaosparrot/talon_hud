@@ -212,9 +212,6 @@ These are ideas that I want to implement in no specific order and with no specif
 Known issues
 ---
 - 'Dismiss options' in the context menu makes the HUD go into a state where the next context menu won't respond properly
-- Walkthrough text clipping
-- Walkthrough animations not registering all the time
-- Walkthrough voice commands not activating animation
 
 If any of these ideas seem cool for you to work on, give me a message on the talon slack so we can coordinate stuff.
 
@@ -225,7 +222,9 @@ Currently working on the Content V2 API which will allow content to be automatic
 This is the current status of it
 - [x] Persist changes in subscriptions and current topics so they can be retrieved upon restart 
 - [x] Automatically enable pollers on start up when a widget is listening for it
-- [ ] Connect automatic enabling / disabling to the Talon HUD environment flow
+- [.] Connect automatic enabling / disabling to the Talon HUD environment flow
+    - [ ] Fix status bar icons
+	- [ ] Fix focus / screen region transition
 - [x] Add a new content builder class to build HUD content with inside of pollers so they do not require actions
 - [x] Rework all the pollers to not use actions in enable / disable flow and have the content builder inserted
     - [x] History poller
@@ -248,12 +247,11 @@ This is the current status of it
 		- [x] Add programming icons
 	- [x] Language poller
 	- [x] Focus icon
-	- [ ] Draw text in status bar again if no icon is found for programming language
-	- [ ] Fix initial status bar animation
-- [ ] Manage topics on widgets properly so that the poller state can be managed
-    - [ ] Fix inconsistent topic registering / deregistering for single topic widgets vs multitopic widgets
-	- [ ] Fix topic deregistering if no content is available for it
-	- [ ] Fix ordering of topics properly
+	- [x] Draw text in status bar again if no icon is found for programming language
+- [x] Manage topics on widgets properly so that the poller state can be managed
+    - [x] Fix inconsistent topic registering / deregistering for single topic widgets vs multitopic widgets
+	- [x] Fix topic deregistering if no content is available for it
+	- [x] Fix ordering of topics properly
 - [x] Remove single widget.topic variable
 - [ ] Make the HUD sort of reloadable by reattaching pollers, content etc
 - [x] Rework variables like the 'mode' check to use the new events
@@ -269,11 +267,25 @@ This is the current status of it
 	- [x] Cursor tracker
 - [x] Phase out references to old API in state.py and display.py
 - [x] Remove unnecessary refreshing of content
-- [ ] Consistent style
+- [x] Consistent style
     - [x] " quotes instead of '
     - [x] Choose one walkthrough definition
-    - [ ] Clear context and walk_through options - Migration version in preferences?
-	- [ ] Make sure all HUD actions are prefixed with hud_ and keep a list of changes for the release notes
+    - [x] Clear context and walk_through options - Migration version in preferences?
+	- [x] Make sure all HUD actions are prefixed with hud_ and keep a list of changes for the release notes
+	    - enable_hud -> hud_enable
+		- disable_hud -> hud_disable
+	    - persist_hud_preferences -> hud_persist_preferences
+	    - set_widget_preference -> hud_set_widget_preference
+	    - enable_hud_id -> hud_enable_id
+	    - disable_hud_id -> hud_disable_id
+	    - switch_hud_theme -> hud_switch_theme
+	    - set_hud_setup_mode -> hud_set_setup_mode
+		- set_hud_setup_mode_multi -> hud_set_setup_mode_multi
+		- show_context_menu -> hud_show_context_menu
+	    - hide_context_menu -> hud_hide_context_menu
+	    - increase_widget_page -> hud_increase_widget_page
+	    - decrease_widget_page -> hud_decrease_widget_page
+	    - get_widget_pagination -> hud_get_widget_pagination
 	- [x] Use only relative paths to make it more flexible where the HUD is located
 - [ ] Redo documentation for all content / widgets etc
 - [ ] Clean up Audio stuff - This is for the next release

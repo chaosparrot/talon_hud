@@ -42,10 +42,10 @@ class ProgrammingLanguagePoller(Poller):
                 if can_toggle:
                     callback = lambda _, _2: actions.user.hud_toggle_programming_language()
                 status_icon = self.content.create_status_icon("programming_toggle", icon, text, language + " detected", callback)
-                self.content.publish_event("status_icons", status_icon.topic, "replace", status_icon, False)
+                self.content.publish_event("status_icons", status_icon.topic, "replace", status_icon)
             else:
                 status_icon = self.content.create_status_icon("programming_toggle", "", "", "No programming language detected", False)
-                self.content.publish_event("status_icons", status_icon.topic, "replace", status_icon, False)
+                self.content.publish_event("status_icons", status_icon.topic, "replace", status_icon)
 
 
 def add_statusbar_programming_icon(_ = None):

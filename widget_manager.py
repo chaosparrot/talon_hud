@@ -76,7 +76,6 @@ class HeadUpWidgetManager:
         user_preferences_screen_file_path = self.preferences.get_screen_preferences_filepath(ui.screens())
         if not os.path.exists(user_preferences_file_location):
             self.preferences.persist_preferences(self.preferences.default_prefs, True)
-                
         self.preferences.load_preferences(user_preferences_screen_file_path)
     
     def reload_preferences(self, force_reload=False, current_hud_environment="") -> str:        
@@ -263,7 +262,7 @@ class HeadUpWidgetManager:
     
     def get_default_widgets(self):
         """Load widgets to give an optional default user experience that allows all the options"""
-        default_status_topics = ["mode_icon", "toolkit_option", "mode_option", "microphone_option", "language_option", "programming_option", "focus_option"]
+        default_status_topics = ["mode_toggle", "mode_option", "microphone_toggle_option", "language_option", "programming_option", "focus_toggle_option"]
         
         return [
             self.load_widget("status_bar", "status_bar", ["*"], default_status_topics ),

@@ -35,7 +35,7 @@ class HeadUpAbilityBar(BaseWidget):
         paint = self.draw_setup_mode(canvas)
         
         diameter = self.height / 2
-        abilities = self.contentv2.get_topic("ability_icons")
+        abilities = self.content.get_topic("ability_icons")
         if self.alignment == "right":
             abilities.reverse()
         margin = 4
@@ -80,4 +80,4 @@ class HeadUpAbilityBar(BaseWidget):
         return animating
 
     def draw_animation(self, canvas, animation_tick):
-        return len(self.contentv2.get_topic("ability_icons")) > 0
+        return len(self.content.get_topic("ability_icons")) > 0

@@ -1,4 +1,4 @@
-from talon import actions, cron, scope, speech_system, ui, app, Module
+from talon import actions, cron, scope, ui, app, Module
 from .poller import Poller
 from .state import hud_content
 from .typing import HudStatusIcon, HudButton, HudStatusOption
@@ -53,8 +53,6 @@ class PartialModePoller(Poller):
         if self.enabled:
             self.enabled = False
             self.poller.unregister(self.type)
-            if self.type == "mode_toggle":
-                self.content.publish_event("status_icons", "mode_toggle", "remove")
 
     def update_mode(self, current_mode):
         if self.type == "mode_toggle":
@@ -64,7 +62,7 @@ class PartialModePoller(Poller):
 
     def publish_statusbar_icon(self, current_mode):
         status_icon = self.content.create_status_icon("mode_toggle", current_mode + "_icon", None, current_mode + " mode", lambda _, _2: actions.user.hud_toggle_mode())
-        self.content.publish_event("status_icons", status_icon.topic, "replace", status_icon, False)
+        self.content.publish_event("status_icons", status_icon.topic, "replace", status_icon)
 
     def destroy(self):
         super().destroy()

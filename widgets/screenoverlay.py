@@ -93,13 +93,13 @@ class HeadUpScreenOverlay(BaseWidget):
     def update_regions(self):
         self.active_regions = []
         if not self.enabled:
-            self.regions = self.contentv2.get_topic("screen_regions")
+            self.regions = self.content.get_topic("screen_regions")
             return
         
         soft_enable = False
         indices_to_clear = []
         region_indices_used = []
-        regions = self.contentv2.get_topic("screen_regions")
+        regions = self.content.get_topic("screen_regions")
         
         if regions is not None:
             new_regions = regions

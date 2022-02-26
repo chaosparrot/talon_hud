@@ -66,7 +66,7 @@
 		"context_hint": "Please turn on command modes to continue the walkthrough"
 	},
     {
-	    "content": "That concludes the brief tour of the Talon HUD. To retry this walkthrough, or try another, you can always say <cmd@ toolkit walk throughs /> to open up the selection.<cmd@ walkthrough options hide /> will close it again.",
+	    "content": "That concludes the brief tour of the Talon HUD. To retry this walkthrough, or try another, you can always say <cmd@ toolkit walkthroughs /> to open up the selection.<cmd@ toolkit walkthroughs hide /> will close it again.",
         "modes": ["command"],
 		"context_hint": "Please turn on command modes to continue the walkthrough"
 	}

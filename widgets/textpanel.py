@@ -8,7 +8,8 @@ from talon.types.point import Point2d
 icon_radius = 10
 def close_widget(widget):
     widget.disable(True)
-    
+    widget.event_dispatch.synchronize_widget_poller(widget.id)
+
 def minimize_toggle_widget(widget):
     widget.minimized = not widget.minimized
     widget.drag_positions = []

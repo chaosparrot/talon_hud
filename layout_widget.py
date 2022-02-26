@@ -11,7 +11,6 @@ class LayoutWidget(BaseWidget):
     
     default_buttons = []
     buttons = []
-    
     mark_layout_invalid = True
     mouse_capture_canvas: canvas.Canvas = None
     layout = []
@@ -58,7 +57,7 @@ class LayoutWidget(BaseWidget):
             self.animation_tick = -self.animation_max_duration if self.show_animations else 0
             if self.canvas:
                 self.canvas.resume()
-            
+
             if persisted:
                 self.preferences.enabled = False
                 self.preferences.mark_changed = True
@@ -71,10 +70,10 @@ class LayoutWidget(BaseWidget):
         self.mark_layout_invalid = True
         
     def content_handler(self, event) -> bool:
-        if isinstance(event.content, HudPanelContent):
-            return self.update_panel(event.content)
-        else:
-            return super().content_handler(event)
+        updated = super().content_handler(event)
+        if (isinstance(event.content, HudPanelContent)):
+            self.update_panel(event.content)
+        return updated
 
     def set_page_index(self, page_index: int):
         self.page_index = max(0, min(page_index, len(self.layout) - 1))
@@ -125,20 +124,17 @@ class LayoutWidget(BaseWidget):
     def update_panel(self, panel_content) -> bool:
         if not panel_content.content[0] and self.enabled:
             self.disable()
-
-        if not self.enabled and panel_content.show:
-            self.panel_content = panel_content        
+            
+        if panel_content.content[0] and panel_content.show and not self.enabled:
             self.enable(True)
         
         if self.enabled:
             self.panel_content = panel_content
-            self.current_topics = [panel_content.topic]
             self.mark_layout_invalid = True
             if not self.canvas:
                 self.generate_canvases()
             self.canvas.resume()
         return self.enabled and panel_content.topic in self.current_topics
-        
 
     def layout_content(self, canvas, paint):
         # Determine the dimensions and positions of the content

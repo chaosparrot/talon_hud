@@ -16,3 +16,6 @@ class HeadUpEventDispatch(Dispatch):
         
     def deactivate_poller(self, poller_name):
         self.dispatch("deactivate_poller", poller_name)
+        
+    def synchronize_widget_poller(self, widget_id):
+        self.dispatch("synchronize_poller", widget_id)

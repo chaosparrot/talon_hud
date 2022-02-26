@@ -72,9 +72,13 @@ class HudContentBuilder():
         """Adds a log to the HUD"""
         self._content.append_to_log_messages(type, message, timestamp, metadata)
         
-    def publish_event(self, topic_type: str, topic:str, operation: str, data: Any = None, show: bool = False, claim: bool = False):
+    def publish_event(self, topic_type: str, topic:str, operation: str, data: Any = None, show: bool = False, claim: int = None):
         """Publish created content to the central HUD content object"""
         if topic_type is not None and self._content is not None:
+        
+            # By default - Make sure sure that text and choice claim a topic type completely
+            if claim is None:
+                claim = 2 if topic_type in ["text", "choice"] else 0
             self._content.publish_event(topic_type, topic, data, operation, show, claim)
     
     def connect(self, content: HeadUpDisplayContent = None):

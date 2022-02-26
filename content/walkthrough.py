@@ -27,6 +27,7 @@ class WalkthroughPoller:
     in_right_context = True
     development_mode = False
     reload_job = None
+    next_step_job = None
     
     def __init__(self):
         self.walkthroughs = {}
@@ -119,7 +120,7 @@ class WalkthroughPoller:
         
     def start_up_hud(self):
         """Start up the HUD - Used for the initial walkthrough"""
-        actions.user.enable_hud()
+        actions.user.hud_enable()
         cron.after("1s", self.start_initial_walkthrough)
         
     def start_initial_walkthrough(self):
@@ -136,7 +137,7 @@ class WalkthroughPoller:
                 choice_texts.append({"text": title, "selected": done})
             choices = self.content.create_choices(choice_texts, self.pick_walkthrough)
             choice_panel_content = self.content.create_panel_content("Pick a walkthrough from the options below by saying <*option <number>/> or by saying the name.", "walkthrough_options", "Toolkit walkthroughs", True, choices=choices)
-            self.content.publish_event("choice", choice_panel_content.topic, "replace", choice_panel_content)
+            self.content.publish_event("choice", choice_panel_content.topic, "replace", choice_panel_content, True)
 
     def pick_walkthrough(self, data):
         """Pick a walkthrough from the options menu"""
@@ -219,16 +220,21 @@ class WalkthroughPoller:
                     self.current_stepnumber = -1
             self.next_step()
 
-    def next_step(self):
-        """Navigate to the next step in the walkthrough"""
+    def next_step_or_page(self):
+        """Navigate to the next step, or the next page in the walkthrough"""
         if self.current_walkthrough is not None:
         
             # Next step also functions as next page on a widget
-            pagination = actions.user.get_widget_pagination("walkthrough")
+            pagination = actions.user.hud_get_widget_pagination("walkthrough")
             if pagination.current < pagination.total:
-                actions.user.increase_widget_page("walkthrough")
+                actions.user.hud_increase_widget_page("walkthrough")
                 return
             
+            self.next_step()
+    
+    def next_step(self):
+        """Navigate to the next step in the walkthrough"""
+        if self.current_walkthrough is not None:
             # Update the walkthrough CSV state
             if self.current_walkthrough.title not in self.walkthrough_steps:
                 self.walkthrough_steps[self.current_walkthrough.title] = {"current": 0, "total": len(self.current_walkthrough.steps), "progress": 0}
@@ -254,9 +260,9 @@ class WalkthroughPoller:
         if self.current_walkthrough is not None:
         
             # Previous step also functions as previous page on a widget
-            pagination = actions.user.get_widget_pagination("walkthrough")
+            pagination = actions.user.hud_get_widget_pagination("walkthrough")
             if pagination.current > 1:
-                actions.user.decrease_widget_page("walkthrough")
+                actions.user.hud_decrease_widget_page("walkthrough")
                 return
 
             # Update the walkthrough CSV state
@@ -332,14 +338,14 @@ class WalkthroughPoller:
             step = self.current_walkthrough.steps[self.current_stepnumber]
             step.show_context_hint = not in_right_context
             if not in_right_context:
-                self.content.publish_event("walkthrough_step", "walkthrough_step", "replace", step, show=True, claim=True)
+                self.content.publish_event("walkthrough_step", "walkthrough_step", "replace", copy.copy(step), show=True, claim=True)
             else:
                 # Forced publication must clear the voice commands said as well
                 # To ensure a clean widget state
                 if force_publish:
                     step.said_walkthrough_commands = []
                 
-                self.content.publish_event("walkthrough_step", "walkthrough_step", "replace", step, show=True, claim=True)
+                self.content.publish_event("walkthrough_step", "walkthrough_step", "replace", copy.copy(step), show=True, claim=True)
             self.in_right_context = in_right_context
     
     def check_step(self, phrase):
@@ -357,8 +363,19 @@ class WalkthroughPoller:
                 
                 # Send an update about the voice commands said during the step if it has changed
                 if current_length != len(self.current_words):
-                    step.said_walkthrough_commands = list(self.current_words)
-                    self.content.publish_event("walkthrough_step", "walkthrough_step", "replace", step, show=True, claim=True)
+                    step.said_walkthrough_commands = self.current_words[:]
+                    self.content.publish_event("walkthrough_step", "walkthrough_step", "replace", copy.copy(step), show=True, claim=True)
+                    
+                    # Skip to the next step if no voice commands are available
+                    voice_commands_remaining = copy.copy(step.voice_commands)
+                    all_commands_said = False
+                    for said_word in self.current_words:
+                        if said_word in voice_commands_remaining:
+                            voice_commands_remaining.remove(said_word)
+                    
+                    if len(step.voice_commands) > 0 and len(voice_commands_remaining) == 0 and not "skip step" in step.voice_commands and not "continue" in step.voice_commands:
+                        cron.cancel(self.next_step_job)
+                        self.next_step_job = cron.after("1500ms", self.next_step)
     
 hud_walkthrough = WalkthroughPoller()
 hud_directory = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -404,7 +421,7 @@ class Actions:
     def hud_skip_walkthrough_step():
         """Skip the current walk through step"""
         global hud_walkthrough
-        hud_walkthrough.next_step()
+        hud_walkthrough.next_step_or_page()
         
     def hud_previous_walkthrough_step():
         """Skip the current walk through step"""

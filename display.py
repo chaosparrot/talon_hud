@@ -12,7 +12,6 @@ from .widget_manager import HeadUpWidgetManager
 from .lowvision.audio_manager import HeadUpAudioManager
 from .content.content_builder import HudContentBuilder
 from .content.state import hud_content
-from .content.history_poller import HistoryPoller
 from .layout_widget import LayoutWidget
 from .widgets.textpanel import HeadUpTextPanel
 from .widgets.choicepanel import HeadUpChoicePanel
@@ -110,32 +109,28 @@ class HeadUpDisplay:
         self.display_state = display_state
         self.preferences = preferences
         self.pollers = {}
+        self.keep_alive_pollers = []
         self.disable_poller_job = None
         self.theme = HeadUpDisplayTheme(self.preferences.prefs["theme_name"])
         self.event_dispatch = HeadUpEventDispatch()
         self.show_animations = self.preferences.prefs["show_animations"]
         self.widget_manager = HeadUpWidgetManager(self.preferences, self.theme, self.event_dispatch)
-        
+
         self.audio_manager = HeadUpAudioManager(self.preferences, self.theme)
         self.display_state.register("broadcast_update", self.broadcast_update)
         self.display_state.register("register_audio_cue", self.register_cue)
         self.display_state.register("unregister_audio_cue", self.unregister_cue)
-
-        self.pollers = {}
-        self.keep_alive_pollers = []
-
 
     def start(self):
         if (self.preferences.prefs["enabled"]):
             # Temporarily disable broadcast updates that were captured with the previous handler in the init
             self.display_state.unregister("broadcast_update", self.broadcast_update)        
             self.enable()
-                        
             ctx.tags = ["user.talon_hud_available", "user.talon_hud_visible", "user.talon_hud_choices_visible"]
-            
+
             if self.preferences.prefs["audio_enabled"]:
                 self.audio_manager.enable()
-                
+
             if actions.sound.active_microphone() == "None":
                 actions.user.hud_add_log("warning", "Microphone is set to \"None\"!\n\nNo voice commands will be registered.")
     
@@ -143,7 +138,7 @@ class HeadUpDisplay:
         if not self.enabled:
             self.enabled = True
             self.display_state.register("broadcast_update", self.broadcast_update)            
-                        
+
             # Only reset the talon HUD environment after a user action
             # And only set the visible tag
             if persisted:
@@ -155,18 +150,12 @@ class HeadUpDisplay:
             self.event_dispatch.register("hide_context_menu", self.hide_context_menu)
             self.event_dispatch.register("deactivate_poller", self.deactivate_poller)
             self.event_dispatch.register("show_context_menu", self.move_context_menu)
-            
-            attached_topics = list(self.keep_alive_pollers)
+            self.event_dispatch.register("synchronize_poller", self.synchronize_widget_poller)
+
             for widget in self.widget_manager.widgets:
                 if widget.preferences.enabled and not widget.enabled:
                     widget.enable()
-                    if widget.current_topics:
-                    	attached_topics.extend(widget.current_topics)
-
-            # Automatically start pollers that are connected to widgets
-            for topic, poller in self.pollers.items():
-                if topic in attached_topics and (not hasattr(self.pollers[topic], "enabled") or not self.pollers[topic].enabled):
-                    self.pollers[topic].enable()
+            self.synchronize_pollers()
 
             # Reload the preferences just in case a screen change happened in between the hidden state
             if persisted:
@@ -195,12 +184,14 @@ class HeadUpDisplay:
             for widget in self.widget_manager.widgets:
                 if widget.enabled:
                     widget.disable()
+            self.synchronize_pollers()
             
             # Disconnect the events relating to non-content communication
             self.event_dispatch.unregister("persist_preferences", self.debounce_widget_preferences)
             self.event_dispatch.unregister("hide_context_menu", self.hide_context_menu)
             self.event_dispatch.unregister("deactivate_poller", self.deactivate_poller)
-            self.event_dispatch.unregister("show_context_menu", self.move_context_menu)            
+            self.event_dispatch.unregister("show_context_menu", self.move_context_menu)
+            self.event_dispatch.unregister("synchronize_poller", self.synchronize_widget_poller)
             
             self.disable_poller_job = cron.interval("30ms", self.disable_poller_check)
             self.display_state.unregister("broadcast_update", self.broadcast_update)
@@ -225,6 +216,7 @@ class HeadUpDisplay:
             if widget.preferences.mark_changed:
                 dict = {**dict, **widget.preferences.export(widget.id)}
                 widget.preferences.mark_changed = False
+                
         self.preferences.persist_preferences(dict)
         self.determine_active_setup_mouse()
         
@@ -243,7 +235,7 @@ class HeadUpDisplay:
                 for topic, poller in self.pollers.items():
                     if topic in widget.current_topics and (not hasattr(self.pollers[topic], "enabled") or not self.pollers[topic].enabled):
                         self.pollers[topic].enable()
-                    
+
                 self.update_context()
                 break
                 
@@ -251,11 +243,7 @@ class HeadUpDisplay:
         for widget in self.widget_manager.widgets:
             if widget.enabled and widget.id == id:
                 widget.disable(True)
-                for topic, poller in self.pollers.items():
-                    if topic in widget.current_topics and topic not in self.keep_alive_pollers and \
-                        (not hasattr(self.pollers[topic], "enabled") or self.pollers[topic].enabled):
-                        self.pollers[topic].disable()
-                    
+                self.synchronize_widget_poller(widget.id)
                 self.update_context()
                 break
         self.determine_active_setup_mouse()
@@ -370,10 +358,10 @@ class HeadUpDisplay:
         
     def remove_poller(self, topic: str):
         if topic in self.pollers:
+            self.pollers[topic].disable()
             if hasattr(self.pollers[topic], "content"):
                 self.pollers[topic].content.content = None
                 self.pollers[topic].content = None
-            self.pollers[topic].disable()
             del self.pollers[topic]
             
     def deactivate_poller(self, topic: str):
@@ -386,7 +374,41 @@ class HeadUpDisplay:
             topic not in self.keep_alive_pollers and \
             (not hasattr(self.pollers[topic], "enabled") or not self.pollers[topic].enabled):
             self.pollers[topic].enable()
-         
+
+    def synchronize_pollers(self, disable_pollers = True, enable_pollers = True):
+        attached_topics = list(self.keep_alive_pollers)
+        for widget in self.widget_manager.widgets:
+            if widget.current_topics and widget.enabled:
+                attached_topics.extend(widget.current_topics)
+
+        # First - Disable all pollers from making content updates to prevent race conditions with content events from occurring
+        if disable_pollers:
+            for topic, poller in self.pollers.items():
+                if topic not in attached_topics and (hasattr(self.pollers[topic], "enabled") and self.pollers[topic].enabled):
+                    self.pollers[topic].disable()
+
+        # Then - Automatically start pollers that are connected to widgets
+        if enable_pollers:
+            for topic, poller in self.pollers.items():
+                if topic in attached_topics and (not hasattr(self.pollers[topic], "enabled") or not self.pollers[topic].enabled):
+                    self.pollers[topic].enable()                            
+
+    # Synchronize the pollers attached to a single widget
+    def synchronize_widget_poller(self, widget_id):
+        current_topics = []
+        for widget in self.widget_manager.widgets:
+            if widget.id == widget_id:
+                current_topics = widget.current_topics
+                break
+
+        for topic in current_topics:
+            if topic in self.pollers and topic not in self.keep_alive_pollers:
+                if widget.enabled and (not hasattr(self.pollers[topic], "enabled") or not self.pollers[topic].enabled):
+                    self.pollers[topic].enable()
+                elif not widget.enabled and (hasattr(self.pollers[topic], "enabled") and self.pollers[topic].enabled):
+                    self.pollers[topic].disable()
+                    
+
     # Check if the widgets are finished unloading, then disable the poller
     # This should only run when we have a state poller
     def disable_poller_check(self):
@@ -395,7 +417,7 @@ class HeadUpDisplay:
             if not widget.cleared:
                 enabled = True
                 break
-        
+
         if not enabled:
             for topic, poller in self.pollers.items():
                 poller.disable()
@@ -403,13 +425,13 @@ class HeadUpDisplay:
             self.disable_poller_job = None
 
     def broadcast_update(self, event: HudContentEvent):
-        # Do not force a reopen of Talon HUD without explicit user permission
+        # Do not force a reopen of Talon HUD without explicit user permission        
         updated = False
         if not self.enabled:
             event.show = False
-                
+        
         # Claim a widget and unregister its pollers
-        if event.claim:
+        if event.claim > 0:
             topic = event.topic
             using_fallback = True
             widget_to_claim = None
@@ -433,13 +455,8 @@ class HeadUpDisplay:
                     if widget.id != widget_to_claim.id:
                         widget.clear_topic(event.topic)
                 
-                previous_topics = list(widget_to_claim.current_topics)[:]
                 updated = widget_to_claim.content_handler(event)
-                if updated:
-                    for previous_topic in previous_topics:
-                        if previous_topic not in widget_to_claim.current_topics and \
-                            previous_topic in self.pollers and previous_topic not in self.keep_alive_pollers:
-                            self.pollers[previous_topic].disable()
+                self.synchronize_pollers()
         else:
             for widget in self.widget_manager.widgets:
                 if event.topic_type == "variable" or (event.topic_type in widget.topic_types and \
@@ -454,9 +471,19 @@ class HeadUpDisplay:
                                 self.pollers[event.topic].enable()
                             else:
                                 self.pollers[event.topic].disable()
-                                
+            self.synchronize_pollers()
         if updated:
             self.update_context()
+
+    # Enable the content events to make changes to widgets and preferences
+    def content_flow_enable(self):
+        self.preferences.enable()
+        self.display_state.register("broadcast_update", self.broadcast_update)
+        
+    # Disable the content events from making changes to widgets and preferences
+    def content_flow_disable(self):
+        self.preferences.disable()
+        self.display_state.unregister("broadcast_update", self.broadcast_update)
 
     # Determine whether or not we need to have a global mouse poller
     # This poller is needed for setup modes as not all canvases block the mouse
@@ -636,6 +663,9 @@ class HeadUpDisplay:
 
     def hud_environment_change(self, hud_environment: str):
         if self.current_talon_hud_environment != hud_environment:
+            # Temporarily disable preference persisting during the transition between environments
+            # As content updates during the transition can override previous files
+            self.content_flow_disable()
             self.current_talon_hud_environment = hud_environment
             
             # Add a debouncer for the environment change to reduce flickering on transitioning
@@ -644,11 +674,14 @@ class HeadUpDisplay:
 
     def debounce_environment_change(self, _=None, __=None):
         reload_theme = self.widget_manager.reload_preferences(True, self.current_talon_hud_environment)
-        
         # Switch the theme and make sure there is no lengthy animation between modes 
         # as they can happen quite frequently
         self.switch_theme(reload_theme, True)
-        
+
+        # Re-enable the content flow including persistence after transitions have been made
+        self.synchronize_pollers(disable_pollers=True, enable_pollers=False)
+        self.content_flow_enable()
+        self.synchronize_pollers(disable_pollers=False, enable_pollers=True)
         
     # ---------- AUDIO RELATED METHODS ---------- #
     def register_cue(self, cue):
@@ -700,27 +733,27 @@ app.register("ready", hud_start)
 @mod.action_class
 class Actions:
                 
-    def enable_hud():
+    def hud_enable():
         """Enables the HUD"""
         global hud
         hud.enable(True)
 
-    def disable_hud():
+    def hud_disable():
         """Disables the HUD"""
         global hud
         hud.disable(True)
 
-    def persist_hud_preferences():
+    def hud_persist_preferences():
         """Saves the HUDs preferences"""
         global hud
         hud.debounce_widget_preferences()
 
-    def enable_hud_id(id: str):
+    def hud_enable_id(id: str):
         """Enables a specific HUD element"""
         global hud        
         hud.enable_id(id)
         
-    def set_widget_preference(id: str, property: str, value: Any):
+    def hud_set_widget_preference(id: str, property: str, value: Any):
         """Set a specific widget preference"""
         global hud        
         hud.set_widget_preference(id, property, value, True)        
@@ -735,22 +768,22 @@ class Actions:
         global hud
         hud.unsubscribe_content_id(id, topic)
         
-    def disable_hud_id(id: str):
+    def hud_disable_id(id: str):
         """Disables a specific HUD element"""
         global hud
         hud.disable_id(id)
         
-    def switch_hud_theme(theme_name: str):
+    def hud_switch_theme(theme_name: str):
         """Switches the UI theme"""
         global hud
         hud.switch_theme(theme_name)
         
-    def set_hud_setup_mode(id: str, setup_mode: str):
+    def hud_set_setup_mode(id: str, setup_mode: str):
         """Starts a setup mode which can change position"""
         global hud
         hud.start_setup_id(id, setup_mode)
 
-    def set_hud_setup_mode_multi(ids: list[str], setup_mode: str):
+    def hud_set_setup_mode_multi(ids: list[str], setup_mode: str):
         """Starts a setup mode which can change position for multiple widgets at the same time"""
         global hud
         
@@ -762,25 +795,25 @@ class Actions:
         for id in ids:
             hud.start_setup_id(id, setup_mode, mouse_pos)
                 
-    def show_context_menu(widget_id: str, pos_x: int, pos_y: int, buttons: list[HudButton]):
+    def hud_show_context_menu(widget_id: str, pos_x: int, pos_y: int, buttons: list[HudButton]):
         """Show the context menu for a specific widget id"""
         hud.move_context_menu(widget_id, Point2d(pos_x, pos_y), buttons)
         
-    def hide_context_menu():
+    def hud_hide_context_menu():
         """Show the context menu for a specific widget id"""
         hud.hide_context_menu()
         
-    def increase_widget_page(widget_id: str):
+    def hud_increase_widget_page(widget_id: str):
         """Increase the content page of the widget if it has pages available"""
         global hud
         hud.increase_widget_page(widget_id)
 
-    def decrease_widget_page(widget_id: str):
+    def hud_decrease_widget_page(widget_id: str):
         """Decrease the content page of the widget if it has pages available"""
         global hud
         hud.decrease_widget_page(widget_id)
         
-    def get_widget_pagination(widget_id: str) -> HudContentPage:
+    def hud_get_widget_pagination(widget_id: str) -> HudContentPage:
         """Get the pagination information of the widget"""
         global hud
         return hud.get_widget_pagination(widget_id)
@@ -817,7 +850,7 @@ class Actions:
         hud.remove_poller(topic)
         
     def hud_activate_poller(topic: str):
-        """Enables a poller and claims a widget"""    
+        """Enables a poller and claims a widget"""
         global hud
         hud.activate_poller(topic)
         

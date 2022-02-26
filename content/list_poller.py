@@ -25,7 +25,7 @@ class ListPoller(Poller):
         if (list_state != self.previous_list_state):
             self.previous_list_state = list_state
             panel_content = self.content.create_panel_content(list_state, "list", "List inspection", self.should_open)
-            self.content.publish_event("text", panel_content.topic, "replace", panel_content, self.should_open, True)
+            self.content.publish_event("text", panel_content.topic, "replace", panel_content, self.should_open)
             self.should_open = False
         
     def get_list_in_text(self):

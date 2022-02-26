@@ -28,7 +28,7 @@ class BaseWidget(metaclass=ABCMeta):
     # New content topic types
     topic_types = []
     current_topics = []    
-    contentv2 = None
+    content = None
         
     animation_tick = 0
     animation_max_duration = 100
@@ -46,9 +46,11 @@ class BaseWidget(metaclass=ABCMeta):
         if subscriptions != None:
             self.subscriptions = subscriptions
         if current_topics != None:
-            self.current_topics = current_topics        
-            
-        self.contentv2 = HudPartialContent()
+            self.current_topics = current_topics
+
+        self.content = HudPartialContent()
+        self.content.set_persisted_topics(self.current_topics)
+
         self.load(preferences_dict)
 
     # Load the widgets preferences
@@ -69,8 +71,9 @@ class BaseWidget(metaclass=ABCMeta):
         self.expand_direction = self.preferences.expand_direction
         self.minimized = self.preferences.minimized
         self.subscriptions = self.preferences.subscriptions
-        self.current_topics = self.preferences.current_topics
-        self.contentv2.set_persisted_topics(self.preferences.current_topics)
+        if len(self.preferences.current_topics) > 0:
+            self.current_topics = self.preferences.current_topics
+            self.content.set_persisted_topics(self.preferences.current_topics)
         self.load_extra_preferences()
         
         # For re-enabling or disabling widgets after a reload ( mostly for talon hud environment changes )
@@ -92,24 +95,24 @@ class BaseWidget(metaclass=ABCMeta):
     # Clear the given topic from the current topics
     def clear_topic(self, topic: str):
         for topic_type in self.topic_types:
-            self.contentv2.remove_topic(topic_type, topic)
-        self.preferences.current_topic = self.contentv2.get_current_topics()
+            self.content.remove_topic(topic_type, topic)
+        self.preferences.current_topics = self.content.get_current_topics()
         self.preferences.mark_changed = True
         self.event_dispatch.request_persist_preferences()
     
     def set_theme(self, theme):
         self.theme = theme
-        self.load_theme_values()        
+        self.load_theme_values()
         if self.enabled:
             if self.canvas:
                 self.canvas.resume()
             self.animation_tick = self.animation_max_duration if self.show_animations else 0
 
     def content_handler(self, event) -> bool:
-        self.contentv2.process_event(event)
+        self.content.process_event(event)
         
         # Set the new content topics if they have changed
-        new_topics = set(self.contentv2.get_current_topics())
+        new_topics = self.content.get_current_topics()
         if len(new_topics) != len(self.current_topics) or len(set(new_topics) - set(self.current_topics)) > 0:
             self.current_topics = new_topics
             self.preferences.current_topics = self.current_topics

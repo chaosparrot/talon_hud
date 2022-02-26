@@ -1,4 +1,4 @@
-from talon import actions, cron, scope, speech_system, ui, app, Module
+from talon import actions, cron, app, Module
 from .poller import Poller
 from .._configuration import hud_get_configuration
 import os
@@ -122,8 +122,6 @@ class PartialMicrophonePoller(Poller):
         if self.enabled:
             self.enabled = False
             self.poller.unregister(self.type)
-            if self.type == "microphone_toggle":
-                self.content.publish_event("status_icons", "microphone_toggle", "remove")
 
     def destroy(self):
         super().destroy()
@@ -137,6 +135,7 @@ def add_statusbar_one_click_toggle(_ = None):
     
 def remove_statusbar_one_click_toggle(_ = None):
     actions.user.hud_deactivate_poller("microphone_toggle")
+    actions.user.hud_remove_status_icon("microphone_toggle")
 
 microphone_poller = MicrophonePoller()
 def register_microphone_pollers():

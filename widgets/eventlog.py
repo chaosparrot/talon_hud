@@ -126,7 +126,7 @@ class HeadUpEventLog(BaseWidget):
             
     def enable(self, persisted=False):
         if not self.enabled:
-            self.soft_enabled = self.contentv2.get_variable("mode", "command") == "command"
+            self.soft_enabled = self.content.get_variable("mode", "command") == "command"
             super().enable(persisted)
 
     def clear(self):

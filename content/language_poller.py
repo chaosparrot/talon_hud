@@ -16,17 +16,23 @@ class LanguagePoller(Poller):
             self.enabled = False
             cron.cancel(self.job)
             self.job = None
-            
+            self.current_language = None
+
     def language_check(self):
-        language = scope.get("language")
+        language = self.detect_language()
         if self.current_language != language:
             self.current_language = language
-            status_icon = self.content.create_status_icon("language_toggle", language if language != "en_US" else None, None, "Language " + language, lambda _, _2: toggle_language)
-            self.content.publish_event("status_icons", status_icon.topic, "replace", status_icon, False)
+            status_icon = self.content.create_status_icon("language_toggle", language, None, "Language " + language, lambda _, _2, language=language: actions.user.hud_toggle_language(language))
+            self.content.publish_event("status_icons", status_icon.topic, "replace", status_icon)
 
-def toggle_language():
-    # TODO THIS NO LONGER SEEMS TO WORK?
-    actions.speech.switch_language("en_US")
+    def detect_language(self):
+        language = scope.get("language", "en_US")
+        if isinstance(language, str):
+            return language
+
+        for lang in language:
+            if "_" in lang:
+                return lang
 
 def add_statusbar_language_icon(_ = None):
     actions.user.hud_activate_poller("language_toggle")
@@ -44,3 +50,12 @@ def register_language_poller():
     actions.user.hud_publish_status_option("language_option", status_option)
 
 app.register("ready", register_language_poller)
+
+mod = Module()
+@mod.action_class
+class Actions:
+
+    def hud_toggle_language(current_language: str = "en_US"):
+        """Toggles the current language to another language"""
+        print( "No default toggle available - Build your own language toggle by overriding user.hud_toggle_language" )
+        pass

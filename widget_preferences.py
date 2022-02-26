@@ -164,6 +164,9 @@ class HeadUpDisplayUserWidgetPreferences:
             
         if (id + "_current_topics") in persisted_dict:
             self.current_topics = persisted_dict[id + "_current_topics"].split(",")
+            # Remove empty topics
+            if "" in self.current_topics:
+                self.current_topics.remove("")
         if (id + "_subscriptions") in persisted_dict:
             self.subscriptions = persisted_dict[id + "_subscriptions"].split(",")            
 

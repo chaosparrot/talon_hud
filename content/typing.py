@@ -117,13 +117,17 @@ CONTENT_EVENT_OPERATION_REMOVE = "remove" # Used to signal a topic is being clea
 CONTENT_EVENT_OPERATION_APPEND = "append" # Used to signal a single item being appended to a collection
 CONTENT_EVENT_OPERATION_PATCH = "patch" # Used to signal a partial replacement of the given topic
 
+CLAIM_BROADCAST = 0 # Broadcast to any widget that listens for this topic type
+CLAIM_WIDGET = 1 # Claim a single widget and send the content towards it
+CLAIM_WIDGET_TOPIC_TYPE = 2 # Claim a single widget and clear out the topic type attached to it
+
 @dataclass
 class HudContentEvent:
     topic_type: str
     topic: str
     content: Any
     operation: str = "replace"
-    claim: bool = False
+    claim: int = CLAIM_BROADCAST
     show: bool = False
     
 @dataclass

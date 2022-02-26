@@ -1,4 +1,4 @@
-from talon import actions, cron, scope, ui, app, Module, settings
+from talon import actions, app, Module, settings
 from talon_init import TALON_HOME
 from .poller import Poller
 import datetime
@@ -14,28 +14,19 @@ class SpeechPoller(Poller):
     def enable(self):
     	if not self.enabled:
             self.enabled = True
-            if self.content is None or self.content._content is None or self.content._content.topic_types is None:
-                return
-
             self.content._content.register("broadcast_update", self.on_broadcast_update)
             self.generate_phrase_debug_content()
 
     def disable(self):
         if self.enabled:
             self.enabled = False
-            if self.content is None or self.content._content is None or self.content._content.topic_types is None:
-                return
-            
             self.content._content.unregister("broadcast_update", self.on_broadcast_update)
         
     def on_broadcast_update(self, event):
         if event.topic_type == "log_messages" and event.topic == "phrase":
             self.generate_phrase_debug_content()
             
-    def generate_phrase_debug_content(self):
-        if self.content is None or self.content._content is None or self.content._content.topic_types is None:
-            return
-    
+    def generate_phrase_debug_content(self):    
         phrases = self.content._content.topic_types["log_messages"]["phrase"] if "phrase" in self.content._content.topic_types["log_messages"] else []
 
         last_mic = ""
@@ -81,7 +72,7 @@ class SpeechPoller(Poller):
         buttons = []
         buttons.append(self.content.create_button("Show recordings", self.open_recordings))
         panel_content = self.content.create_panel_content(content, "speech", "Toolkit speech", True, buttons)
-        self.content.publish_event("text", panel_content.topic, "replace", panel_content, True, True)
+        self.content.publish_event("text", panel_content.topic, "replace", panel_content, True)
         
     def open_recordings(self, data):
         if settings.get("speech.record_all", False) == False:

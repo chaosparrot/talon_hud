@@ -65,10 +65,10 @@ class HeadUpCursorTracker(BaseWidget):
             self.mouse_poller = None
             if self.canvas:
                 self.canvas.resume()
-            
+
     def update_icons(self):
         soft_enable = False
-        cursor_icons = self.contentv2.get_topic("cursor_regions")
+        cursor_icons = self.content.get_topic("cursor_regions")
         if cursor_icons != None:
             new_icons = cursor_icons          
             soft_enable = self.cursor_icons != new_icons and len(new_icons) > 0
