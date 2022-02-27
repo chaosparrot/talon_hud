@@ -225,6 +225,7 @@ This is the current status of it
 - [.] Connect automatic enabling / disabling to the Talon HUD environment flow
     - [ ] Fix status bar icons
 	- [ ] Fix focus / screen region transition
+	- [ ] Persisting only topics that are connected to pollers?
 - [x] Add a new content builder class to build HUD content with inside of pollers so they do not require actions
 - [x] Rework all the pollers to not use actions in enable / disable flow and have the content builder inserted
     - [x] History poller
@@ -287,8 +288,8 @@ This is the current status of it
 	    - decrease_widget_page -> hud_decrease_widget_page
 	    - get_widget_pagination -> hud_get_widget_pagination
 	- [x] Use only relative paths to make it more flexible where the HUD is located
+- [x] Clean up Audio stuff - This is for the next release
 - [ ] Redo documentation for all content / widgets etc
-- [ ] Clean up Audio stuff - This is for the next release
 
 Acknowledgements
 ---

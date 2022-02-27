@@ -51,7 +51,7 @@ class HeadUpWalkthroughPanel(LayoutWidget):
         HudButton("", "Restore current step", ui.Rect(0,0,0,0), lambda widget: actions.user.hud_restore_walkthrough_step())        
     ]
 
-    walkthrough_button_hovered = -1    
+    walkthrough_button_hovered = -1
     walkthrough_buttons = [
         HudButton("", "Previous", ui.Rect(0,0,0,0), lambda widget: actions.user.hud_previous_walkthrough_step()),    
         HudButton("", "Walkthrough options", ui.Rect(0,0,0,0), lambda widget: actions.user.hud_widget_options(widget.id)),
@@ -90,8 +90,11 @@ class HeadUpWalkthroughPanel(LayoutWidget):
         if replaced:
             if self.show_animations and ( self.previous_progress and self.previous_progress.percent != event.content.progress.percent ) or \
             	self.previous_walkthrough_step is None:
+                if self.layout is None:
+                    self.previous_content_dimensions = None
+                else:
+                    self.previous_content_dimensions = self.layout[self.page_index]["rect"] if self.page_index < len(self.layout) else None
                 self.page_index = 0
-                self.previous_content_dimensions = self.layout[self.page_index]["rect"] if self.page_index < len(self.layout) else None
                 should_animate = self.previous_content_dimensions is not None and self.enabled == True
                 self.transition_animation_state = self.max_transition_animation_state if should_animate else 0
                 self.animated_words = []
@@ -195,12 +198,11 @@ class HeadUpWalkthroughPanel(LayoutWidget):
         if self.alignment == "center" or \
             ( self.x + self.width < self.limit_x + self.limit_width and self.limit_x < self.x ):
             horizontal_alignment = "center"
-    
-        layout_width = max(self.width - self.padding[1] * 2 - self.padding[3] * 2, 
-            self.limit_width - self.padding[1] * 2 - self.padding[3] * 2)
 
         icon_padding = icon_radius
-        content_text = [] if self.minimized else layout_rich_text(paint, current_walkthrough_step.content if not current_walkthrough_step.show_context_hint else current_walkthrough_step.context_hint, layout_width - icon_padding, self.limit_height)
+        layout_width = self.limit_width - self.padding[1] * 2 - self.padding[3] * 2 - icon_padding
+        max_text_width = layout_width - icon_padding - self.padding[1] if self.width < self.limit_width else self.limit_width - self.padding[1] - self.padding[3] - icon_padding
+        content_text = [] if self.minimized else layout_rich_text(paint, current_walkthrough_step.content if not current_walkthrough_step.show_context_hint else current_walkthrough_step.context_hint, max_text_width, self.limit_height)
         
         footer_height = self.font_size + self.padding[2] + self.padding[0]
         
@@ -277,14 +279,14 @@ class HeadUpWalkthroughPanel(LayoutWidget):
                     
                 # We have exceeded the page height limit, append the layout and try again
                 else:
-                    width = min( self.limit_width, max(self.width, total_text_width + self.padding[1] + self.padding[3])) - icon_padding
-                    height = self.limit_height - footer_height
+                    width = min( self.limit_width, max(self.width, total_text_width + self.padding[1] + self.padding[1] + self.padding[3]))
+                    height = self.limit_height
                     x = self.x if horizontal_alignment == "left" else self.limit_x + self.limit_width - width
                     if horizontal_alignment == "center":
                         x = self.limit_x + ( self.limit_width - width ) / 2
                     y = self.limit_y if vertical_alignment == "top" else self.limit_y + self.limit_height - height - footer_height
                     layout_pages.append({
-                        "rect": ui.Rect(x, y, width - self.padding[1] + icon_padding, height + footer_height), 
+                        "rect": ui.Rect(x, y, width, height), 
                         "line_count": max(1, line_count - 1),
                         "content_text": current_page_text,
                         "content_height": current_content_height,
@@ -300,20 +302,34 @@ class HeadUpWalkthroughPanel(LayoutWidget):
                   
         # Make sure the remainder of the content gets placed on the final page
         if len(current_page_text) > 0 or len(layout_pages) == 0:
-            width = min( self.limit_width, max(self.width, total_text_width + self.padding[1] + self.padding[3])) - icon_padding
+            width = min( self.limit_width, max(self.width, total_text_width + self.padding[1] + self.padding[1] + self.padding[3]))
             content_height = total_text_height + self.padding[0] + self.padding[2]
-            height = min(self.limit_height, max(self.height, content_height))
+            if self.height == self.limit_height:
+                height = min(self.limit_height, min(self.height, content_height) + footer_height)
+            else:
+                height = min(self.limit_height, max(self.height, content_height) + footer_height)
             x = self.x if horizontal_alignment == "left" else self.limit_x + self.limit_width - width
             if horizontal_alignment == "center":
-                x = self.limit_x + ( self.limit_width - width ) / 2                
-            y = self.limit_y if vertical_alignment == "top" else self.limit_y + self.limit_height - height - footer_height
+                x = self.limit_x + ( self.limit_width - width ) / 2
+            y = self.limit_y if vertical_alignment == "top" else self.limit_y + self.limit_height - height
+            
+            last_page_layout_buttons = []
+            if vertical_alignment == "top":
+                for index, layout_button in enumerate(layout_buttons):
+                    last_page_layout_button = {
+                        "text": layout_button["text"],
+                        "rect": ui.Rect(layout_button["rect"].x, y + content_height + self.padding[0], layout_button["rect"].width, layout_button["rect"].height)
+                    }
+                    last_page_layout_buttons.append(last_page_layout_button)
+            else:
+                last_page_layout_buttons = layout_buttons
             
             layout_pages.append({
-                "rect": ui.Rect(x, y, width - self.padding[1] + icon_padding, height), 
+                "rect": ui.Rect(x, y, width, height), 
                 "line_count": max(1, line_count + 2 ),
                 "content_text": current_page_text,
                 "content_height": content_height,
-                "layout_buttons": layout_buttons,
+                "layout_buttons": last_page_layout_buttons,
                 "footer_height": footer_height
             })
         return layout_pages

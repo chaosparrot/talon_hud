@@ -61,16 +61,6 @@ class HeadUpDisplayContent(Dispatch):
         
         self.dispatch("broadcast_update", HudContentEvent(topic_type, topic, data, operation, claim, show))
 
-    def register_cue(self, cue: HudAudioCue):
-        self.dispatch("register_audio_cue", cue)
-            
-    def unregister_cue(self, cue_id):
-        self.dispatch("unregister_audio_cue", cue_id)
-        
-    def trigger_audio_cue(self, cue_title):
-        cue_id = cue_title.lower().replace(" ", "_")    
-        self.dispatch("trigger_audio_cue", cue_id)
-
     # Update a topic type if the content has changed
     def update_topic_type(self, topic_type, topic, data, send_event = True) -> bool:
         updated = False
@@ -325,21 +315,3 @@ class Actions:
         content = HudPanelContent("choice", title, [content], [], time.time(), True, choices)
         global hud_content
         hud_content.publish("choice", content)
-        
-    def hud_register_audio_cue(title: str, description: str, file: str, enabled: Union[bool, int] = True):
-        """Register an audio cue which may be triggered by a poller"""
-        cue_id = title.lower().replace(" ", "_")
-        global hud_content
-        hud_content.register_cue(HudAudioCue(cue_id, title, description, file, 75, enabled > 0))
-        
-    def hud_unregister_audio_cue(title: str):
-        """Register an audio cue which may be triggered by a poller"""
-        cue_id = title.lower().replace(" ", "_")
-        global hud_content
-        hud_content.unregister_cue(cue_id)
-        
-    def hud_trigger_audio_cue(title: str):
-        """Trigger an audio cue if it exists and if it is enabled"""
-        cue_id = title.lower().replace(" ", "_")
-        global hud_content
-        hud_content.trigger_audio_cue(cue_id)

@@ -9,7 +9,6 @@ from .preferences import HeadUpDisplayUserPreferences
 from .theme import HeadUpDisplayTheme
 from .event_dispatch import HeadUpEventDispatch
 from .widget_manager import HeadUpWidgetManager
-from .lowvision.audio_manager import HeadUpAudioManager
 from .content.content_builder import HudContentBuilder
 from .content.state import hud_content
 from .layout_widget import LayoutWidget
@@ -85,7 +84,6 @@ class HeadUpDisplay:
     preferences = None
     theme = None
     event_dispatch = None
-    audio_manager = None    
     pollers = []
     keep_alive_pollers = [] # These pollers will only deactivate when the hud deactivates    
     custom_themes = {}
@@ -116,10 +114,7 @@ class HeadUpDisplay:
         self.show_animations = self.preferences.prefs["show_animations"]
         self.widget_manager = HeadUpWidgetManager(self.preferences, self.theme, self.event_dispatch)
 
-        self.audio_manager = HeadUpAudioManager(self.preferences, self.theme)
         self.display_state.register("broadcast_update", self.broadcast_update)
-        self.display_state.register("register_audio_cue", self.register_cue)
-        self.display_state.register("unregister_audio_cue", self.unregister_cue)
 
     def start(self):
         if (self.preferences.prefs["enabled"]):
@@ -127,9 +122,6 @@ class HeadUpDisplay:
             self.display_state.unregister("broadcast_update", self.broadcast_update)        
             self.enable()
             ctx.tags = ["user.talon_hud_available", "user.talon_hud_visible", "user.talon_hud_choices_visible"]
-
-            if self.preferences.prefs["audio_enabled"]:
-                self.audio_manager.enable()
 
             if actions.sound.active_microphone() == "None":
                 actions.user.hud_add_log("warning", "Microphone is set to \"None\"!\n\nNo voice commands will be registered.")
@@ -160,8 +152,6 @@ class HeadUpDisplay:
             # Reload the preferences just in case a screen change happened in between the hidden state
             if persisted:
                 self.reload_preferences()
-
-            self.display_state.register("trigger_audio_cue", self.audio_manager.trigger_cue)
             
             ui.register("screen_change", self.reload_preferences)
             settings.register("user.talon_hud_environment", self.hud_environment_change)
@@ -172,14 +162,10 @@ class HeadUpDisplay:
             # Make sure context isn't updated in this thread because of automatic reloads
             cron.cancel(self.update_context_debouncer)
             self.update_context_debouncer = cron.after("50ms", self.update_context)
-            
-            if self.preferences.prefs["audio_enabled"]:
-                self.audio_manager.enable()            
 
     def disable(self, persisted=False):
         if self.enabled:
             self.enabled = False            
-            self.audio_manager.disable()
             
             for widget in self.widget_manager.widgets:
                 if widget.enabled:
@@ -195,7 +181,6 @@ class HeadUpDisplay:
             
             self.disable_poller_job = cron.interval("30ms", self.disable_poller_check)
             self.display_state.unregister("broadcast_update", self.broadcast_update)
-            self.display_state.unregister("trigger_audio_cue", self.audio_manager.trigger_cue)            
             ui.unregister("screen_change", self.reload_preferences)
             settings.unregister("user.talon_hud_environment", self.hud_environment_change)            
             self.determine_active_setup_mouse()
@@ -334,7 +319,6 @@ class HeadUpDisplay:
     def reload_preferences(self, _= None):
         """Reload user preferences ( in case a monitor switches or something )"""
         self.widget_manager.reload_preferences(False, self.current_talon_hud_environment)
-        #self.audio_manager.reload_preferences()
     
     def register_poller(self, topic: str, poller: Poller, keep_alive: bool):
         self.remove_poller(topic)
@@ -681,45 +665,7 @@ class HeadUpDisplay:
         # Re-enable the content flow including persistence after transitions have been made
         self.synchronize_pollers(disable_pollers=True, enable_pollers=False)
         self.content_flow_enable()
-        self.synchronize_pollers(disable_pollers=False, enable_pollers=True)
-        
-    # ---------- AUDIO RELATED METHODS ---------- #
-    def register_cue(self, cue):
-        self.audio_manager.register_cue(cue)
-        
-        # Debounce the updating of the cues to prevent to many context values changing in rapid succession
-        cron.cancel(self.update_cue_context_debouncer)
-        self.update_cue_context_debouncer = cron.after("100ms", self.update_cue_context)
-        
-    def unregister_cue(self, cue):
-        self.audio_manager.unregister_cue(cue)
-        
-        # Debounce the updating of the cues to prevent to many context values changing in rapid succession
-        cron.cancel(self.update_cue_context_debouncer)
-        self.update_cue_context_debouncer = cron.after("100ms", self.update_cue_context)
-    
-    def update_cue_context(self):
-        cue_list = {}
-        for cue in self.audio_manager.cues:
-            cue_list[string_to_speakable_string(cue)] = cue
-        ctx.lists["user.talon_hud_audio_cue"] = cue_list
-
-    def audio_enable(self, id = None, trigger_automatically = True):
-        if not id:
-            self.audio_manager.enable(True)
-            self.display_state.register("trigger_audio_cue", self.audio_manager.trigger_cue)
-        else:
-            self.audio_manager.enable_id(id, trigger_automatically)
-        
-    def audio_disable(self, id = None):
-        if not id:
-            self.audio_manager.disable(True)
-            self.display_state.unregister("trigger_audio_cue", self.audio_manager.trigger_cue)            
-        else:
-            self.audio_manager.disable_id(id)
-        
-    def audio_set_volume(self, volume, id = None):
-        self.audio_manager.set_volume(volume, True, id)
+        self.synchronize_pollers(disable_pollers=False, enable_pollers=True)        
 
 preferences = HeadUpDisplayUserPreferences("", CURRENT_TALON_HUD_VERSION) 
 hud = HeadUpDisplay(hud_content, preferences)
@@ -878,35 +824,3 @@ class Actions:
         """Stop watching for changes in the theme directories"""
         global hud
         hud.unwatch_directories()
-        
-    def hud_audio_enable():
-        """Enables the audio cues from the HUD"""
-        global hud
-        hud.audio_enable()
-        
-    def hud_audio_disable():
-        """Disables the audio cues from the HUD"""
-        global hud
-        hud.audio_disable()
-        
-    def hud_audio_set_volume(volume_key: str):
-        """Set the global volume of the HUD"""
-        global hud
-        global numerical_choice_index_map
-        hud.audio_set_volume(numerical_choice_index_map[volume_key])
-
-    def hud_audio_enable_id(id: str, trigger_automatically:Union[bool, int] = True):
-        """Enables a specific audio cue from the HUD"""
-        global hud
-        hud.audio_enable(id, trigger_automatically)
-        
-    def hud_audio_disable_id(id: str):
-        """Disables a specific audio cue from the HUD"""
-        global hud
-        hud.audio_disable(id)
-        
-    def hud_audio_set_volume_id(volume_key: str, id: str):
-        """Set the volume of a specific audio cue in the HUD"""
-        global hud
-        global numerical_choice_index_map
-        hud.audio_set_volume(numerical_choice_index_map[volume_key], id) 

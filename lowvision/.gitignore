@@ -1,8 +1,0 @@
-.DS_Store
-.AppleDouble
-.LSOverride
-!index.html
-!sound.py
-assets/*.wav
-*.txt
-!assets/command_mode.wav
