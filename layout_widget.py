@@ -72,7 +72,7 @@ class LayoutWidget(BaseWidget):
     def content_handler(self, event) -> bool:
         updated = super().content_handler(event)
         if (isinstance(event.content, HudPanelContent)):
-            self.update_panel(event.content)
+            updated = self.update_panel(event.content)
         return updated
 
     def set_page_index(self, page_index: int):

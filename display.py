@@ -54,8 +54,6 @@ mod.list("talon_hud_themes", desc="Available themes for the Talon HUD")
 mod.list("talon_hud_numerical_choices", desc="Available choices shown on screen numbered")
 mod.list("talon_hud_quick_choices", desc="List of widgets with their quick options")
 mod.list("talon_hud_widget_enabled_voice_commands", desc="List of extra voice commands added by visible widgets")
-mod.list("talon_hud_volume_number", desc="List of numbers available to select for volume changing")
-mod.list("talon_hud_audio_cue", desc="List of all available audio cues")
 mod.tag("talon_hud_available", desc="Tag that shows the availability of the Talon HUD repository for other scripts")
 mod.tag("talon_hud_visible", desc="Tag that shows that the Talon HUD is visible")
 mod.tag("talon_hud_choices_visible", desc="Tag that shows there are choices available on screen that can be chosen")
@@ -63,8 +61,6 @@ mod.setting("talon_hud_environment", type="string", desc="Which environment to s
 
 ctx.tags = ["user.talon_hud_available"]
 ctx.settings["user.talon_hud_environment"] = ""
-ctx.lists["user.talon_hud_volume_number"] = numerical_choice_index_map.keys()
-ctx.lists["user.talon_hud_audio_cue"] = []
 ctx.lists["user.talon_hud_widget_enabled_voice_commands"] = []
 
 # A list of Talon HUD versions that can be used to check for in other packages
@@ -574,7 +570,7 @@ class HeadUpDisplay:
                     widget.select_choice(int(choice_index))
                 else:
                     widget.click_button(int(choice_index))
-                self.update_context()
+        self.update_context()
                     
     def activate_enabled_voice_command(self, voice_command):
         if voice_command in self.enabled_voice_commands:
@@ -640,7 +636,11 @@ class HeadUpDisplay:
                         
                 if widget.panel_content.choices and widget.panel_content.choices.multiple:
                     choices["confirm"] = widget.id + "|" + str(index + 1)
-
+        
+        # Make sure the list is never empty to prevent #495
+        if len(choices) == 0:
+            choices["head up choice empty command"] = "|"
+        
         ctx.lists["user.talon_hud_numerical_choices"] = numerical_choices
         ctx.lists["user.talon_hud_widget_names"] = widget_names
         ctx.lists["user.talon_hud_choices"] = choices

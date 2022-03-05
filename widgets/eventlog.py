@@ -149,6 +149,13 @@ class HeadUpEventLog(BaseWidget):
         else:
             self.visual_logs = []
 
+    # Make sure the custom operations do not trigger an update
+    def content_handler(self, event) -> bool:
+        updated = super().content_handler(event)
+        if event.operation in ["append", "patch"]:
+            updated = False
+        return updated
+
     def refresh(self, new_content):
         # We only want the logs to appear during command mode
         # Dictation mode already shows the output directly as dictation
