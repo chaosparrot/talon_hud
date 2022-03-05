@@ -55,7 +55,7 @@ class HeadUpDisplayUserWidgetPreferences:
     minimized: bool = False
     
     # A list of all the current topics attached to this widget
-    current_topics: list[str] = []
+    current_topics: list[str] = None
     
     # A list of all allowed topics available for this widget
     subscriptions: list[str] = ["*"]
@@ -112,7 +112,8 @@ class HeadUpDisplayUserWidgetPreferences:
         dict[id + "_expand_direction"] = self.expand_direction
         dict[id + "_minimized"] = "1" if self.minimized else "0"
         
-        dict[id + "_current_topics"] = ",".join(self.current_topics)
+        if self.current_topics is not None:
+            dict[id + "_current_topics"] = ",".join(self.current_topics)
         dict[id + "_subscriptions"] = ",".join(self.subscriptions)        
         
         for extra_preference in self.extra_preferences:

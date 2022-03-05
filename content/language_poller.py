@@ -8,8 +8,9 @@ class LanguagePoller(Poller):
     current_language = None
     
     def enable(self):
-        if (self.job is None):
-            self.job = cron.interval("200ms", self.language_check)
+        if not self.enabled:
+            self.enabled = True
+            self.job = cron.interval("200ms", self.language_check)            
     
     def disable(self):
         if self.enabled:

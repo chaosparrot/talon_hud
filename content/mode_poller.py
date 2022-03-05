@@ -18,7 +18,8 @@ class ModePoller():
     def unregister(self, name):
         if name in self.callbacks:
             del self.callbacks[name]
-            
+        
+        self.previous_mode = None
         current_callback_amount = len(self.callbacks.values())
         if (current_callback_amount == 0):
             cron.cancel(self.job)

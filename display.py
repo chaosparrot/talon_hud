@@ -90,6 +90,7 @@ class HeadUpDisplay:
     disable_poller_job = None
     show_animations = False
     choices_visible = False
+    allowed_content_operations = ["*"]
     
     prev_mouse_pos = None
     mouse_poller = None
@@ -255,7 +256,7 @@ class HeadUpDisplay:
         if os.path.exists(theme_dir):
             self.custom_themes[theme_name] = theme_dir
         else:
-            app.notify("Invalid directory for "" + theme_name + "": " + theme_dir)
+            app.notify("Invalid directory for '" + theme_name + "': " + theme_dir)
 
     def switch_theme(self, theme_name, disable_animation = False, forced = False):
         if self.theme.name != theme_name or forced:
@@ -414,6 +415,10 @@ class HeadUpDisplay:
         if not self.enabled:
             event.show = False
         
+        # Restrict the content flow to only the allowed operations
+        if "*" not in self.allowed_content_operations and event.operation not in self.allowed_content_operations:
+            return
+        
         # Claim a widget and unregister its pollers
         if event.claim > 0:
             topic = event.topic
@@ -462,12 +467,12 @@ class HeadUpDisplay:
     # Enable the content events to make changes to widgets and preferences
     def content_flow_enable(self):
         self.preferences.enable()
-        self.display_state.register("broadcast_update", self.broadcast_update)
+        self.allowed_content_operations = ["*"]
         
-    # Disable the content events from making changes to widgets and preferences
-    def content_flow_disable(self):
+    # Restrict the content events from making non-clean up changes to widgets and preferences
+    def content_flow_restrict(self):
         self.preferences.disable()
-        self.display_state.unregister("broadcast_update", self.broadcast_update)
+        self.allowed_content_operations = ["remove"]
 
     # Determine whether or not we need to have a global mouse poller
     # This poller is needed for setup modes as not all canvases block the mouse
@@ -649,7 +654,7 @@ class HeadUpDisplay:
         if self.current_talon_hud_environment != hud_environment:
             # Temporarily disable preference persisting during the transition between environments
             # As content updates during the transition can override previous files
-            self.content_flow_disable()
+            self.content_flow_restrict()
             self.current_talon_hud_environment = hud_environment
             
             # Add a debouncer for the environment change to reduce flickering on transitioning

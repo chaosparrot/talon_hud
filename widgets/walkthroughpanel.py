@@ -318,7 +318,7 @@ class HeadUpWalkthroughPanel(LayoutWidget):
                 for index, layout_button in enumerate(layout_buttons):
                     last_page_layout_button = {
                         "text": layout_button["text"],
-                        "rect": ui.Rect(layout_button["rect"].x, y + content_height + self.padding[0], layout_button["rect"].width, layout_button["rect"].height)
+                        "rect": ui.Rect(layout_button["rect"].x, min(self.limit_y + self.limit_height - footer_height + self.padding[0], y + content_height + self.padding[0]), layout_button["rect"].width, layout_button["rect"].height)
                     }
                     last_page_layout_buttons.append(last_page_layout_button)
             else:

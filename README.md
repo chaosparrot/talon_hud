@@ -222,10 +222,10 @@ Currently working on the Content V2 API which will allow content to be automatic
 This is the current status of it
 - [x] Persist changes in subscriptions and current topics so they can be retrieved upon restart 
 - [x] Automatically enable pollers on start up when a widget is listening for it
-- [.] Connect automatic enabling / disabling to the Talon HUD environment flow
-    - [ ] Fix status bar icons
-	- [ ] Fix focus / screen region transition
-	- [ ] Persisting only topics that are connected to pollers?
+- [x] Connect automatic enabling / disabling to the Talon HUD environment flow
+    - [x] Fix status bar icons
+	- [x] Fix focus / screen region transition
+- [x] Status bar minimize
 - [x] Add a new content builder class to build HUD content with inside of pollers so they do not require actions
 - [x] Rework all the pollers to not use actions in enable / disable flow and have the content builder inserted
     - [x] History poller

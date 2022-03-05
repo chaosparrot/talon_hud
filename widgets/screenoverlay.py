@@ -79,7 +79,7 @@ class HeadUpScreenOverlay(BaseWidget):
     def soft_enable(self):
         if not self.soft_enabled:
             self.soft_enabled = True
-        self.activate_mouse_tracking()
+            self.activate_mouse_tracking()
 
     def soft_disable(self):
         self.clear_canvases()
@@ -88,7 +88,7 @@ class HeadUpScreenOverlay(BaseWidget):
             cron.cancel(self.mouse_poller)
             self.mouse_poller = None
             self.regions = []
-            self.active_regions = []            
+            self.active_regions = []
 
     def update_regions(self):
         self.active_regions = []

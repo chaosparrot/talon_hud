@@ -13,9 +13,10 @@ class ProgrammingLanguagePoller(Poller):
     can_toggle = False
     
     def enable(self):
-        if self.job is None:
+        if not self.enabled:
             self.job = cron.interval("200ms", self.language_check)
             self.enabled = True
+
     
     def disable(self):
         if self.enabled:

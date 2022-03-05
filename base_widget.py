@@ -71,7 +71,7 @@ class BaseWidget(metaclass=ABCMeta):
         self.expand_direction = self.preferences.expand_direction
         self.minimized = self.preferences.minimized
         self.subscriptions = self.preferences.subscriptions
-        if len(self.preferences.current_topics) > 0:
+        if self.preferences.current_topics is not None:
             self.current_topics = self.preferences.current_topics
             self.content.set_persisted_topics(self.preferences.current_topics)
         self.load_extra_preferences()
