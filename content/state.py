@@ -1,4 +1,4 @@
-from talon import actions, Module, ui
+from talon import actions, Module, ui, app
 from talon.types.point import Point2d
 from talon_init import TALON_USER
 from talon.scripting import Dispatch
@@ -185,7 +185,16 @@ class HeadUpDisplayContent(Dispatch):
             "discard_remaining": discard_remaining, "throttled": throttled})
         self.revise_log()
 
+    def destroy(self):
+        pass
+
 hud_content = HeadUpDisplayContent()
+
+def on_ready():
+    global hud_content
+    actions.user.hud_internal_register("HeadUpDisplayContent", hud_content)
+
+app.register('ready', on_ready)
 
 @mod.action_class
 class Actions:
