@@ -42,7 +42,7 @@ class FocusPoller(Poller):
                 regions[0].vertical_centered = False
                 self.content.publish_event("screen_regions", "focus", "replace", regions)
 
-                status_icon = self.content.create_status_icon("focus_toggle", "focus", None, app.name, lambda _, _2: actions.user.hud_remove_focus_indicator() )
+                status_icon = self.content.create_status_icon("focus_toggle", "focus", None, app.name, lambda _, _2: actions.user.hud_deactivate_poller("focus") )
                 self.content.publish_event("status_icons", status_icon.topic, "replace", status_icon)
 
     def move_focus_indicator(self, window):

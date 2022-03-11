@@ -27,7 +27,7 @@ class BaseWidget(metaclass=ABCMeta):
     
     # New content topic types
     topic_types = []
-    current_topics = []    
+    current_topics = []
     content = None
         
     animation_tick = 0
@@ -48,8 +48,9 @@ class BaseWidget(metaclass=ABCMeta):
         if current_topics != None:
             self.current_topics = current_topics
 
-        self.content = HudPartialContent()
+        self.content = HudPartialContent(self.topic_types)
         self.content.set_persisted_topics(self.current_topics)
+        self.preferences.current_topics = self.current_topics
 
         self.load(preferences_dict)
 

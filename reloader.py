@@ -49,18 +49,22 @@ class Actions:
         global _reloader_state
         global clean_older_references_job
         
+        keep_alive_pollers = []
+        if len(_reloader_state[key_hud]) > 0:
+            keep_alive_pollers = _reloader_state[key_hud][0].keep_alive_pollers[:]
+        
         if type == key_hud:
             if len(_reloader_state[key_hud]) > 0:
                 for hud in _reloader_state[key_hud]:
                     if hud:
                         hud.destroy()
-                        
+            
             # Connect the latest HUD object to the latest content and other objects
             _reloader_state[key_hud].append(data)
             for key in _reloader_state:
                 if key == key_poller:
                     for name in _reloader_state[key_poller]:
-                        data.register_poller(name, data)
+                        data.register_poller(name, _reloader_state[key_poller][name], name in keep_alive_pollers)
                 elif len(_reloader_state[key]) > 0:
                     data.connect_internal(key, _reloader_state[key][-1])
             
@@ -74,7 +78,7 @@ class Actions:
             _reloader_state[key_poller][name] = data
             
             if len(_reloader_state[key_hud] ) > 0:
-                _reloader_state[key_hud][-1].register_poller(name, data)
+                _reloader_state[key_hud][-1].register_poller(name, data, name in keep_alive_pollers)
                 
         # All auxiliary types that connect to the HUD
         else:

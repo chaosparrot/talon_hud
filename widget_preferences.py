@@ -114,13 +114,13 @@ class HeadUpDisplayUserWidgetPreferences:
         
         if self.current_topics is not None:
             dict[id + "_current_topics"] = ",".join(self.current_topics)
-        dict[id + "_subscriptions"] = ",".join(self.subscriptions)        
+        dict[id + "_subscriptions"] = ",".join(self.subscriptions)
         
         for extra_preference in self.extra_preferences:
             if hasattr(self, extra_preference.name):
                 value = getattr(self, extra_preference.name)
                 dict[f"{id}_{extra_preference.name}"] = extra_preference.serializer(value)
-        
+
         return dict
         
     # Load the widgets preferences from a persisted format

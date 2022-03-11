@@ -9,9 +9,11 @@ class HudPartialContent:
     topic_types = None
     persisted_topics = None
 	
-    def __init__(self):
-        self.topic_types = {}
+    def __init__(self, topic_types = []):
         self.persisted_topics = []
+        self.topic_types = {}
+        for topic_type in topic_types:
+            self.topic_types[topic_type] = {}
     
     def set_persisted_topics(self, topics: list[str]):
         self.persisted_topics = copy.copy(topics)
@@ -63,7 +65,7 @@ class HudPartialContent:
 
         if topic in self.topic_types[topic_type]:
             del self.topic_types[topic_type][topic]
-            
+
     # Get a unique list of all the current topics on the widget
     def get_current_topics(self):
         return copy.copy(self.persisted_topics)
@@ -74,4 +76,11 @@ class HudPartialContent:
             self.set_topic(event.topic_type, event.topic, event.content, event.claim)
         elif event.operation == "remove":
             self.remove_topic(event.topic_type, event.topic)
+        elif event.operation == "dump":
+            for topic_type in event.content["topic_types"]:
+                if topic_type not in self.topic_types:
+                    continue
+                for topic in event.content["topic_types"][topic_type]:
+                    if topic in self.persisted_topics:
+                        self.set_topic(topic_type, topic, event.content["topic_types"][topic_type][topic])
         # Other types of content events need manual changing ( patch and append for example )

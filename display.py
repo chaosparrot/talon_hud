@@ -86,6 +86,7 @@ class HeadUpDisplay:
     show_animations = False
     choices_visible = False
     allowed_content_operations = ["*"]
+    allow_update_context = True
     
     prev_mouse_pos = None
     mouse_poller = None
@@ -114,15 +115,13 @@ class HeadUpDisplay:
         if (self.preferences.prefs["enabled"]):
 
             # Load in the correct preferences if the talon HUD environment is different than the default
-            if self.current_talon_hud_environment != "":
-                self.synchronize_pollers()
-
-                reload_theme = self.widget_manager.reload_preferences(True, self.current_talon_hud_environment)
-                if reload_theme != self.theme.name:
-                    theme_dir = self.custom_themes[reload_theme] if reload_theme in self.custom_themes else None
-                    self.theme = HeadUpDisplayTheme(reload_theme, theme_dir)
-                    for widget in self.widget_manager.widgets:
-                        widget.theme = self.theme
+            #if self.current_talon_hud_environment != "":
+            #    reload_theme = self.widget_manager.reload_preferences(True, self.current_talon_hud_environment)
+            #    if reload_theme != self.theme.name:
+            #        theme_dir = self.custom_themes[reload_theme] if reload_theme in self.custom_themes else None
+            #        self.theme = HeadUpDisplayTheme(reload_theme, theme_dir)
+            #        for widget in self.widget_manager.widgets:
+            #            widget.theme = self.theme
 
             self.enable()
             ctx.tags = ["user.talon_hud_available", "user.talon_hud_visible", "user.talon_hud_choices_visible"]
@@ -130,6 +129,9 @@ class HeadUpDisplay:
             if actions.sound.active_microphone() == "None":
                 actions.user.hud_add_log("warning", "Microphone is set to \"None\"!\n\nNo voice commands will be registered.")
         self.distribute_content()
+        
+        # Only enable persisting of the preferences after the initial start up sequence
+        self.preferences.enable()
     
     def enable(self, persisted=False):
         if not self.enabled:
@@ -346,9 +348,16 @@ class HeadUpDisplay:
 
     def distribute_content(self):
         """Distributes the content from the content types to the different widgets"""
-        print( "TODO DISTRIBUTE AND REFRESH" )
+        self.allow_update_context = False
+        self.display_state.save_events()
 
-        #self.update_context()
+        content_dump = self.display_state.get_content_dump()
+        for widget in self.widget_manager.widgets:
+            widget.content_handler(content_dump)
+
+        self.update_context()
+        self.allow_update_context = True
+        self.display_state.flush_events()
     
     def register_poller(self, topic: str, poller: Poller, keep_alive: bool):
         self.remove_poller(topic)
@@ -491,7 +500,7 @@ class HeadUpDisplay:
                             else:
                                 self.pollers[event.topic].disable()
             self.synchronize_pollers()
-        if updated:
+        if updated and self.allow_update_context:
             self.update_context()
 
     # Enable the content events to make changes to widgets and preferences
@@ -847,7 +856,9 @@ class Actions:
     def hud_add_poller(topic: str, poller: Poller, keep_alive: bool = False):
         """Add a content poller / listener to the HUD"""    
         global hud
-        hud.register_poller(topic, poller, keep_alive)
+        if keep_alive and topic not in hud.keep_alive_pollers:
+            hud.keep_alive_pollers.append(topic)
+        actions.user.hud_internal_register("Poller", poller, topic)        
         
     def hud_remove_poller(topic: str):
         """Remove a content poller / listener to the HUD"""    

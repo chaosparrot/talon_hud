@@ -12,16 +12,14 @@ user_preferences_file_location = os.path.join(user_preferences_file_dir, widget_
 # To keep the display state consistent across sessions
 class HeadUpDisplayUserPreferences:
     
-    persisting_enabled = True
+    persisting_enabled = False
     
     monitor_file_path = None
     default_prefs = {
         "version": "0.6",
         "show_animations": True,
         "enabled": False,
-        "theme_name": "light",
-        "audio_enabled": False,
-        "audio_cue_volume": "75"
+        "theme_name": "light"
     }
     
     # Keep the base preferences available as well
@@ -38,7 +36,6 @@ class HeadUpDisplayUserPreferences:
     hud_environment = ""
     
     def __init__(self, hud_environment = "", hud_version = 5):
-        self.persisting_enabled = True
         self.hud_environment = hud_environment
         self.load_preferences(self.get_screen_preferences_filepath(ui.screens()))
         self.hud_version = hud_version
@@ -213,6 +210,11 @@ class HeadUpDisplayUserPreferences:
         for index, key in enumerate(self.prefs):
             if ( is_monitor_preference and key.endswith(self.monitor_related_pref_endings) ) or \
                 ( not is_monitor_preference and not key.endswith(self.monitor_related_pref_endings) ):
+                
+                # Skip persisting the initial current topics if the file does not exist yet to allow
+                # The topics to by migrated properly instead of being cleared on the first load
+                if key.endswith("_current_topics") and not os.path.exists(filename):
+                    continue
                 
                 # Skip values that are the same in the base environment preferences
                 # To keep the changes as specific as possible to each environment

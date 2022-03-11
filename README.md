@@ -254,15 +254,19 @@ This is the current status of it
 	- [x] Fix topic deregistering if no content is available for it
 	- [x] Fix ordering of topics properly
 - [x] Remove single widget.topic variable
+- [ ] Fix reloading in correct talon hud environment
+   - [ ] Fix topic switching between talon hud environments
+   - [ ] Fix start up hud environment switching
 - [.] Make the HUD sort of reloadable by reattaching pollers, content etc
-    - [ ] Fix reloading in correct talon hud environment
-	- [ ] Fix content refreshing properly after a reload
-	- [ ] Fix poller registration
+	- [x] Fix content refreshing properly after a reload
+	- [x] Fix poller registration
 	- [ ] Test with git checkout and file changes
-	    - [ ] Content reloading
-		- [ ] Poller reloading
-		- [ ] HUD reloading
+	    - [x] Content reloading
+		- [x] Poller reloading
+		- [x] HUD reloading
 		- [ ] New object reloading
+		- [x] No preferences
+		- [x] Partial preferences ( v0.5 )
 - [x] Rework variables like the 'mode' check to use the new events
 - [x] Rework all widgets to conform to the new events
     - [x] Status bar

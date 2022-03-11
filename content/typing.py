@@ -112,6 +112,7 @@ class HudWalkThrough:
 # These content events will be handled automatically
 CONTENT_EVENT_OPERATION_REPLACE = "replace" # Used to signal a complete replacement of the given topic
 CONTENT_EVENT_OPERATION_REMOVE = "remove" # Used to signal a topic is being cleared
+CONTENT_EVENT_OPERATION_DUMP = "dump" # Used to signal a complete replacement all the topics in a widget
 
 # These content events require manual handling from the widgets themselves
 CONTENT_EVENT_OPERATION_APPEND = "append" # Used to signal a single item being appended to a collection

@@ -6,6 +6,7 @@ from .typing import HudPanelContent, HudButton, HudChoice, HudChoices, HudScreen
 from typing import Callable, Any, Union
 import time
 import os
+import copy
 
 max_log_length = 50
 mod = Module()
@@ -21,6 +22,8 @@ class HeadUpDisplayContent(Dispatch):
 
     queued_log_splits = None
     throttled_logs = None
+    save_up_events = True
+    saved_events = None
     
     topic_types = {
         "variable": {
@@ -44,7 +47,7 @@ class HeadUpDisplayContent(Dispatch):
         "cursor_regions": {},        
         "screen_regions": {},
     }
-            
+
     # Publish content meant for text boxes and other panels
     def publish(self, topic_type, panel_content: HudPanelContent):
         if not topic_type in self.topic_types:
@@ -184,6 +187,29 @@ class HeadUpDisplayContent(Dispatch):
         self.queued_log_splits.append({"type": type, "prefix": prefix, 
             "discard_remaining": discard_remaining, "throttled": throttled})
         self.revise_log()
+        
+    def save_events(self):
+        self.save_up_events = True
+
+    def flush_events(self):
+        self.save_up_events = False
+        if self.saved_events is not None and len(self.saved_events) == 0:
+            return
+        
+        for event in self.saved_events:
+            self.dispatch(event["type"], event["event"])
+
+    def dispatch(self, type: str, event: HudContentEvent):
+        if self.save_up_events:
+            if self.saved_events == None:
+                self.saved_events = []
+            self.saved_events.append({"type": type, "event": event})
+        else:
+            super().dispatch(type, event)
+        
+    # Get a full content dump to be used in refreshing widgets after a code update
+    def get_content_dump(self) -> HudContentEvent:
+        return HudContentEvent("content_dump", "", {"topic_types": copy.copy(self.topic_types)}, "dump")
 
     def destroy(self):
         pass

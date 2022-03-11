@@ -127,16 +127,16 @@ class HeadUpWidgetManager:
                 
         if environment_changed:
             new_theme = self.preferences.prefs["theme_name"]            
-        
+
         # Apply the new preferences to the widgets directly
         for widget in self.widgets:
             # First cancel any set up to make sure there won"t be some weird collision going on with persistence
             if widget.setup_type != "":
                 widget.start_setup("cancel")
-            widget.load(self.preferences.prefs, False, True)
+            widget.load(self.preferences.prefs, False, environment_changed)
             if widget.enabled:
                 widget.start_setup("reload")
-            
+
         # Set the screen info to be used for comparison in case the screen changes later
         self.previous_screen_rects = current_screen_rects
         return new_theme
