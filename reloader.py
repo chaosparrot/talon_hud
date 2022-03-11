@@ -22,11 +22,11 @@ def clear_old_references():
     # Keep the first content state around as it is the most likely to be filled
     content_topic_types = copy.copy(_reloader_state[key_content][0].topic_types) if len(_reloader_state[key_content]) > 0 else {}    
     for key in _reloader_state:
-        if key not in [key_hud, key_poller]:
+        if key not in [key_hud, key_poller] and len(_reloader_state[key]) > 0:
             for index, extra_type in enumerate(_reloader_state[key]):
                 if index != len(_reloader_state[key]) - 1:
                     _reloader_state[key][index] = None
-            _reloader_state[key] = [_reloader_state[key][-1]]
+                _reloader_state[key] = [_reloader_state[key][-1]]
     
     if len(_reloader_state[key_content]) > 0:
         _reloader_state[key_content][0].topic_types = content_topic_types
