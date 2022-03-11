@@ -193,7 +193,7 @@ class HeadUpDisplayContent(Dispatch):
 
     def flush_events(self):
         self.save_up_events = False
-        if self.saved_events is not None and len(self.saved_events) == 0:
+        if self.saved_events is None or len(self.saved_events) == 0:
             return
         
         for event in self.saved_events:

@@ -26,7 +26,7 @@ def clear_old_references():
             for index, extra_type in enumerate(_reloader_state[key]):
                 if index != len(_reloader_state[key]) - 1:
                     _reloader_state[key][index] = None
-                _reloader_state[key] = [_reloader_state[key][-1]]
+            _reloader_state[key] = [_reloader_state[key][-1]]
     
     if len(_reloader_state[key_content]) > 0:
         _reloader_state[key_content][0].topic_types = content_topic_types
