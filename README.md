@@ -264,7 +264,7 @@ This is the current status of it
 	    - [x] Content reloading
 		- [x] Poller reloading
 		- [x] HUD reloading
-		- [ ] New object reloading
+		- [x] New object reloading
 		- [x] No preferences
 		- [x] Partial preferences ( v0.5 )
 - [x] Rework variables like the 'mode' check to use the new events

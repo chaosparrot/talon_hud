@@ -15,28 +15,25 @@ _reloader_state = {
 def clear_old_references():
     global _reloader_state
     
-    #print( "CLEARING!" )
     for index, hud in enumerate(_reloader_state[key_hud]):
-    #    print( "RELOAD HUD INDEX", index, len(_reloader_state[key_hud]) - 1 )
         if index != len(_reloader_state[key_hud]) - 1:
-    #        print( "CLEARING", index )
             _reloader_state[key_hud][index] = None
-    _reloader_state[key_hud] = [_reloader_state[key_hud][-1]]
-    
+
     # Keep the first content state around as it is the most likely to be filled
     content_topic_types = copy.copy(_reloader_state[key_content][0].topic_types) if len(_reloader_state[key_content]) > 0 else {}    
     for key in _reloader_state:
         if key not in [key_hud, key_poller]:
-    #        print( "RELOAD " + key, index, len(_reloader_state[key]) - 1 )
             for index, extra_type in enumerate(_reloader_state[key]):
                 if index != len(_reloader_state[key]) - 1:
-    #                print( "CLEARING", index )
                     _reloader_state[key][index] = None
             _reloader_state[key] = [_reloader_state[key][-1]]
     
     if len(_reloader_state[key_content]) > 0:
         _reloader_state[key_content][0].topic_types = content_topic_types
-    _reloader_state[key_hud][-1].start()
+        
+    if len(_reloader_state[key_hud]) > 0:
+        _reloader_state[key_hud] = [_reloader_state[key_hud][-1]]
+        _reloader_state[key_hud][-1].start()
 
 clean_older_references_job = None
 
