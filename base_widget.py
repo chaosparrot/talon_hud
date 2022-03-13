@@ -80,10 +80,11 @@ class BaseWidget(metaclass=ABCMeta):
         # For re-enabling or disabling widgets after a reload ( mostly for talon hud environment changes )
         if update_enabled:
             if self.enabled != self.preferences.enabled:
-                self.show_animations = False
-                self.enable() if self.preferences.enabled else self.disable()
-                self.show_animations = True
-        
+                if "enabled" in dict and dict["enabled"]:            
+                    self.show_animations = False
+                    self.enable() if self.preferences.enabled else self.disable()
+                    self.show_animations = self.preferences.show_animations
+
         if initialize:
             self.load_theme_values()        
     

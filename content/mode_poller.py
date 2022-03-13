@@ -47,13 +47,15 @@ class PartialModePoller(Poller):
         if not self.enabled:
             self.enabled = True
             self.poller.register(self.type, self.update_mode)
-            if self.poller.previous_mode is not None:
+            if self.type == "mode_toggle" and self.poller.previous_mode is not None:
                 self.publish_statusbar_icon(self.poller.previous_mode)
 
     def disable(self):
         if self.enabled:
             self.enabled = False
             self.poller.unregister(self.type)
+            if self.type == "mode_toggle":
+                self.content.publish_event("status_icons", "mode_toggle", "remove")
 
     def update_mode(self, current_mode):
         if self.type == "mode_toggle":

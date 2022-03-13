@@ -21,6 +21,7 @@ class SpeechPoller(Poller):
         if self.enabled:
             self.enabled = False
             self.content._content.unregister("broadcast_update", self.on_broadcast_update)
+            self.content.publish_event("text", "speech", "remove")            
         
     def on_broadcast_update(self, event):
         if event.topic_type == "log_messages" and event.topic == "phrase":

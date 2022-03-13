@@ -49,6 +49,7 @@ class HeadUpStatusBar(BaseWidget):
             ]
         
             self.blink_state = 100 if self.show_animations else 0
+            
         self.update_icons()
         self.update_buttons()
         if self.canvas:

@@ -23,6 +23,7 @@ class ProgrammingLanguagePoller(Poller):
             self.enabled = False
             cron.cancel(self.job)
             self.job = None
+            self.content.publish_event("status_icons", "programming_toggle", "remove")
             
     def language_check(self):
         global languages

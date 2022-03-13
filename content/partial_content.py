@@ -14,10 +14,10 @@ class HudPartialContent:
         self.topic_types = {}
         for topic_type in topic_types:
             self.topic_types[topic_type] = {}
-    
+
     def set_persisted_topics(self, topics: list[str]):
         self.persisted_topics = copy.copy(topics)
-    
+
     # Get a specific topic from the known topic types in the order of creation
     def get_topic(self, topic_type: str, topic = None) -> list:
         topic_contents = []
@@ -30,7 +30,7 @@ class HudPartialContent:
                         topic_contents.append(self.topic_types[topic_type][ordered_topic])
 
         return topic_contents
-        
+
     def get_variable(self, topic:str, default: Any) -> Any:
         if "variable" in self.topic_types and topic in self.topic_types["variable"]:
             return self.topic_types["variable"][topic]

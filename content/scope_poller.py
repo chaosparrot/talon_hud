@@ -14,13 +14,14 @@ class ScopePoller(Poller):
             self.enabled = True
             self.should_open = True
             self.job = cron.interval("100ms", self.state_check)
-                
+
     def disable(self):
         if self.enabled:
             cron.cancel(self.job)
             self.job = None
             self.enabled = False
             self.previous_scope_state = ""
+            self.content.publish_event("text", "scope", "remove")
 
     def state_check(self):        
         scope_state = self.get_state_in_text()
@@ -57,5 +58,4 @@ class Actions:
 
     def hud_toolkit_scope():
         """Start debugging the Talon scope in the Talon HUD"""
-        actions.user.hud_add_poller("scope", ScopePoller())
         actions.user.hud_activate_poller("scope")

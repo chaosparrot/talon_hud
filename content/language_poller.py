@@ -18,6 +18,7 @@ class LanguagePoller(Poller):
             cron.cancel(self.job)
             self.job = None
             self.current_language = None
+            self.content.publish_event("status_icons", "language_toggle", "remove")
 
     def language_check(self):
         language = self.detect_language()

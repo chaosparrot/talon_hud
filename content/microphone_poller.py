@@ -122,6 +122,10 @@ class PartialMicrophonePoller(Poller):
         if self.enabled:
             self.enabled = False
             self.poller.unregister(self.type)
+            if self.type == "microphone_toggle":
+                self.content.publish_event("status_icons", "microphone_toggle", "remove")
+            else:
+                self.content.publish_event("choice", "microphone_list", "remove")
 
     def destroy(self):
         super().destroy()

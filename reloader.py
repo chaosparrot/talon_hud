@@ -12,8 +12,11 @@ _reloader_state = {
     "Poller": {}
 }
 
+initialized = False
+
 def clear_old_references():
     global _reloader_state
+    global initialized
     
     for index, hud in enumerate(_reloader_state[key_hud]):
         if index != len(_reloader_state[key_hud]) - 1:
@@ -33,7 +36,8 @@ def clear_old_references():
         
     if len(_reloader_state[key_hud]) > 0:
         _reloader_state[key_hud] = [_reloader_state[key_hud][-1]]
-        _reloader_state[key_hud][-1].start()
+        _reloader_state[key_hud][-1].start("initialize" if not initialized else "repair")
+        initialized = True
 
 clean_older_references_job = None
 

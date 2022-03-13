@@ -87,6 +87,7 @@ class HeadUpDisplay:
     choices_visible = False
     allowed_content_operations = ["*"]
     allow_update_context = True
+    current_flow = ""
     
     prev_mouse_pos = None
     mouse_poller = None
@@ -110,18 +111,10 @@ class HeadUpDisplay:
         self.show_animations = self.preferences.prefs["show_animations"]
         self.widget_manager = HeadUpWidgetManager(self.preferences, self.theme, self.event_dispatch)
 
-    def start(self):
+    def start(self, current_flow="initialize"):
+        self.set_current_flow(current_flow)
         self.current_talon_hud_environment = settings.get("user.talon_hud_environment", "")
         if (self.preferences.prefs["enabled"]):
-
-            # Load in the correct preferences if the talon HUD environment is different than the default
-            #if self.current_talon_hud_environment != "":
-            #    reload_theme = self.widget_manager.reload_preferences(True, self.current_talon_hud_environment)
-            #    if reload_theme != self.theme.name:
-            #        theme_dir = self.custom_themes[reload_theme] if reload_theme in self.custom_themes else None
-            #        self.theme = HeadUpDisplayTheme(reload_theme, theme_dir)
-            #        for widget in self.widget_manager.widgets:
-            #            widget.theme = self.theme
 
             self.enable()
             ctx.tags = ["user.talon_hud_available", "user.talon_hud_visible", "user.talon_hud_choices_visible"]
@@ -130,8 +123,7 @@ class HeadUpDisplay:
                 actions.user.hud_add_log("warning", "Microphone is set to \"None\"!\n\nNo voice commands will be registered.")
         self.distribute_content()
         
-        # Only enable persisting of the preferences after the initial start up sequence
-        self.preferences.enable()
+        self.set_current_flow("manual")
     
     def enable(self, persisted=False):
         if not self.enabled:
@@ -141,6 +133,8 @@ class HeadUpDisplay:
             # Only reset the talon HUD environment after a user action
             # And only set the visible tag
             if persisted:
+                self.set_current_flow("enabled")                    
+                self.current_flow = "enable"
                 ctx.tags = ["user.talon_hud_available", "user.talon_hud_visible", "user.talon_hud_choices_visible"]
                 self.current_talon_hud_environment = settings.get("user.talon_hud_environment", "")
             
@@ -165,6 +159,7 @@ class HeadUpDisplay:
             self.determine_active_setup_mouse()
             if persisted:
                 self.preferences.persist_preferences({"enabled": True})
+                self.set_current_flow("manual")
 
             # Make sure context isn't updated in this thread because of automatic reloads
             cron.cancel(self.update_context_debouncer)
@@ -172,7 +167,8 @@ class HeadUpDisplay:
 
     def disable(self, persisted=False):
         if self.enabled:
-            self.enabled = False            
+            self.set_current_flow("disabled" if persisted else "auto_disabled")
+            self.enabled = False
             
             for widget in self.widget_manager.widgets:
                 if widget.enabled:
@@ -218,6 +214,7 @@ class HeadUpDisplay:
         self.update_preferences_debouncer = cron.after("100ms", self.persist_widgets_preferences)
     
     def enable_id(self, id):
+        self.set_current_flow("widget_enabled")
         if not self.enabled:
             self.enable()
     
@@ -230,8 +227,10 @@ class HeadUpDisplay:
 
                 self.update_context()
                 break
+        self.set_current_flow("manual")
                 
     def disable_id(self, id):
+        self.set_current_flow("widget_disabled")
         for widget in self.widget_manager.widgets:
             if widget.enabled and widget.id == id:
                 widget.disable(True)
@@ -239,32 +238,65 @@ class HeadUpDisplay:
                 self.update_context()
                 break
         self.determine_active_setup_mouse()
+        self.set_current_flow("manual")        
         
     def subscribe_content_id(self, id, content_key):
+        self.set_current_flow("content_changed")    
         for widget in self.widget_manager.widgets:
             if widget.id == id:
-                if content_key not in widget.subscribed_content:
-                    widget.subscribed_content.append(content_key)
-                    
+                if content_key not in widget.subscriptions:
+                    widget.subscriptions.append(content_key)
+        self.set_current_flow("manual")
+
     def unsubscribe_content_id(self, id, content_key):
+        self.set_current_flow("content_changed")
         for widget in self.widget_manager.widgets:
             if widget.id == id:
-                if content_key in widget.subscribed_content:
-                    widget.subscribed_content.remove(content_key)
+                if content_key in widget.subscriptions:
+                    widget.subscriptions.remove(content_key)
+        self.set_current_flow("manual")
 
     def set_widget_preference(self, id, property, value, persisted=False):
+        self.set_current_flow("layout_changed")
         for widget in self.widget_manager.widgets:
             if widget.id == id:
                 widget.set_preference(property, value, persisted)
         self.determine_active_setup_mouse()
+        self.set_current_flow("manual")
 
     def add_theme(self, theme_name, theme_dir):
         if os.path.exists(theme_dir):
             self.custom_themes[theme_name] = theme_dir
         else:
             app.notify("Invalid directory for '" + theme_name + "': " + theme_dir)
+    
+    # Manages the persistance and event flow depending on what flow we are changing to
+    def set_current_flow(self, flow):
+        print( "CHANGED FLOW: " + self.current_flow + " -> " + flow )
+
+        # Restrict the flow of content events during environment transitions and widget disabling
+        if flow == "environment_changed":
+            self.allowed_content_operations = ["remove"]
+        elif flow == "widget_disabled":
+            self.allowed_content_operations = ["replace", "append", "patch", "dump"]
+        elif flow in ["disabled", "auto_disabled"]:
+            self.allowed_content_operations = []
+        else:
+            self.allowed_content_operations = ["*"]
+        
+        # Temporarily disable preference persisting during the transition between environments
+        # As content updates during the transition can override previous files        
+        if flow in ["repair", "initialize", "environment_changed"]:
+            self.preferences.disable()
+        else:
+            self.preferences.enable()
+
+        self.current_flow = flow
 
     def switch_theme(self, theme_name, disable_animation = False, forced = False):
+        if self.theme.name != theme_name and not disable_animation and not forced:
+            self.set_current_flow("theme_changed")
+    
         if self.theme.name != theme_name or forced:
             should_reset_watch = self.watching_directories
             if should_reset_watch:
@@ -285,6 +317,9 @@ class HeadUpDisplay:
                 self.watch_directories()
             
             self.preferences.persist_preferences({"theme_name": theme_name})
+        
+        if self.current_flow == "theme_changed":
+            self.set_current_flow("manual")
 
     def reload_theme(self, name=None, flags=None):
         self.theme = HeadUpDisplayTheme(self.theme.name, self.theme.theme_dir)
@@ -415,7 +450,7 @@ class HeadUpDisplay:
         if enable_pollers:
             for topic, poller in self.pollers.items():
                 if topic in attached_topics and (not hasattr(self.pollers[topic], "enabled") or not self.pollers[topic].enabled):
-                    self.pollers[topic].enable()                            
+                    self.pollers[topic].enable()
 
     # Synchronize the pollers attached to a single widget
     def synchronize_widget_poller(self, widget_id):
@@ -484,7 +519,6 @@ class HeadUpDisplay:
                         widget.clear_topic(event.topic)
                 
                 updated = widget_to_claim.content_handler(event)
-                self.synchronize_pollers()
         else:
             for widget in self.widget_manager.widgets:
                 if event.topic_type == "variable" or (event.topic_type in widget.topic_types and \
@@ -499,19 +533,14 @@ class HeadUpDisplay:
                                 self.pollers[event.topic].enable()
                             else:
                                 self.pollers[event.topic].disable()
+
+        # For certain flows that trigger a lot of events we do not allow the pollers to be updated
+        # As it can lead to faulty state
+        if self.current_flow not in ["repair", "initialize", "environment_changed"]:
             self.synchronize_pollers()
+
         if updated and self.allow_update_context:
             self.update_context()
-
-    # Enable the content events to make changes to widgets and preferences
-    def content_flow_enable(self):
-        self.preferences.enable()
-        self.allowed_content_operations = ["*"]
-        
-    # Restrict the content events from making non-clean up changes to widgets and preferences
-    def content_flow_restrict(self):
-        self.preferences.disable()
-        self.allowed_content_operations = ["remove"]
 
     # Determine whether or not we need to have a global mouse poller
     # This poller is needed for setup modes as not all canvases block the mouse
@@ -696,9 +725,7 @@ class HeadUpDisplay:
 
     def hud_environment_change(self, hud_environment: str):
         if self.current_talon_hud_environment != hud_environment:
-            # Temporarily disable preference persisting during the transition between environments
-            # As content updates during the transition can override previous files
-            self.content_flow_restrict()
+            self.set_current_flow("environment_changed")        
             self.current_talon_hud_environment = hud_environment
             
             # Add a debouncer for the environment change to reduce flickering on transitioning
@@ -713,8 +740,8 @@ class HeadUpDisplay:
 
         # Re-enable the content flow including persistence after transitions have been made
         self.synchronize_pollers(disable_pollers=True, enable_pollers=False)
-        self.content_flow_enable()
-        self.synchronize_pollers(disable_pollers=False, enable_pollers=True)        
+        self.set_current_flow("manual")        
+        self.synchronize_pollers(disable_pollers=False, enable_pollers=True)
 
     def destroy(self):
         cron.cancel(self.disable_poller_job)

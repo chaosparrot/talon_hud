@@ -256,11 +256,12 @@ This is the current status of it
 - [x] Remove single widget.topic variable
 - [ ] Fix reloading in correct talon hud environment
    - [ ] Fix topic switching between talon hud environments
+   - [ ] Fix enabling hud environment switching
    - [ ] Fix start up hud environment switching
-- [.] Make the HUD sort of reloadable by reattaching pollers, content etc
+- [x] Make the HUD sort of reloadable by reattaching pollers, content etc
 	- [x] Fix content refreshing properly after a reload
 	- [x] Fix poller registration
-	- [ ] Test with git checkout and file changes
+	- [x] Test with git checkout and file changes
 	    - [x] Content reloading
 		- [x] Poller reloading
 		- [x] HUD reloading
