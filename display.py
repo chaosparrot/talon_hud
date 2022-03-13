@@ -115,16 +115,14 @@ class HeadUpDisplay:
         self.set_current_flow(current_flow)
         self.current_talon_hud_environment = settings.get("user.talon_hud_environment", "")
         if (self.preferences.prefs["enabled"]):
-
             self.enable()
             ctx.tags = ["user.talon_hud_available", "user.talon_hud_visible", "user.talon_hud_choices_visible"]
 
             if actions.sound.active_microphone() == "None":
                 actions.user.hud_add_log("warning", "Microphone is set to \"None\"!\n\nNo voice commands will be registered.")
-        self.distribute_content()
-        
         self.set_current_flow("manual")
-    
+        self.distribute_content()
+
     def enable(self, persisted=False):
         if not self.enabled:
             self.enabled = True
@@ -132,12 +130,13 @@ class HeadUpDisplay:
 
             # Only reset the talon HUD environment after a user action
             # And only set the visible tag
+            self.current_talon_hud_environment = settings.get("user.talon_hud_environment", "")
+            
             if persisted:
-                self.set_current_flow("enabled")                    
+                self.set_current_flow("enabled")
                 self.current_flow = "enable"
                 ctx.tags = ["user.talon_hud_available", "user.talon_hud_visible", "user.talon_hud_choices_visible"]
-                self.current_talon_hud_environment = settings.get("user.talon_hud_environment", "")
-            
+
             # Connect the events relating to non-content communication
             self.event_dispatch.register("persist_preferences", self.debounce_widget_preferences)
             self.event_dispatch.register("hide_context_menu", self.hide_context_menu)
@@ -145,14 +144,16 @@ class HeadUpDisplay:
             self.event_dispatch.register("show_context_menu", self.move_context_menu)
             self.event_dispatch.register("synchronize_poller", self.synchronize_widget_poller)
 
+            # Reload the preferences just in case a screen change happened in between the hidden state
+            if persisted or self.current_flow in ["repair", "initialize"]:
+                reload_theme = self.widget_manager.reload_preferences(True, self.current_talon_hud_environment)
+                if reload_theme != self.theme.name:
+                    self.switch_theme(reload_theme, True)
+
             for widget in self.widget_manager.widgets:
                 if widget.preferences.enabled and not widget.enabled:
                     widget.enable()
             self.synchronize_pollers()
-
-            # Reload the preferences just in case a screen change happened in between the hidden state
-            if persisted:
-                self.reload_preferences()
             
             ui.register("screen_change", self.reload_preferences)
             settings.register("user.talon_hud_environment", self.hud_environment_change)
@@ -270,10 +271,8 @@ class HeadUpDisplay:
         else:
             app.notify("Invalid directory for '" + theme_name + "': " + theme_dir)
     
-    # Manages the persistance and event flow depending on what flow we are changing to
+    # Manages the persistence and event flow depending on what flow we are changing to
     def set_current_flow(self, flow):
-        print( "CHANGED FLOW: " + self.current_flow + " -> " + flow )
-
         # Restrict the flow of content events during environment transitions and widget disabling
         if flow == "environment_changed":
             self.allowed_content_operations = ["remove"]
@@ -290,6 +289,12 @@ class HeadUpDisplay:
             self.preferences.disable()
         else:
             self.preferences.enable()
+        
+        # For the repair flow - Turn all the pollers off and on to make sure up to date content is persisted
+        if flow == "repair":
+            self.synchronize_pollers(True, False)
+        elif self.current_flow == "repair":
+            self.synchronize_pollers(False, True)            
 
         self.current_flow = flow
 

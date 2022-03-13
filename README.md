@@ -209,10 +209,6 @@ These are ideas that I want to implement in no specific order and with no specif
 - Splitting out or merging topics from widgets into separate widgets using voice
 - Better default image, dimension and font scaling based on physical dimensions of the screen
 
-Known issues
----
-- 'Dismiss options' in the context menu makes the HUD go into a state where the next context menu won't respond properly
-
 If any of these ideas seem cool for you to work on, give me a message on the talon slack so we can coordinate stuff.
 
 Content API v2
@@ -220,88 +216,6 @@ Content API v2
 
 Currently working on the Content V2 API which will allow content to be automatically listened for during start up and other transitions.
 This is the current status of it
-- [x] Persist changes in subscriptions and current topics so they can be retrieved upon restart 
-- [x] Automatically enable pollers on start up when a widget is listening for it
-- [x] Connect automatic enabling / disabling to the Talon HUD environment flow
-    - [x] Fix status bar icons
-	- [x] Fix focus / screen region transition
-- [x] Status bar minimize
-- [x] Add a new content builder class to build HUD content with inside of pollers so they do not require actions
-- [x] Rework all the pollers to not use actions in enable / disable flow and have the content builder inserted
-    - [x] History poller
-	- [x] Focus poller
-	- [x] Speech poller
-	- [x] Scope poller
-	- [x] List poller
-	- [x] Microphone poller
-	- [x] Walkthrough
-- [x] Add a settings file persisting mechanism specifically for content like walkthrough pollers and the favourite microphone
-    - [x] Persist walkthrough
-	- [x] Persist favourite microphone
-- [x] Phase out status bar poller in favour of the following:
-	- [x] Active microphone status icon poller
-	- [x] Mode icon poller
-	    - [x] Make overrideable action for determining modes
-		- [x] Make overrideable action for switching modes
-	- [x] Programming language poller
-		- [x] Make list of languages in preferences for user to change
-		- [x] Add programming icons
-	- [x] Language poller
-	- [x] Focus icon
-	- [x] Draw text in status bar again if no icon is found for programming language
-- [x] Manage topics on widgets properly so that the poller state can be managed
-    - [x] Fix inconsistent topic registering / deregistering for single topic widgets vs multitopic widgets
-	- [x] Fix topic deregistering if no content is available for it
-	- [x] Fix ordering of topics properly
-- [x] Remove single widget.topic variable
-- [ ] Fix reloading in correct talon hud environment
-   - [ ] Fix topic switching between talon hud environments
-   - [ ] Fix enabling hud environment switching
-   - [ ] Fix start up hud environment switching
-- [x] Make the HUD sort of reloadable by reattaching pollers, content etc
-	- [x] Fix content refreshing properly after a reload
-	- [x] Fix poller registration
-	- [x] Test with git checkout and file changes
-	    - [x] Content reloading
-		- [x] Poller reloading
-		- [x] HUD reloading
-		- [x] New object reloading
-		- [x] No preferences
-		- [x] Partial preferences ( v0.5 )
-- [x] Rework variables like the 'mode' check to use the new events
-- [x] Rework all widgets to conform to the new events
-    - [x] Status bar
-    - [x] Event log
-	- [x] Ability bar
-    - [x] Text panel
-	- [x] Documentation panel
-	- [x] Choice panel
-	- [x] Walkthrough panel
-	- [x] Screen overlay
-	- [x] Cursor tracker
-- [x] Phase out references to old API in state.py and display.py
-- [x] Remove unnecessary refreshing of content
-- [x] Consistent style
-    - [x] " quotes instead of '
-    - [x] Choose one walkthrough definition
-    - [x] Clear context and walk_through options - Migration version in preferences?
-	- [x] Make sure all HUD actions are prefixed with hud_ and keep a list of changes for the release notes
-	    - enable_hud -> hud_enable
-		- disable_hud -> hud_disable
-	    - persist_hud_preferences -> hud_persist_preferences
-	    - set_widget_preference -> hud_set_widget_preference
-	    - enable_hud_id -> hud_enable_id
-	    - disable_hud_id -> hud_disable_id
-	    - switch_hud_theme -> hud_switch_theme
-	    - set_hud_setup_mode -> hud_set_setup_mode
-		- set_hud_setup_mode_multi -> hud_set_setup_mode_multi
-		- show_context_menu -> hud_show_context_menu
-	    - hide_context_menu -> hud_hide_context_menu
-	    - increase_widget_page -> hud_increase_widget_page
-	    - decrease_widget_page -> hud_decrease_widget_page
-	    - get_widget_pagination -> hud_get_widget_pagination
-	- [x] Use only relative paths to make it more flexible where the HUD is located
-- [x] Clean up Audio stuff - This is for the next release
 - [ ] Redo documentation for all content / widgets etc
 
 Acknowledgements
