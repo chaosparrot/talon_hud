@@ -92,7 +92,7 @@ def load_languages(languages_file):
             "markdown,.md,programming_markdown",
             "yaml,.yml,"
         ]
-        file_contents = "" + languages_header
+        file_contents = "" + languages_header + "\n"
         file_contents += "\n".join(language_defaults)
         with open(languages_file, "w") as f:
             f.write(file_contents)    
@@ -118,6 +118,11 @@ languages = load_languages(languages_file)
 mod = Module()
 @mod.action_class
 class Actions:
+
+    def hud_get_available_languages():
+        """Get the available programming languages inside of the HUD"""
+        global languages
+        return languages
 
     def hud_can_toggle_programming_language() -> bool:
         """Check if we should be able to toggle the programming language from the status bar"""
