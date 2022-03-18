@@ -2,6 +2,7 @@ from talon import skia, app
 import os
 import random
 from .utils import hex_to_ints
+import logging
 
 semantic_directory = os.path.dirname(os.path.abspath(__file__))
 
@@ -12,6 +13,7 @@ class HeadUpDisplayTheme:
     image_dict = {}
     audio_dict = {}
     values = {}
+    colours = {}
     theme_dir = ''
 
     def __init__(self, theme_name, theme_dir=None):
@@ -38,7 +40,7 @@ class HeadUpDisplayTheme:
                 
     def load_dir(self, theme_dir):
         theme_config_file = theme_dir + "/theme.csv"
-        if (os.path.exists(theme_config_file)):
+        if os.path.exists(theme_config_file):
             fh = open(theme_config_file, "r")
             lines = fh.readlines()
             for index,line in enumerate(lines):
@@ -86,11 +88,11 @@ class HeadUpDisplayTheme:
             full_image_name += "h" + str(height)
     
         # Use cached full image name
-        if (full_image_name in self.image_dict):
+        if full_image_name in self.image_dict:
             return self.image_dict[full_image_name]
             
         # Scale existing image in our cache
-        elif (image_name in self.image_dict and full_image_name not in self.image_dict):
+        elif image_name in self.image_dict and full_image_name not in self.image_dict:
             image = self.image_dict[image_name]
             self.image_dict[full_image_name] = self.resize_image(image, width, height)
             return self.image_dict[full_image_name]
@@ -142,25 +144,35 @@ class HeadUpDisplayTheme:
         return image.reshape(int(width), int(height))
 
     def get_colour(self, colour, default_colour="000000"):
-        if (colour in self.values):
-            return self.values[colour]
+        if colour in self.colours:
+            return self.colours[colour]
         else:
-            return default_colour
+            if colour in self.values:
+                colour_value = self.values[colour]
+                if colour_value.startswith("#"):
+                    colour_value = colour_value.replace("#", "")                
+                if len(colour_value) != 6 and len(colour_value) != 8:
+                    logging.warning( "Talon HUD - " + colour + " has an invalid colour value of " + colour_value + ", using default " + default_colour)                    
+                    colour_value = default_colour
+                self.colours[colour] = colour_value
+            else:
+                self.colours[colour] = default_colour
+            return self.colours[colour]
 
     def get_opacity(self, opacity_name, default_opacity=1.0):
-        if (opacity_name in self.values):
+        if opacity_name in self.values:
             return int( float(self.values[opacity_name]) * 255 )
         else:
             return int(default_opacity * 255)
             
     def get_float_value(self, name, default_value=1.0):
-        if (name in self.values):
+        if name in self.values:
             return float(self.values[name])
         else:
             return default_value
             
     def get_int_value(self, name, default_value=1):
-        if (name in self.values):
+        if name in self.values:
             return int(self.values[name])
         else:
             return default_value

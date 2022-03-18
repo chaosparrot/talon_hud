@@ -11,10 +11,9 @@ In order to change a theme, you only really need two things.
 - A program that can open a CSV file like Excel
 - A way to generate HEX color codes ( There is plenty of online tools for that, like the [duckduckgo colorpicker](https://duckduckgo.com/?q=color+picker&t=h_&ia=answer) where you can simply pick your color and copy the text next to the # )
 
-Before tweaking themes, it is recommended to turn the HUD in development mode by saying `head up development start`, that way when you save the file, it will automatically update the widgets accordingly. When you are done tweaking the values, saying `head updevelopment stop` will turn the HUD back into its regular
-non-autoreloading mode.
+Before tweaking themes, it is recommended to turn the HUD in development mode by saying `head up development start`, that way when you save the file, it will automatically update the widgets accordingly. When you are done tweaking the values, saying `head up development stop` will turn the HUD back into its regular non-autoreloading mode.
 
-Inside the themes.csv file inside themes/light you will find a list of values that you can change, for instance the command_mode_colour which is currently set to FFFFFF. If you change this to a different value, like 0000AA which is the color blue, it will display a blue colour on your status bar.
+Inside the themes.csv file inside themes/light you will find a list of values that you can change, for instance the command_mode_colour which is currently set to #FFFFFF. If you change this to a different value, like #0000AA which is the color blue, it will display a blue colour on your status bar. If there is a problem with a colour not showing up properly, check your Talon log for any Talon HUD warnings that show up.  
 
 You will notice that inside of the light theme folder, there are no images to be found. That is because all the themes take the images out from a single base theme inside of _base_theme. You can change the images around here and they will be used for all the available themes. As long as you use the right file names, the images should update nicely.
 
