@@ -1,7 +1,6 @@
 # Appearance and theming
 
 The HUD's appearance is almost fully changeable without having to dive into nitty gritty code. Depending on the widget, a number of values can be tweaked like colours, border thickness and paddings, and so on. The images are also neatly kept inside of a folder for you to change as you wish. 
-
 All of these things are bundled in a 'theme'. The light theme is the one you see when you start up. You can find the themes inside of the themes folder.
 
 By default, there are two available themes - Light and dark, for a light and dark mode. These you can switch using `head up theme dark` and `head up theme light`.

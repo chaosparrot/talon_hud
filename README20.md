@@ -16,9 +16,9 @@ By default, the HUD comes in a light and a dark mode, but you can create other t
 1. [Installation and fixing](#installation)
 2. [Important voice commands](#important-voice-commands)
 3. [Available content](#available-content)
-    1. [Talon mode tracking](#talon-mode-tracking)
-    2. [Speech history](#speech-history)
-    3. [Microphone muting and management](#microphone-muting-management)
+    1. [Talon mode tracking](#talon-mode-tracking--turned-on-by-default-)
+    2. [Speech history](#speech-history--turned-on-by-default-)
+    3. [Microphone muting and management](#microphone-management)
 	4. [Language tracking](#language-tracking)
 	5. [Programming language tracking](#programming-language-tracking)
 	6. [Focus tracking](#focus-tracking)
@@ -33,12 +33,12 @@ By default, the HUD comes in a light and a dark mode, but you can create other t
 	5. [Animations](#animations)
 	6. [List of available widgets](#list-of-available-widgets)
 4. [Advanced usage](#advanced-usage)
-    1. [Changing appearance](#changing-appearance)
+    1. [Changing appearance](APPEARANCE.md)
 	2. [Preferences folder](#preferences-folder)
 	3. [Talon HUD environments](#talon-hud-environments)
-	4. [Documentation and walkthrough creation](#documentation-and-walkthrough-creation)
-	5. [Other content creation](#other-content-creation)
-	6. [Internal workings ( TODO )](#internal-workings)
+	4. [Text content, documentation and walkthrough creation](CUSTOMIZATION.md#creating-text-content)
+	5. [Non-text content creation](CUSTOMIZATION.md#non-text-content)
+	6. [Sticky content creation](CUSTOMIZATION.md#sticky-content)
 5. [Miscellaneous](#miscellaneous)
     1. [Roadmap](#roadmap)
 	2. [Development philosophy and guidelines](#development-philosophy-and-guidelines)
@@ -58,6 +58,7 @@ If for some reason the HUD seems broken, you can try and see if clearing out the
 `head up show` turns on the head up display.  
 `head up hide` hides the head up display.  
 `toolkit options` shows all the available content connected to the HUD toolkit, the options on the screen can be read out for navigation.  
+`head up theme dark` and `head up theme light` switch in between the default available themes.
 
 All voice commands are available in the .talon files inside of the HUD, while some are also generated based on the titles of the widgets themselves.
 
@@ -72,7 +73,7 @@ The status bar will always show whether you are in sleep mode or not at a glance
 
 You can change the mode detection, toggle and available modes yourself as well, if your set up requires a more personal touch. To see how, read the link below.
 
-(TODO!)[Customizing mode tracking]
+(Customizing mode tracking)[CUSTOMIZATION.md#customizing-mode-tracking]
 
 ### Speech history ( turned on by default )
 
@@ -92,9 +93,9 @@ This comes in handy when you have multiple microphone set ups, like a laptop mic
 
 ### Language tracking
 
-For the multi-lingual folks out there, switching between different languages for dictation is a necessity to keep your workflow working with voice. For that purpose, you can add a language icon indicating your language on the status bar by saying `status bar add language` or right clicking the status bar to the option Add language.  
+For the multilingual folks out there, switching between different languages for dictation is a necessity to keep your workflow working with voice. For that purpose, you can add a language icon indicating your language on the status bar by saying `status bar add language` or right clicking the status bar to the option Add language.  
 
-(TODO!)[Customizing languages]
+(Customizing languages)[CUSTOMIZATION.md#customizing-language-tracking]
 
 ### Programming language tracking
 
@@ -102,7 +103,7 @@ A lot of programmers inhabit the Talon Voice community, and with them come many 
 To make sure you know what programming language context you are in, you can add a language icon to your status bar by saying `status bar add code language` or right clicking the status bar and clicking 'Add code language'.  
 You can add and remove programming languages icons yourself, by following the instructions below.  
 
-(TODO!)[Customizing programming languages]
+(Customizing programming languages)[CUSTOMIZATION.md#customizing-programming-languages]
 
 ### Focus tracking
 
@@ -116,12 +117,12 @@ You can also publish your own files to the HUD documentation, to keep as a remin
 
 When you need to switch between pages, you can say `<widget name> next` or `<widget name> back` to go forward or backward in the current content.
 
-You can read about creating your own content here (TODO!)[Creating your own documentation]
+You can read about creating your own content at (publishing documentation)[CUSTOMIZATION.md#publishing-documentation]
 
 ### Walkthroughs
 
 While having a good overview of all voice commands can be good, it is often overwhelming. To make the learning process a little less steep, the HUD offers some walkthroughs which guide you through voice commands one by one in a designed fashion, giving explanations about the voice commands as you go. You can find the walkthroughs by navigating through the status bar right click menu Content toolkit -> Walkthroughs or by saying `toolkit walkthroughs` instead.  
-You can also create walkthroughs for your own work flow, or for your own packages as well. You can read about how to create walkthroughs yourself in the (TODO!)[Create walkthrough section]
+You can also create walkthroughs for your own work flow, or for your own packages as well. You can read about how to create walkthroughs yourself at (publishing walkthroughs)[CUSTOMIZATION.md#publishing-walkthroughs]
 
 ### Debugging
 
@@ -183,6 +184,41 @@ Most of the Talon HUD widgets have animations turned on by default, but you migh
 - Screen overlay: A widget that can put labels all over the screen. Only used in the focus tracker so far.
 - Cursor tracker: A widget that follows your mouse around. Currently has no available content.
 - Context menu: The right click menu of a widget.
+
+## Advanced usage
+
+You can tweak more about the HUD and use it in more advanced ways if you feel like tinkering around.
+For changing the appearance of the HUD, you can take a look at the [Changing appearance](APPEARANCE.md) page.  
+For customizing and creating your own content, you can have a look at the [Customization](CUSTOMIZATION.md) page.
+
+### Preferences folder
+
+The 'preferences' folder inside of the HUD contains all the changes the user has made to the HUD. All the files inside are non-critical, meaning that you can remove them and they will be regenerated based on the default settings when you next start up Talon.  
+The user preferences are split into two files, the monitor file which contains all the positional information based on the current monitor set up, and the widget_settings.csv file, which contains all the non-positional information like widget enabled status, alignment and attached content.  
+If you have another talon hud environment ( explained below ), you will have more files in the preferences folder as well, prefixed by the talon hud environment. These files are used purely for that environment.  
+
+On top of widget related settings, the preferences folder can also contain files that are used for the content creation. An example of this is the programming_languages.csv file which contains available programming languages, the walkthrough.csv file which keeps track of all finished walkthroughs, and the hud_preferred_microphone.txt file, which contains the prefered microphone to toggle to with the status bar microphone toggle.  
+
+If you want to customize the place where you keep your preferences, so you can bundle them all in one place for example, you can change the `_configuration.py` file to change the directories there.
+
+### Talon HUD environments
+
+You can change your HUD layout entirely using the context management of Talon, saving you from having to say voice commands to set up your desired content and layout.  
+Let's say you want to change the placement and enabled widgets when you enter a browser.  
+This is entirely achievable using the 'user.talon_hud_environment' setting.  
+
+We implement this in the following talon_hud_browser.talon file example.  
+When you focus a browser after adding a talon file like this, it will automatically make a new set of preference files specifically for the 'browser_hud' Talon HUD environment.
+You can then change your HUD around as you see fit. When you switch out of your browser context, it will change the HUD back as you left it before opening the browser.
+And next time you open up the browser again, it will neatly place the widgets where they were left previously in the 'browser_hud' environment.
+
+```
+tag: user.talon_hud_visible
+and tag: browser
+-
+settings():
+    user.talon_hud_environment = "browser_hud"
+```
 
 ## Miscellaneous
 
