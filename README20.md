@@ -73,7 +73,7 @@ The status bar will always show whether you are in sleep mode or not at a glance
 
 You can change the mode detection, toggle and available modes yourself as well, if your set up requires a more personal touch. To see how, read the link below.
 
-(Customizing mode tracking)[CUSTOMIZATION.md#customizing-mode-tracking]
+[Customizing mode tracking](CUSTOMIZATION.md#customizing-mode-tracking)
 
 ### Speech history ( turned on by default )
 
@@ -95,7 +95,7 @@ This comes in handy when you have multiple microphone set ups, like a laptop mic
 
 For the multilingual folks out there, switching between different languages for dictation is a necessity to keep your workflow working with voice. For that purpose, you can add a language icon indicating your language on the status bar by saying `status bar add language` or right clicking the status bar to the option Add language.  
 
-(Customizing languages)[CUSTOMIZATION.md#customizing-language-tracking]
+[Customizing languages](CUSTOMIZATION.md#customizing-language-tracking)
 
 ### Programming language tracking
 
@@ -103,7 +103,7 @@ A lot of programmers inhabit the Talon Voice community, and with them come many 
 To make sure you know what programming language context you are in, you can add a language icon to your status bar by saying `status bar add code language` or right clicking the status bar and clicking 'Add code language'.  
 You can add and remove programming languages icons yourself, by following the instructions below.  
 
-(Customizing programming languages)[CUSTOMIZATION.md#customizing-programming-languages]
+[Customizing programming languages](CUSTOMIZATION.md#customizing-programming-languages)
 
 ### Focus tracking
 
@@ -117,12 +117,12 @@ You can also publish your own files to the HUD documentation, to keep as a remin
 
 When you need to switch between pages, you can say `<widget name> next` or `<widget name> back` to go forward or backward in the current content.
 
-You can read about creating your own content at (publishing documentation)[CUSTOMIZATION.md#publishing-documentation]
+You can read about creating your own content at [publishing documentation](CUSTOMIZATION.md#publishing-documentation)
 
 ### Walkthroughs
 
 While having a good overview of all voice commands can be good, it is often overwhelming. To make the learning process a little less steep, the HUD offers some walkthroughs which guide you through voice commands one by one in a designed fashion, giving explanations about the voice commands as you go. You can find the walkthroughs by navigating through the status bar right click menu Content toolkit -> Walkthroughs or by saying `toolkit walkthroughs` instead.  
-You can also create walkthroughs for your own work flow, or for your own packages as well. You can read about how to create walkthroughs yourself at (publishing walkthroughs)[CUSTOMIZATION.md#publishing-walkthroughs]
+You can also create walkthroughs for your own work flow, or for your own packages as well. You can read about how to create walkthroughs yourself at [publishing walkthroughs](CUSTOMIZATION.md#publishing-walkthroughs)
 
 ### Debugging
 
@@ -171,6 +171,8 @@ You can change the alignment of widgets by saying `head up align <widget name> <
 Most of the Talon HUD widgets have animations turned on by default, but you might not like those animations yourself. You can turn them off by saying `head up basic <widget name>`, or turn them back on by saying `head up fancy <widget name>`.
 
 ### List of available widgets
+
+![Image showing the names of all the widgets next to them](/docs/widget_overview.png)
 
 (*) The name of these widgets may change based on the title of the panel.
 
