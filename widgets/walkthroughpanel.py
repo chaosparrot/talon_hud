@@ -1,3 +1,4 @@
+
 from talon import skia, ui, cron, actions, clip
 from ..layout_widget import LayoutWidget
 from ..widget_preferences import HeadUpDisplayUserWidgetPreferences
