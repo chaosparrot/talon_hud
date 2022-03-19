@@ -259,7 +259,7 @@ In walkthroughs, every new line starts a new walkthrough step.
 
 ## Non-text content
 
-TODO - Give an explanation of every content type to publish - For now just look at actions inside content/state.py until I flesh this out again.
+This is still being fleshed out, but in the mean time, you can take a look at the [previous content documentation](docs/deprecated_docs/CONTENT_README.md)
 
 ## Sticky content
 

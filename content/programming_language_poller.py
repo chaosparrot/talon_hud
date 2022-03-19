@@ -1,6 +1,6 @@
 from talon import actions, cron, scope, app, Module
 from .poller import Poller
-from .._configuration import hud_get_configuration
+from ..configuration import hud_get_configuration
 import os
 
 languages = {}

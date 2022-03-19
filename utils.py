@@ -51,10 +51,7 @@ def retrieve_available_voice_commands(text: str):
     # Edge case - Clean up remaining commands        
     if "command_available" in styles:
         voice_commands.append(string_to_speakable_string(" ".join(words_to_use)))
-    
-    # Sort commands by length so that shorter commands do not take away words from a longer command
-    voice_commands.sort(key=len, reverse=True)
-    
+
     return voice_commands
 
 def layout_rich_text(paint:skia.Paint, text:str, width:int = 1920, height:int = 1080) -> list[HudRichTextLine]:

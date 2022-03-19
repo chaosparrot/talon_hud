@@ -2,7 +2,7 @@ from typing import Callable, Any
 from talon import app, Module, actions, Context, speech_system, cron, scope, fs
 from .typing import HudWalkThrough, HudWalkThroughStep, HudContentPage
 from ..utils import retrieve_available_voice_commands, md_to_richtext_content
-from .._configuration import hud_get_configuration
+from ..configuration import hud_get_configuration
 import os
 import json
 import copy
@@ -164,7 +164,7 @@ class WalkthroughPoller:
         """Load the walkthrough file"""
         filename = self.walkthrough_files[title]
         walkthrough_defaults = {"content": "", "context_hint": "", "modes": [], "tags": [], "app": ""}
-        steps = []        
+        steps = []
         if filename.endswith(".json"):
             with open(filename) as json_file:
                 jsondata = json.load(json_file)
@@ -356,10 +356,14 @@ class WalkthroughPoller:
                 step = self.current_walkthrough.steps[self.current_stepnumber]
                 
                 current_length = len(self.current_words)
-                for voice_command in step.voice_commands:
-                    if voice_command in phrase_to_check:
-                        self.current_words.append(voice_command)
-                        phrase_to_check = " ".join(phrase_to_check.split(voice_command, 1))
+                for index, voice_command in enumerate(step.voice_commands):
+                    # Make sure the activations can only happen in-order
+                    if index >= current_length:
+                        if voice_command in phrase_to_check:
+                            self.current_words.append(voice_command)
+                            phrase_to_check = phrase_to_check.split(voice_command, 1)[1]
+                        else:
+                            break
                 
                 # Send an update about the voice commands said during the step if it has changed
                 if current_length != len(self.current_words):

@@ -107,7 +107,9 @@ class HeadUpWalkthroughPanel(LayoutWidget):
                 self.animated_word_state = 0
                 self.previous_progress = HudContentPage(0,1,0)
             else:
-                if self.show_animations and len(self.previous_walkthrough_step.said_walkthrough_commands) != len(new_content["event"].content.said_walkthrough_commands):
+                if self.show_animations and self.previous_walkthrough_step.said_walkthrough_commands is not None \
+                    and new_content["event"].content.said_walkthrough_commands is not None \
+                    and len(self.previous_walkthrough_step.said_walkthrough_commands) != len(new_content["event"].content.said_walkthrough_commands):
                     animated_words = []
                     for said_voice_command in new_content["event"].content.said_walkthrough_commands:                    
                         current_count = self.previous_walkthrough_step.said_walkthrough_commands.count(said_voice_command)

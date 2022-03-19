@@ -17,7 +17,7 @@ from .widgets.cursortracker import HeadUpCursorTracker
 from .widgets.screenoverlay import HeadUpScreenOverlay
 from .theme import HeadUpDisplayTheme
 from .event_dispatch import HeadUpEventDispatch
-from ._configuration import hud_get_configuration
+from .configuration import hud_get_configuration
 
 user_preferences_file_dir = hud_get_configuration("user_preferences_folder")
 user_preferences_file_location = os.path.join(user_preferences_file_dir, "widget_settings.csv")

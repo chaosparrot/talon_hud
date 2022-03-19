@@ -2,7 +2,7 @@
 import os
 from talon import ui
 import copy
-from ._configuration import hud_get_configuration
+from .configuration import hud_get_configuration
 
 user_preferences_file_dir = hud_get_configuration("user_preferences_folder")
 widget_settings_file_ending = "widget_settings.csv"
