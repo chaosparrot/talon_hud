@@ -2,8 +2,8 @@ from talon import skia, cron, ctrl, scope, canvas, ui
 from talon.types import Point2d
 from abc import ABCMeta
 import numpy
-from user.talon_hud.widget_preferences import HeadUpDisplayUserWidgetPreferences
-from user.talon_hud.content.typing import HudButton
+from .widget_preferences import HeadUpDisplayUserWidgetPreferences
+from .content.partial_content import HudPartialContent
 import copy
 
 class BaseWidget(metaclass=ABCMeta):
@@ -24,12 +24,11 @@ class BaseWidget(metaclass=ABCMeta):
     buttons = []
     
     allowed_setup_options = ["position", "dimension", "limit", "font_size"]
-    subscribed_content = ['mode']
-    subscribed_logs = []
-    subscribed_topics = []
-    topic = ''
     
-    content = {}
+    # New content topic types
+    topic_types = []
+    current_topics = []
+    content = None
         
     animation_tick = 0
     animation_max_duration = 100
@@ -38,18 +37,23 @@ class BaseWidget(metaclass=ABCMeta):
     setup_vertical_direction = ""
     setup_horizontal_direction = ""
     
-    def __init__(self, id, preferences_dict, theme, event_dispatch, subscriptions = None):
+    def __init__(self, id, preferences_dict, theme, event_dispatch, subscriptions = None, current_topics = None):
         self.id = id
         self.theme = theme
         self.preferences = copy.copy(self.preferences)
         self.event_dispatch = event_dispatch
-        
-        self.load(preferences_dict)
+
         if subscriptions != None:
-            self.topic = subscriptions['current_topic'] if 'current_topic' in subscriptions else ''
-            self.subscribed_topics = subscriptions['topics'] if 'topics' in subscriptions else self.subscribed_topics
-            self.subscribed_logs = subscriptions['logs'] if 'logs' in subscriptions else self.subscribed_logs
-            
+            self.subscriptions = subscriptions
+        if current_topics != None:
+            self.current_topics = current_topics
+
+        self.content = HudPartialContent(self.topic_types)
+        self.content.set_persisted_topics(self.current_topics)
+        self.preferences.current_topics = self.current_topics
+
+        self.load(preferences_dict)
+
     # Load the widgets preferences
     def load(self, dict, initialize = True, update_enabled = False):
         self.preferences.load(self.id, dict)
@@ -67,40 +71,70 @@ class BaseWidget(metaclass=ABCMeta):
         self.alignment = self.preferences.alignment
         self.expand_direction = self.preferences.expand_direction
         self.minimized = self.preferences.minimized
+        self.subscriptions = self.preferences.subscriptions
+        if self.preferences.current_topics is not None:
+            self.current_topics = self.preferences.current_topics
+            self.content.set_persisted_topics(self.preferences.current_topics)
+        self.load_extra_preferences()
         
         # For re-enabling or disabling widgets after a reload ( mostly for talon hud environment changes )
         if update_enabled:
             if self.enabled != self.preferences.enabled:
-                self.enable() if self.preferences.enabled else self.disable()
+                if "enabled" in dict and dict["enabled"]:            
+                    self.show_animations = False
+                    self.enable() if self.preferences.enabled else self.disable()
+                    self.show_animations = self.preferences.show_animations
 
         if initialize:
             self.load_theme_values()        
     
-    # Set the topic that has claimed this widget
-    def set_topic(self, topic:str):
-    	self.topic = topic
+    def load_extra_preferences(self):
+        """
+        To be overridden by derived types to load widget-specific preferences
+        """
+        pass
+    
+    # Clear the given topic from the current topics
+    def clear_topic(self, topic: str):
+        for topic_type in self.topic_types:
+            self.content.remove_topic(topic_type, topic)
+        self.preferences.current_topics = self.content.get_current_topics()
+        self.preferences.mark_changed = True
+        self.event_dispatch.request_persist_preferences()
     
     def set_theme(self, theme):
         self.theme = theme
-        self.load_theme_values()        
+        self.load_theme_values()
         if self.enabled:
-            self.canvas.resume()
+            if self.canvas:
+                self.canvas.resume()
             self.animation_tick = self.animation_max_duration if self.show_animations else 0
-    
-    def update_content(self, content):
-        if not self.sleep_enabled and "mode" in content:
-            if (content["mode"] == "sleep"):
+
+    def content_handler(self, event) -> bool:
+        self.content.process_event(event)
+        
+        # Set the new content topics if they have changed
+        new_topics = self.content.get_current_topics()
+        if len(new_topics) != len(self.current_topics) or len(set(new_topics) - set(self.current_topics)) > 0:
+            self.current_topics = new_topics
+            self.preferences.current_topics = self.current_topics
+            self.preferences.mark_changed = True
+            self.event_dispatch.request_persist_preferences()
+        
+        if not self.sleep_enabled and event.topic_type == "variable" and event.topic == "mode":
+            if (event.content == "sleep"):
                 self.disable()
             elif self.preferences.enabled == True:
                 self.enable()
-    
-        self.refresh(content)
-        for key in content:
-            self.content[key] = content[key]
         
+        self.refresh({"event": event})
+        
+        updated = False
         if self.enabled and self.canvas:
             self.canvas.resume()
-            
+            updated = True
+        return updated
+
     def update_panel(self, panel_content) -> bool:
         if not panel_content.content[0] and self.enabled:
             self.disable()
@@ -110,7 +144,6 @@ class BaseWidget(metaclass=ABCMeta):
         
         if self.enabled:
             self.panel_content = panel_content
-            self.topic = panel_content.topic
             self.canvas.resume()
         return self.enabled and panel_content.topic
     
@@ -120,8 +153,8 @@ class BaseWidget(metaclass=ABCMeta):
             self.canvas = canvas.Canvas(min(self.x, self.limit_x), min(self.y, self.limit_y), max(self.width, self.limit_width), max(self.height, self.limit_height))
             if self.mouse_enabled:
                 self.canvas.blocks_mouse = True
-                self.canvas.register('mouse', self.on_mouse)
-            self.canvas.register('draw', self.draw_cycle)
+                self.canvas.register("mouse", self.on_mouse)
+            self.canvas.register("draw", self.draw_cycle)
             self.animation_tick = self.animation_max_duration if self.show_animations else 0
             self.canvas.resume()
             
@@ -134,7 +167,7 @@ class BaseWidget(metaclass=ABCMeta):
     def disable(self, persisted=False):
         if self.enabled:
             if self.mouse_enabled:
-                self.canvas.unregister('mouse', self.on_mouse)
+                self.canvas.unregister("mouse", self.on_mouse)
         
             self.enabled = False
             self.animation_tick = -self.animation_max_duration if self.show_animations else 0
@@ -162,7 +195,7 @@ class BaseWidget(metaclass=ABCMeta):
     # Clear up all the resources after a disabling
     def clear(self):
         if (self.canvas is not None):
-            self.canvas.unregister('draw', self.draw_cycle)
+            self.canvas.unregister("draw", self.draw_cycle)
             self.canvas.close()
             self.canvas = None
             self.cleared = True
@@ -197,7 +230,7 @@ class BaseWidget(metaclass=ABCMeta):
         if self.setup_type in ["dimension", "limit", "position"]:
             # Colours blue and red chosen for contrast and decreased possibility of colour blindness making it difficult
             # To make out the width and the limit lines
-            paint.color = '0000AA'
+            paint.color = "0000AA"
             resize_margin = 2
             leftmost = self.x + resize_margin
             rightmost = self.x + self.width - resize_margin
@@ -208,7 +241,7 @@ class BaseWidget(metaclass=ABCMeta):
             canvas.draw_line(rightmost, bottommost, leftmost, bottommost)
             canvas.draw_line(leftmost, bottommost, leftmost, topmost)
             
-            paint.color = 'FF0000'
+            paint.color = "FF0000"
             resize_margin = 0
             leftmost = self.limit_x + resize_margin
             rightmost = self.limit_x + self.limit_width - resize_margin
@@ -253,7 +286,7 @@ class BaseWidget(metaclass=ABCMeta):
         pass
         
     def start_setup(self, setup_type, mouse_position = None):
-        """Starts a setup mode that is used for moving, resizing and other various changes that the user might setup"""    
+        """Starts a setup mode that is used for moving, resizing and other various changes that the user might setup"""            
         if (mouse_position is not None):
             self.drag_position = [mouse_position[0] - self.limit_x, mouse_position[1] - self.limit_y]
         
@@ -293,7 +326,8 @@ class BaseWidget(metaclass=ABCMeta):
             self.setup_type = setup_type
             
             self.preferences.mark_changed = True
-            self.canvas.resume()
+            if self.canvas:
+                self.canvas.resume()
             self.event_dispatch.request_persist_preferences()
         # Cancel every change
         elif setup_type == "cancel":
@@ -302,7 +336,7 @@ class BaseWidget(metaclass=ABCMeta):
                 self.load({}, False)
                 
                 self.setup_type = ""                
-                if self.canvas:
+                if self.canvas and self.enabled:
                     rect = ui.Rect(self.x, self.y, self.width, self.height)                    
                     self.canvas.rect = rect
                     self.canvas.resume()
@@ -310,9 +344,13 @@ class BaseWidget(metaclass=ABCMeta):
         elif setup_type == "reload":
             self.drag_position = []
             self.setup_type = ""             
-            if self.canvas:            
-                rect = ui.Rect(self.x, self.y, self.width, self.height)                    
-                self.canvas.rect = rect
+            if self.canvas and self.enabled:
+                rect = ui.Rect(self.x, self.y, self.width, self.height)
+                
+                # Only do a rect change if it has actually changed to prevent costly operations
+                if self.canvas.rect.x != self.x or self.canvas.rect.y != self.y or \
+                    self.canvas.rect.width != self.width or self.canvas.rect.height != self.height:
+                    self.canvas.rect = rect
                 self.canvas.resume()
                 
         # Start the setup state
@@ -333,6 +371,9 @@ class BaseWidget(metaclass=ABCMeta):
                 
     def setup_move(self, pos):
         """Responds to global mouse movements when a widget is in a setup mode"""
+        if not self.canvas:
+            return
+        
         if (self.setup_type == "position"):
             x, y = pos
             if len(self.drag_position) > 0:

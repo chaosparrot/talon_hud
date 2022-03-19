@@ -1,28 +1,28 @@
 from talon import skia, ui
 from talon.types.point import Point2d
-from user.talon_hud.content.typing import HudRichText, HudRichTextLine, HudButton, HudIcon
+from .content.typing import HudRichText, HudRichTextLine, HudButton, HudIcon
 from textwrap import wrap
 import math
 import re
 import numpy
 
 rich_text_delims_dict = {
-    '/>': 'end', # GENERAL STYLE END - We only use a single token for this to not have to deal with issues where nested styles get changed out of order
-    '<*': 'bold', # BOLD STYLE
-    '</': 'italic', # ITALIC STYLE
-    '<+': 'success', # COLOUR
-    '<!!': 'error', # COLOUR
-    '<!': 'warning', # COLOUR
-    '<@': 'notice', # COLOUR
+    "/>": "end", # GENERAL STYLE END - We only use a single token for this to not have to deal with issues where nested styles get changed out of order
+    "<*": "bold", # BOLD STYLE
+    "</": "italic", # ITALIC STYLE
+    "<+": "success", # COLOUR
+    "<!!": "error", # COLOUR
+    "<!": "warning", # COLOUR
+    "<@": "notice", # COLOUR
     
     # Semantic information
-    '<cmd@': 'command_available', # Voice command available
+    "<cmd@": "command_available", # Voice command available
 }
 rich_text_delims = rich_text_delims_dict.keys()
-rich_text_delims_regex = r'(/>|<\*|</|<\+|<\!\!|<\!|<@|<cmd@)'
+rich_text_delims_regex = r"(/>|<\*|</|<\+|<\!\!|<\!|<@|<cmd@)"
 
 def remove_tokens_from_rich_text(text:str):
-    return re.sub(rich_text_delims_regex, '', text)
+    return re.sub(rich_text_delims_regex, "", text)
     
 def retrieve_available_voice_commands(text: str):
     voice_commands = []
@@ -33,7 +33,7 @@ def retrieve_available_voice_commands(text: str):
     styles = []
     for token in tokened_text:
         if token in rich_text_delims:
-            if token == '/>':
+            if token == "/>":
                 if len(styles) > 0:
                     in_voice_command = "command_available" in styles
                     styles.pop()
@@ -51,7 +51,7 @@ def retrieve_available_voice_commands(text: str):
     # Edge case - Clean up remaining commands        
     if "command_available" in styles:
         voice_commands.append(string_to_speakable_string(" ".join(words_to_use)))
-    
+
     return voice_commands
 
 def layout_rich_text(paint:skia.Paint, text:str, width:int = 1920, height:int = 1080) -> list[HudRichTextLine]:
@@ -91,7 +91,7 @@ def layout_rich_text(paint:skia.Paint, text:str, width:int = 1920, height:int = 
                     current_line_bounds.width = 0
                     current_line_bounds.height = 0
                 words_to_use = []
-                if token == '/>':
+                if token == "/>":
                     if len(styles) > 0:
                         styles.pop()
                         
@@ -155,6 +155,94 @@ def layout_rich_text(paint:skia.Paint, text:str, width:int = 1920, height:int = 
     paint.font.embolden = False
     return final_lines
 
+def md_to_richtext_content(md_string: str):
+    sanitized_content = sanitize_md_from_unsupported_tags(md_string)
+    
+    # Marks to be translated to the internal rich text delimiters
+    mark_voice_command = "-MARK-VOICE-COMMAND-"
+    mark_italic = "-MARK-ITALIC-"
+    mark_italic_u = "-MARK-U-ITALIC-"    
+    mark_emphasis = "-MARK-EMPHASIS-"
+    mark_emphasis_u = "-MARK-U-EMPHASIS-"
+    mark_error = "-MARK-ERROR-"
+    
+    # Escaped marks
+    escaped_backtick = "-ESCAPED-BACKTICK-"
+    escaped_star = "-ESCAPED-STAR-"
+    escaped_underscore = "-ESCAPED-UNDERSCORE-"
+    
+    # Keep escaped characters around
+    md_content = sanitized_content.replace("\\`", escaped_backtick).replace("\\*", escaped_star).replace("\\_", escaped_underscore)\
+        .replace(" ` ", " " + escaped_backtick + " ").replace(" * ", " " + escaped_star + " ").replace(" _ ", " " + escaped_underscore + " ")
+    content_escaped = len(md_content) != len(sanitized_content)
+    
+    # Replace all the MD markers
+    md_content = md_content.replace("!!", mark_error)            
+    md_content = md_content.replace("__", mark_emphasis_u).replace("**", mark_emphasis)
+    md_content = md_content.replace("_", mark_italic_u).replace("*", mark_italic)
+    md_content = md_content.replace(mark_emphasis + mark_emphasis_u, mark_emphasis + mark_italic_u)\
+    	.replace(mark_emphasis_u + mark_emphasis, mark_emphasis_u + mark_italic)            
+    md_content = md_content.replace("```", "`").replace("`", mark_voice_command)
+    
+    # This is probably a highly inefficient way of replacing tokens, but it should probably be atleast consistent?
+    md_content = replace_md_content_mark(md_content, mark_voice_command, "<cmd@")
+    md_content = replace_md_content_mark(md_content, mark_error, "<!!")
+    md_content = replace_md_content_mark(md_content, mark_italic, "</")
+    md_content = replace_md_content_mark(md_content, mark_italic_u, "</")
+    md_content = replace_md_content_mark(md_content, mark_emphasis, "<*")
+    md_content = replace_md_content_mark(md_content, mark_emphasis_u, "<*")
+    
+    # Only unescape the content if we have escaped
+    if content_escaped:
+        md_content = md_content.replace(escaped_backtick, "`").replace(escaped_star, "*").replace(escaped_underscore, "_")
+            
+    return md_content
+
+def replace_md_content_mark(md_content: str, mark_to_replace: str, token: str) -> str:
+    mark_opened = False
+    token_splits = md_content.split(mark_to_replace)
+    if len(token_splits) > 0:
+        replaced_content = token_splits[0]
+        for split_token in token_splits[1:]:
+            mark_opened = not mark_opened
+            replaced_content += ( token if mark_opened else "/>" ) + split_token
+        md_content = replaced_content
+    return md_content
+
+def sanitize_md_from_unsupported_tags(md_content: str) -> str:
+    content = []
+    lines = md_content.splitlines()
+    line_added = False
+    
+    for line in lines:
+        stripped_line = line.strip()
+        
+        # Skip all headers
+        # Skip all table rows
+        # Skip all block quotes
+        if stripped_line.startswith("#") or \
+            stripped_line.startswith("|") or \
+            stripped_line.startswith(">"):
+            content_added = False
+            continue
+		    
+        # Skip all horizontal lines and remove the previous line before it if it has been added
+        elif ( "-" in stripped_line and not len(stripped_line.replace("-", "")) > 0) or \
+            ( "=" in stripped_line and not len(stripped_line.replace("=", "")) > 0):
+            if content_added:
+                content.pop()
+                content_added = False		    
+            continue
+        elif line == "":
+            content.append(line)
+            
+            # Empty lines need to be marked as no content to allow the header removal to work properly
+            content_added = False
+        else:
+            content.append(line)
+            content_added = True
+    return "\n".join(content)    
+
 def calculate_words_bounds(words: list[str], paint, space_text_bounds) -> ui.Rect:
     current_words_joined = " ".join(words)
     _, current_line_bounds = paint.measure_text(current_words_joined)            
@@ -163,12 +251,12 @@ def calculate_words_bounds(words: list[str], paint, space_text_bounds) -> ui.Rec
     if len(words) == 1 and words[0] == "":
         current_line_bounds = space_text_bounds
     else:
-        leading_spaces_count = len(current_words_joined) - len(current_words_joined.lstrip(' '))
-        trailing_spaces_count = len(current_words_joined) - len(current_words_joined.rstrip(' '))
+        leading_spaces_count = len(current_words_joined) - len(current_words_joined.lstrip(" "))
+        trailing_spaces_count = len(current_words_joined) - len(current_words_joined.rstrip(" "))
         extra_spaces_count = leading_spaces_count + trailing_spaces_count
         
         # Edge case - Spaces only
-        if len(current_words_joined.lstrip(' ')) == 0:
+        if len(current_words_joined.lstrip(" ")) == 0:
             extra_spaces_count = leading_spaces_count
         current_line_bounds.width += extra_spaces_count * space_text_bounds.width
 
@@ -180,18 +268,18 @@ def hex_to_ints(hex: str) -> list[int]:
     
 def lighten_hex_colour(hex: str, percent: int) -> str:
     ints = hex_to_ints(hex)
-    new_hex = ''
+    new_hex = ""
     for index, value in enumerate(ints):
         # Skip the opacity channel
         if index <= 2:
             if value < 80:
                 value = 80
             value = int(min(255, value * ( 100 + percent ) / 100))
-        new_hex += '0' + format(value, 'x') if value <= 15 else format(value, 'x')
+        new_hex += "0" + format(value, "x") if value <= 15 else format(value, "x")
     return new_hex
     
 def string_to_speakable_string(str: str) -> str:
-    return re.sub(r'([!?-_\,\.])', ' ', str.lower()).strip()
+    return re.sub(r"([!?-_\,\.])", " ", str.lower()).strip()
     
 def determine_screen_for_pos(pos) -> ui.Screen:
     for index, screen in enumerate(ui.screen.screens()):

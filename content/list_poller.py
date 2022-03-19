@@ -1,19 +1,19 @@
 from talon import actions, cron, registry, ui, app, Module
-from user.talon_hud.content.poller import Poller
+from .poller import Poller
 
 # Polls the current Talon registry lists for debugging purposes
 class ListPoller(Poller):
+    content = None
     job = None
-    previous_list_state = ''
+    previous_list_state = ""
     list = None
+    should_open = False
 
     def enable(self):
-       if (self.job is None):
+       if self.job is None and self.list is not None:
             self.enabled = True
-            scope_state = self.get_list_in_text()        
-            actions.user.hud_publish_content(scope_state, 'list', 'List inspection')        
-            
-            self.job = cron.interval('200ms', self.list_check)
+            self.should_open = True
+            self.job = cron.interval("200ms", self.list_check)
                 
     def disable(self):
         cron.cancel(self.job)
@@ -24,7 +24,9 @@ class ListPoller(Poller):
         list_state = self.get_list_in_text()
         if (list_state != self.previous_list_state):
             self.previous_list_state = list_state
-            actions.user.hud_publish_content(list_state, 'list', 'List inspection', False)
+            panel_content = self.content.create_panel_content(list_state, "list", "List inspection", self.should_open)
+            self.content.publish_event("text", panel_content.topic, "replace", panel_content, self.should_open)
+            self.should_open = False
         
     def get_list_in_text(self):
         content = ""
@@ -55,8 +57,8 @@ class ListPoller(Poller):
 def select_list(data):
     list_poller = ListPoller()
     list_poller.list = data["text"]
-    actions.user.hud_add_poller('list', list_poller)
-    actions.user.hud_activate_poller('list')
+    actions.user.hud_add_poller("list", list_poller)
+    actions.user.hud_activate_poller("list")
 
 mod = Module()
 @mod.action_class

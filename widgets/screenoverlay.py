@@ -1,7 +1,7 @@
-from user.talon_hud.base_widget import BaseWidget
-from user.talon_hud.utils import layout_rich_text, hit_test_rect, is_light_colour, hex_to_ints
-from user.talon_hud.content.typing import HudScreenRegion
-from user.talon_hud.widget_preferences import HeadUpDisplayUserWidgetPreferences
+from ..base_widget import BaseWidget
+from ..utils import layout_rich_text, hit_test_rect, is_light_colour, hex_to_ints
+from ..content.typing import HudScreenRegion
+from ..widget_preferences import HeadUpDisplayUserWidgetPreferences
 from talon import skia, ui, cron, ctrl, canvas
 from talon.types.point import Point2d
 import time
@@ -18,36 +18,31 @@ class HeadUpScreenOverlay(BaseWidget):
     prev_mouse_pos = None
     smooth_mode = True
 
-    preferences = HeadUpDisplayUserWidgetPreferences(type="screen_overlay", x=0, y=0, width=300, height=30, font_size=12, enabled=True, alignment='center', expand_direction='down', sleep_enabled=False)
-    subscribed_content = [
-        "mode",
-        "screen_regions"
-    ]
-    subscribed_topics = ['focus', 'overlay']    
+    preferences = HeadUpDisplayUserWidgetPreferences(type="screen_overlay", x=0, y=0, width=300, height=30, font_size=12, enabled=True, alignment="center", expand_direction="down", sleep_enabled=False)
+    
+    # New content topic types
+    topic_types = ["screen_regions"]
+    current_topics = []
+    subscriptions = ["*"]
     
     regions = None
     active_regions = None
     canvases = None
-    content = {
-        'mode': 'command',
-        "screen_regions": {
-           "overlay": []
-        }
-    }
     
-    def __init__(self, id, preferences_dict, theme, subscriptions = None):
-        super().__init__(id, preferences_dict, theme, subscriptions)
+    def __init__(self, id, preferences_dict, theme, event_dispatch, subscriptions = None, current_topics = None):
+        super().__init__(id, preferences_dict, theme, event_dispatch, subscriptions, current_topics)
         self.regions = []
         self.active_regions = []
         self.canvases = []
     
     def refresh(self, new_content):
-        if ("mode" in new_content and new_content["mode"] != self.content['mode']):
-            if (new_content["mode"] == 'sleep' and self.sleep_enabled == False):
+        if "event" in new_content and new_content["event"].topic_type == "screen_regions":
+            self.update_regions()
+        elif "event" in new_content and new_content["event"].topic_type == "variable" and new_content["event"].topic == "mode":
+            if (new_content["event"].content == "sleep" and self.sleep_enabled == False):
                 self.soft_disable()
-
-        if "screen_regions" in new_content and "overlay" in new_content["screen_regions"]:
-            self.update_regions(new_content["screen_regions"]["overlay"])
+            else:
+                self.soft_enable()
 
     def enable(self, persisted=False):
         if not self.enabled:
@@ -84,7 +79,7 @@ class HeadUpScreenOverlay(BaseWidget):
     def soft_enable(self):
         if not self.soft_enabled:
             self.soft_enabled = True
-        self.activate_mouse_tracking()
+            self.activate_mouse_tracking()
 
     def soft_disable(self):
         self.clear_canvases()
@@ -93,17 +88,19 @@ class HeadUpScreenOverlay(BaseWidget):
             cron.cancel(self.mouse_poller)
             self.mouse_poller = None
             self.regions = []
-            self.active_regions = []            
+            self.active_regions = []
 
-    def update_regions(self, regions: list[HudScreenRegion] = None):
-        self.active_regions = []    
+    def update_regions(self):
+        self.active_regions = []
         if not self.enabled:
-            self.regions = regions
+            self.regions = self.content.get_topic("screen_regions")
             return
         
         soft_enable = False
         indices_to_clear = []
         region_indices_used = []
+        regions = self.content.get_topic("screen_regions")
+        
         if regions is not None:
             new_regions = regions
             for index, canvas_reference in enumerate(self.canvases):
@@ -111,24 +108,24 @@ class HeadUpScreenOverlay(BaseWidget):
                 for region_index, region in enumerate(new_regions):
                 
                     # Move the canvas in case we are dealing with the same region
-                    if self.compare_regions(canvas_reference['region'], region):
+                    if self.compare_regions(canvas_reference["region"], region):
                         region_found = True
                         region_indices_used.append(region_index)
-                        canvas_reference['canvas'].unregister('draw', canvas_reference['callback'])
+                        canvas_reference["canvas"].unregister("draw", canvas_reference["callback"])
                         
                         canvas_rect = self.align_region_canvas_rect(region)
-                        canvas_reference['canvas'].move(canvas_rect.x, canvas_rect.y)
-                        canvas_reference['callback'] = lambda canvas, self=self, region=region: self.draw_region(canvas, region)
-                        canvas_reference['region'] = region
-                        canvas_reference['canvas'].register('draw', canvas_reference['callback'])
-                        canvas_reference['canvas'].freeze()
+                        canvas_reference["canvas"].move(canvas_rect.x, canvas_rect.y)
+                        canvas_reference["callback"] = lambda canvas, self=self, region=region: self.draw_region(canvas, region)
+                        canvas_reference["region"] = region
+                        canvas_reference["canvas"].register("draw", canvas_reference["callback"])
+                        canvas_reference["canvas"].freeze()
                         self.canvases[index] = canvas_reference
                 
                 if region_found == False:
                     indices_to_clear.append(index)
-                    canvas_reference['canvas'].unregister('draw', canvas_reference['callback'])
-                    canvas_reference['region'] = None
-                    canvas_reference['canvas'] = None
+                    canvas_reference["canvas"].unregister("draw", canvas_reference["callback"])
+                    canvas_reference["region"] = None
+                    canvas_reference["canvas"] = None
                     canvas_reference = None
             
             soft_enable = ( self.regions != new_regions or not self.soft_enabled ) and len(new_regions) > 0
@@ -155,26 +152,26 @@ class HeadUpScreenOverlay(BaseWidget):
         for index, region in enumerate(self.regions):
             if index not in region_indices_used:
                 canvas_rect = self.align_region_canvas_rect(region)
-                canvas_reference = {'canvas': canvas.Canvas(canvas_rect.x, canvas_rect.y, canvas_rect.width, canvas_rect.height)}
-                canvas_reference['callback'] = lambda canvas, self=self, region=region: self.draw_region(canvas, region)
-                canvas_reference['region'] = region
-                canvas_reference['canvas'].register('draw', canvas_reference['callback'])
-                canvas_reference['canvas'].freeze()
+                canvas_reference = {"canvas": canvas.Canvas(canvas_rect.x, canvas_rect.y, canvas_rect.width, canvas_rect.height)}
+                canvas_reference["callback"] = lambda canvas, self=self, region=region: self.draw_region(canvas, region)
+                canvas_reference["region"] = region
+                canvas_reference["canvas"].register("draw", canvas_reference["callback"])
+                canvas_reference["canvas"].freeze()
                 self.canvases.append(canvas_reference)
             
     def clear_canvases(self):
         for canvas_reference in self.canvases:
             if canvas_reference:
-                canvas_reference['canvas'].unregister('draw', canvas_reference['callback'])
-                canvas_reference['region'] = None
-                canvas_reference['canvas'] = None
+                canvas_reference["canvas"].unregister("draw", canvas_reference["callback"])
+                canvas_reference["region"] = None
+                canvas_reference["canvas"] = None
                 canvas_reference = None
         self.canvases = []
         
     def align_region_canvas_rect(self, region):
         if region.rect:
-            horizontal_margin = self.theme.get_int_value('screen_overlay_region_horizontal_margin', 10)
-            vertical_margin = self.theme.get_int_value('screen_overlay_region_vertical_margin', 2)
+            horizontal_margin = self.theme.get_int_value("screen_overlay_region_horizontal_margin", 10)
+            vertical_margin = self.theme.get_int_value("screen_overlay_region_vertical_margin", 2)
         
             y = region.rect.y    
             if self.expand_direction == "up":
@@ -205,11 +202,11 @@ class HeadUpScreenOverlay(BaseWidget):
     def activate_mouse_tracking(self):
         has_active_region = len([x for x in self.regions if x.hover_visibility]) > 0
         if not self.mouse_poller and has_active_region:
-            self.mouse_poller = cron.interval('30ms', self.poll_mouse_pos)
+            self.mouse_poller = cron.interval("30ms", self.poll_mouse_pos)
         elif not has_active_region:
             self.active_regions = self.regions
             for canvas_reference in self.canvases:
-                canvas_reference['canvas'].freeze()
+                canvas_reference["canvas"].freeze()
     
     def poll_mouse_pos(self):
         if self.enabled:
@@ -233,7 +230,7 @@ class HeadUpScreenOverlay(BaseWidget):
                 elif region.rect is not None and region.hover_visibility == 1 and hit_test_rect(region.rect, pos):
                     active_regions.append(region)
                 # For hover visibility -1 , we want the region canvas to be translucent when hovered
-                # So it doesn't occlude content - But otherwise it should be visible
+                # So it doesn"t occlude content - But otherwise it should be visible
                 elif region.hover_visibility == -1:
                     rect = self.align_region_canvas_rect(region)
                     if not hit_test_rect(rect, pos):
@@ -242,7 +239,7 @@ class HeadUpScreenOverlay(BaseWidget):
         if self.active_regions != active_regions:
             self.active_regions = active_regions
             for canvas_reference in self.canvases:
-                canvas_reference['canvas'].freeze()
+                canvas_reference["canvas"].freeze()
             
     def draw_region(self, canvas, region, setup_region = False) -> bool:
         paint = self.draw_setup_mode(canvas)
@@ -250,11 +247,11 @@ class HeadUpScreenOverlay(BaseWidget):
         if self.soft_enabled:
             active = setup_region or region in self.active_regions
             
-            background_colour = region.colour if active else self.theme.get_colour('screen_overlay_background_colour', 'F5F5F588')
-            paint.color = background_colour if background_colour else self.theme.get_colour('screen_overlay_active_background_colour', 'F5F5F5')
+            background_colour = region.colour if active else self.theme.get_colour("screen_overlay_background_colour", "F5F5F588")
+            paint.color = background_colour if background_colour else self.theme.get_colour("screen_overlay_active_background_colour", "F5F5F5")
             
-            vertical_padding = self.theme.get_int_value('screen_overlay_vertical_padding', 4)
-            horizontal_padding = self.theme.get_int_value('screen_overlay_horizontal_padding', 4)
+            vertical_padding = self.theme.get_int_value("screen_overlay_vertical_padding", 4)
+            horizontal_padding = self.theme.get_int_value("screen_overlay_horizontal_padding", 4)
             icon_size = self.height if region.icon or region.colour and not region.title else 0
             text_width = 0
 
@@ -302,15 +299,15 @@ class HeadUpScreenOverlay(BaseWidget):
             
             # Finally draw the text on top
             if region.title:
-                text_colour = region.text_colour if active else self.theme.get_colour('screen_overlay_text_colour', '00000044')
+                text_colour = region.text_colour if active else self.theme.get_colour("screen_overlay_text_colour", "00000044")
                 if not text_colour:
-                    text_colour = self.theme.get_colour('screen_overlay_text_colour', '00000044') if not active else self.theme.get_colour('screen_overlay_active_text_colour', '000000FF')                    
+                    text_colour = self.theme.get_colour("screen_overlay_text_colour", "00000044") if not active else self.theme.get_colour("screen_overlay_active_text_colour", "000000FF")                    
                 
                 # Draw the background colour of the text
                 text_colour_ints = hex_to_ints(text_colour)
-                text_background_colour = '000000' if is_light_colour(text_colour_ints[0], text_colour_ints[1], text_colour_ints[2]) else 'FFFFFF'
+                text_background_colour = "000000" if is_light_colour(text_colour_ints[0], text_colour_ints[1], text_colour_ints[2]) else "FFFFFF"
                 if len(text_colour_ints) > 3:
-                    opacity_hex = format(text_colour_ints[3], 'x')
+                    opacity_hex = format(text_colour_ints[3], "x")
                     opacity_hex = opacity_hex if len(opacity_hex) > 1 else "0" + opacity_hex
                     text_background_colour += opacity_hex
                 paint.color = text_background_colour                
@@ -327,7 +324,7 @@ class HeadUpScreenOverlay(BaseWidget):
             canvas.draw_circle( origin_x + radius, origin_y + radius, radius, paint)
         
         if (region.icon is not None and self.theme.get_image(region.icon) is not None ):
-            icon_border = self.theme.get_int_value('screen_overlay_icon_padding', 4)
+            icon_border = self.theme.get_int_value("screen_overlay_icon_padding", 4)
             image = self.theme.get_image(region.icon, diameter - icon_border, diameter - icon_border)
             canvas.draw_image(image, origin_x + radius - ( image.height ) / 2, \
                 origin_y + radius - ( image.height ) / 2 )
@@ -335,10 +332,10 @@ class HeadUpScreenOverlay(BaseWidget):
     def draw_rich_text(self, canvas, paint, rich_text, x, y, line_padding, single_line=False):
         # Draw text line by line
         text_colour = paint.color
-        error_colour = self.theme.get_colour('error_colour', 'AA0000')
-        warning_colour = self.theme.get_colour('warning_colour', 'F75B00')
-        success_colour = self.theme.get_colour('success_colour', '00CC00')
-        info_colour = self.theme.get_colour('info_colour', '30AD9E')
+        error_colour = self.theme.get_colour("error_colour", "AA0000")
+        warning_colour = self.theme.get_colour("warning_colour", "F75B00")
+        success_colour = self.theme.get_colour("success_colour", "00CC00")
+        info_colour = self.theme.get_colour("info_colour", "30AD9E")
     
         current_line = -1
         for index, text in enumerate(rich_text):
@@ -398,7 +395,7 @@ class HeadUpScreenOverlay(BaseWidget):
             self.setup_type = setup_type
             self.preferences.mark_changed = True
             self.canvas.pause()
-            self.canvas.unregister('draw', self.setup_draw_cycle)
+            self.canvas.unregister("draw", self.setup_draw_cycle)
             self.canvas = None
             
             self.event_dispatch.request_persist_preferences()
@@ -410,33 +407,33 @@ class HeadUpScreenOverlay(BaseWidget):
                 
                 self.setup_type = ""                
                 if self.canvas:
-                    self.canvas.unregister('draw', self.setup_draw_cycle)
+                    self.canvas.unregister("draw", self.setup_draw_cycle)
                     self.canvas = None
 
                 for canvas_reference in self.canvases:
-                    canvas_rect = self.align_region_canvas_rect(canvas_reference['region'])
-                    canvas_reference['canvas'].rect = canvas_rect
-                    canvas_reference['canvas'].freeze()
+                    canvas_rect = self.align_region_canvas_rect(canvas_reference["region"])
+                    canvas_reference["canvas"].rect = canvas_rect
+                    canvas_reference["canvas"].freeze()
                     
         elif setup_type == "reload":
             self.drag_position = []  
             self.setup_type = ""
             for canvas_reference in self.canvases:
-                canvas_reference['canvas'].freeze()
+                canvas_reference["canvas"].freeze()
                 
         # Start the setup by mocking a full screen screen region to place the canvas in
         else:
             main_screen = ui.main_screen()
-            region = HudScreenRegion('setup', 'Setup mode text', 'command_icon', 'DD4500', main_screen.rect, \
+            region = HudScreenRegion("setup", "Setup mode text", "command_icon", "DD4500", main_screen.rect, \
                 Point2d(main_screen.rect.x, main_screen.rect.y))
             region.vertical_centered = True
-            canvas_rect = self.align_region_canvas_rect(region)        
+            canvas_rect = self.align_region_canvas_rect(region)
             self.x = canvas_rect.x
             self.y = canvas_rect.y
             
             if not self.canvas:
                 self.canvas = canvas.Canvas(self.x, self.y, self.limit_width, self.limit_height)
-                self.canvas.register('draw', self.setup_draw_cycle)            
+                self.canvas.register("draw", self.setup_draw_cycle)            
             self.canvas.move(self.x, self.y)
             self.canvas.resume()
             super().start_setup(setup_type, mouse_position)
@@ -449,16 +446,16 @@ class HeadUpScreenOverlay(BaseWidget):
             super().setup_move(pos)
             
             for canvas_reference in self.canvases:
-                canvas_rect = self.align_region_canvas_rect(canvas_reference['region'])
-                canvas_reference['canvas'].rect = canvas_rect            
-                canvas_reference['canvas'].freeze()
+                canvas_rect = self.align_region_canvas_rect(canvas_reference["region"])
+                canvas_reference["canvas"].rect = canvas_rect            
+                canvas_reference["canvas"].freeze()
             
 
     def setup_draw_cycle(self, canvas):
         """Drawing cycle that mimics a screen region set up"""
-        region = HudScreenRegion('setup', 'Setup mode text', 'command_icon', 'DD4500', canvas.rect, \
+        region = HudScreenRegion("setup", "Setup mode text", "command_icon", "DD4500", canvas.rect, \
             Point2d(canvas.rect.x, canvas.rect.y), vertical_centered = True)
-        region.text_colour = 'FFFFFF'
+        region.text_colour = "FFFFFF"
         canvas_rect = self.align_region_canvas_rect(region)
         self.draw_region(canvas, region, True)
         if self.canvas:
@@ -471,9 +468,9 @@ class HeadUpScreenOverlay(BaseWidget):
         self.load(dict, False)
         if self.enabled:
             for canvas_reference in self.canvases:
-                canvas_rect = self.align_region_canvas_rect(canvas_reference['region'])
-                canvas_reference['canvas'].move(canvas_rect.x, canvas_rect.y)            
-                canvas_reference['canvas'].freeze()
+                canvas_rect = self.align_region_canvas_rect(canvas_reference["region"])
+                canvas_reference["canvas"].move(canvas_rect.x, canvas_rect.y)            
+                canvas_reference["canvas"].freeze()
         
         if persisted:
             self.preferences.mark_changed = True
@@ -488,5 +485,5 @@ class HeadUpScreenOverlay(BaseWidget):
                 self.canvas.freeze()
             self.animation_tick = self.animation_max_duration if self.show_animations else 0
             for canvas_reference in self.canvases:
-                canvas_reference['canvas'].freeze()
+                canvas_reference["canvas"].freeze()
             

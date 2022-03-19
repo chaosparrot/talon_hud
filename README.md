@@ -3,160 +3,209 @@ Unofficial Talon Head Up Display
 
 ![Overview image](/docs/intro.png)
 
-This set of user scripts is meant to help build an awesome visual head up display elements using the Talon Canvas apis.  
-It keeps your preferences saved in CSV files, so that whenever you restart Talon, your HUD will be as you left it.  
-All the widgets are themeable, which means you can change the colours and images around as you see fit.
+The HUD is a user interface that helps improve your workflow. Inspired by gaming HUDs, it is meant to show just the right amount of info to your screen without getting in the way of your actual work. It is resizable, scalable and placable in whatever combination you can come up with, so only the screen space that you allow will be used, just as you left it.  
 
-Setup
-----
+It combines voice commands with clickable buttons, allowing for seemless transitions between using your regular old controls and your voice command flow.  
 
-In order to use the HUD, it is best to set it up next to a version of [knausj_talon](https://github.com/knausj85/knausj_talon/) as it works out of the box. 
+On top of that, the HUD remembers where you left off. It keeps the widgets in the place you have left them for the next time you start up, and when you add or remove monitors, it will remember where you kept the widgets in those instances.  
+This makes the HUD excellent for switching between a single laptop screen, and connecting a monitor in the office or at home.
 
-Widgets
-----
+By default, the HUD comes in a light and a dark mode, but you can create other themes yourself as well!
 
-### 1. Status bar
+## Table of contents
+1. [Installation and fixing](#installation)
+2. [Important voice commands](#important-voice-commands)
+3. [Available content](#available-content)
+    1. [Talon mode tracking](#talon-mode-tracking--turned-on-by-default-)
+    2. [Speech history](#speech-history--turned-on-by-default-)
+    3. [Microphone muting and management](#microphone-management)
+	4. [Language tracking](#language-tracking)
+	5. [Programming language tracking](#programming-language-tracking)
+	6. [Focus tracking](#focus-tracking)
+	7. [Documentation](#documentation)
+	8. [Walkthroughs](#walkthroughs)
+	9. [Debugging](#debugging)
+3. [Customizing the HUD](#customizing-the-hud)
+	1. [Hiding and showing widgets](#hiding-and-showing-widgets)
+	2. [Repositioning widgets](#repositioning-widgets)	
+    3. [Changing the size of text and widgets](#changing-the-size-of-text-and-widgets)
+	4. [Changing alignment of widgets](#changing-alignment-of-widgets)
+	5. [Animations](#animations)
+	6. [List of available widgets](#list-of-available-widgets)
+4. [Advanced usage](#advanced-usage)
+    1. [Changing appearance](APPEARANCE.md)
+	2. [Preferences folder](#preferences-folder)
+	3. [Talon HUD environments](#talon-hud-environments)
+	4. [Text content, documentation and walkthrough creation](CUSTOMIZATION.md#creating-text-content)
+	5. [Non-text content creation](CUSTOMIZATION.md#non-text-content)
+	6. [Sticky content creation](CUSTOMIZATION.md#sticky-content)
+5. [Miscellaneous](#miscellaneous)
+    1. [Roadmap](#roadmap)
+	2. [Development philosophy and guidelines](#development-philosophy-and-guidelines)
+	3. [Acknowledgements](#acknowledgements)
 
-This widget will display the current Talon mode ( Command, dictation or sleep ) and will display the detected or forced language. The default action of dwelling on the mode icon puts Talon in sleep mode after 1.5 seconds, and the close icon closes the HUD.  
-The buttons can also be clicked to activate the dwell action immediately.  
+## Installation
 
-You can customize the status bar in multiple ways
-- You can add the current natural language by uncommenting line 96 from the display.py file
-- You can add the microphone toggle by uncommenting line 100 from the display.py file
-- You can change the functionality of the icons by changing the activate_statusbar_icon action in the widgets/statusbar.py file all the way at the bottom.
+To use the Talon HUD, you need to have Talon Voice installed on your computer.
+On top of that, it is best to set it up next to a version of [knausj_talon](https://github.com/knausj85/knausj_talon/) as it gives you a lot of other voice commands to work with.  
+The only thing you need to do is click the 'Code' button on top of this page, download the zip and extract it inside of your Talon user folder somewhere.
+After that, it should start up right away if you have Talon set up, or on your next Talon start up. A walkthrough will lead you through the next steps.
 
-### 2. Event log
+If for some reason the HUD seems broken, you can try and see if clearing out the preferences folder helps, as that is where all your personal settings are stored.
 
-This widget works like the command history from knausj, but instead every message has a timed life of about 9 seconds before it disappears, keeping your screen free of clutter. It isn't just limited to the command history however, you can add your own messages as well.
+## Important voice commands
 
-### 3. Text box
+`head up show` turns on the head up display.  
+`head up hide` hides the head up display.  
+`toolkit options` shows all the available content connected to the HUD toolkit, the options on the screen can be read out for navigation.  
+`head up theme dark` and `head up theme light` switch in between the default available themes.
 
-A catch all-widget for rich text display. It stretches the content until the defined screen limits given by the user. It allows text in a variety of styles, including bold and italic, and various colours.  
-The header contains the name of the panel, including a minimize and a close button. If the content is larger than the allotted screen space, it will create multiple pages which are navigable using a next and previous page button.  
-The text box will align itself based on the given expansion limits. If more space is available to the left, it will align itself to the right, and so on.  
+All voice commands are available in the .talon files inside of the HUD, while some are also generated based on the titles of the widgets themselves.
 
-By default there is only one text box, but you can define multiple and assign them to specific commands in the display.py file. In the future this functionality will probably move to voice commands instead.
+## Available content
 
-### 4. Choice panel
+### Talon Mode tracking ( turned on by default )
 
-This widget shows choices that can be activated with either a mouse click or voice commands.  
-The voice commands follow the simple principle of 'What you see is what you read', meaning that if a button says '2. Test choice' you can either say `option two` or `test choice` to activate it.  
-The widget allows for a short explanation before the choices, and the choices can be defined with either single or multiple selection. With preselected choices also definable.  
-By default there is only one choice panel available, this is to make sure you don't get overloaded with choices on your screen.
+Talon comes in a variety of modes, like the command mode in which you utter commands, or the sleep mode where no commands are used but the wake word. To keep track of what mode you are currently in, the Talon HUD offers a status bar icon that can be clicked. 
+This is added by default, and when clicked, turns Talon either in sleep mode, or from sleep mode back to your previous mode, be it command or dictation mode.  
+Removing the mode icon is possible as well to keep a more minimal look, by saying `status bar remove mode indicator` or by right clicking the status bar and clicking 'Remove mode indicator'.  
+The status bar will always show whether you are in sleep mode or not at a glance, regardless of when you have mode icon added or not, by changing the appearance of the status bar itself.  
 
-### 5. Context menu
+You can change the mode detection, toggle and available modes yourself as well, if your set up requires a more personal touch. To see how, read the link below.
 
-A context menu can be configured to open on any widget that has mouse clicks enabled.  
-This widget contains a bunch of buttons that will interact with the widget that it has opened.  
-The context menu will attempt to stay on the screen where the right-click was made, and as such will change position accordingly.
+[Customizing mode tracking](CUSTOMIZATION.md#customizing-mode-tracking)
 
-### 6. Walkthrough panel
+### Speech history ( turned on by default )
 
-This widget is meant to guide users through a predefined workflow to familiarize them with it.
-You can use this to give an interactive experience for users to learn the ins and outs of various workflows.
-Included in the Talon HUD is a simple walkthrough for using the Talon HUD itself, but any package can make walkthroughs or workflows.
+Taking inspiration from FPS games, the event log widget allows you to read back voice commands as you make them, as well as clearing themselves up after a few seconds to give you back that screen space.  
+Different options to show commands are available. You can keep the commands visible indefinitely, or temporarily freeze them to discuss them, perfect for pairing sessions.  
+All of these options can be shown and toggled by saying `event log options`.
 
-### 7. Ability bar
+If you need are more in-depth view of the commands said, you can say `toolkit speech` or navigate from the status bar with Content toolkit -> Debugging -> Speech to find a full overview of the commands said, as well as the used engine and microphone.
 
-Much like the status bar, except it only allows you to show icons and can be displayed independently of the status bar.  
-By default, it does not have any visual indication, but I have used it in some of my personal scripts to show movement directions.  
+### Microphone management
 
-### 8. Cursor tracker
+In some scenario's like conference calls, it is handy to have a way to instantly turn off the microphones input to Talon. This toggle can be placed on the status bar by saying `status bar add microphone` or right clicking on the status bar and selecting 'Add microphone'.  
+Switching the microphone off this way prevents accidental wake messages or commands from triggering functionality while you are talking to your friends or colleges.
 
-This widget follows your given pointer around and can display an icon or a colour near it.  
-This can be used for example to show the status of a specific thing near your eyetracking gaze through your mouse cursor.  
-By default, there are no cursor indicators, they need to be programmed in using the content documentation.  
+On top of that, you can also switch microphones on the fly by saying `toolkit microphones`, or right clicking the status bar and following Content toolkit -> Microphones. The microphone selected here will be used as a favorite setting, so if you toggle the microphone on and off, it will remember the selected microphone here and switch back to that microphone.  
+This comes in handy when you have multiple microphone set ups, like a laptop microphone and an on desk microphone.
 
-### 9. Screen overlay
+### Language tracking
 
-This widget can annotate regions of the screen with text, icons and colours.
-You can use it to show different regions for virtual keyboard usage combined with noises for example.
+For the multilingual folks out there, switching between different languages for dictation is a necessity to keep your workflow working with voice. For that purpose, you can add a language icon indicating your language on the status bar by saying `status bar add language` or right clicking the status bar to the option Add language.  
 
-Voice commands
----
+[Customizing languages](CUSTOMIZATION.md#customizing-language-tracking)
 
-### General usage
+### Programming language tracking
 
-All the commands to change widgets around can be found in commands.talon. A brief rundown of the commands is listed here:
+A lot of programmers inhabit the Talon Voice community, and with them come many different programming languages. With those programming languages come different commands, and usually these are kept track of by the file extension available in a program, or by manually forcing a certain language to be used.  
+To make sure you know what programming language context you are in, you can add a language icon to your status bar by saying `status bar add code language` or right clicking the status bar and clicking 'Add code language'.  
+You can add and remove programming languages icons yourself, by following the instructions below.  
 
-`head up show` opens up the HUD as you left it.  
-`head up hide` hides the complete HUD.  
-`head up theme <themename>` switches the theme of all the widgets to the selected theme. Default themes are `light` and `dark` for light and dark mode respectively.  
+[Customizing programming languages](CUSTOMIZATION.md#customizing-programming-languages)
 
-You can also target individual widgets for hiding and showing.  
-`head up show <widget name>` or `<widget name> show` enables the chosen widget.  
-`head up hide <widget name>` or `<widget name> hide` hides the chosen widget.  
-`<widget name> minimize` minimizes the widget if it is supported for the widget.  
-`<widget name> maximize` reopens the widget if it is supported for the widget.  
+### Focus tracking
 
-Widgets can have extra options as well.  
-`<widget name> options` shows them on screen. Simply saying the text inside the buttons that appear will activate the button, of course you can also just click them as well.
+When returning back to your computer after a while, it can be hard to see what window Talon has focused for voice commands. This only gets harder if you have multiple monitors. To alleviate this problem, you can add a focus indicator to your status bar by saying `status bar add focus indicator` or right clicking the status bar and selecting 'Add focus indicator'.  
+This will present an orange-red box on the top center of the currently focused window, to remind you what direction you're talking to.
 
-Some widgets like the text box allow you to go to a next or previous page.  
-`<widget name> next` moves to the next page of the content if exists. You can use repeaters with this, so `<widget name> next twice` will go forward twice.  
-`<widget name> previous` or `<widget name> back` goes to the previous page if it exists.
+### Documentation
 
-### Widget setup
+Inside the HUD, there is a place where you can read out available documentation for certain voice commands, like a refresher of sorts. It is available if you say `toolkit documentation` or by navigating from right click menu in the status bar with Content toolkit -> documentation, there you will find a bunch of text that is published to the HUD. Simply say one of the titles on the screen to navigate to that content.  
+You can also publish your own files to the HUD documentation, to keep as a reminder, or to enhance your own packages.
 
-By default, the widgets except for the status bar will hide when Talon goes in sleep mode, but you can keep them around, or hide them, with the following commands.  
-`head up show <widget name> on sleep` keeps the chosen widget enabled during sleep mode.  
-`head up hide <widget name> on sleep` hides the chosen widget when sleep mode is turned on.
+When you need to switch between pages, you can say `<widget name> next` or `<widget name> back` to go forward or backward in the current content.
 
-On top of being able to turn widgets on and off, you can configure their attributes to your liking.  
-Currently, you can change the size, position, alignment, animation and font size.  
+You can read about creating your own content at [publishing documentation](CUSTOMIZATION.md#publishing-documentation)
 
-`head up drag <widget name>` starts dragging the widget. You can also drag multiple widgets at the same time with `head up drag <widget names>`.
-`head up resize <widget name>` starts resizing the widgets width and height.  
-`head up expand <widget name>` changes the maximum size of the widget in case the content does not fit the regular width and height.  
-By default these two dimensions are the same so the widget does not grow when more content is added.  
-`head up text scale <widget name>` starts resizing the text in the widget.  
-`head up drop` confirms and saves the changes of your changed widgets.  
-`head up cancel` cancels the changes. Hiding a widget also discards of the current changes.
+### Walkthroughs
 
-Some widgets like the event log also allow you to change the text direction and alignment  
-`head up align <widget name> left` aligns the text and the widget to the left side of its bounds.  
-`head up align <widget name> right` aligns the text and the widget to the right side of its bounds.  
-`head up align <widget name> top` changes the direction in which content is placed upwards.  
-`head up align <widget name> bottom` changes the direction in which content is placed downwards.
+While having a good overview of all voice commands can be good, it is often overwhelming. To make the learning process a little less steep, the HUD offers some walkthroughs which guide you through voice commands one by one in a designed fashion, giving explanations about the voice commands as you go. You can find the walkthroughs by navigating through the status bar right click menu Content toolkit -> Walkthroughs or by saying `toolkit walkthroughs` instead.  
+You can also create walkthroughs for your own work flow, or for your own packages as well. You can read about how to create walkthroughs yourself at [publishing walkthroughs](CUSTOMIZATION.md#publishing-walkthroughs)
 
-If you prefer having a more basic animation free set up, or want to switch back to an animated display, you can use the following commands  
-`head up basic <widget name>` disables animations on the chosen widget.  
-`head up fancy <widget name>` enables animations on the chosen widget.
+### Debugging
 
-You can have different positions on different monitor configurations, this happens automatically when you add more monitors.
+When you are working with, or working on, your Talon scripts, it is often hard to see what is going on in the background. In order to give a slight peek inside of the current state of your Talon set up, there is a debugging menu that can be reached with the voice command `toolkit debugging`.
 
-Each widget position is saved in a monitor preferences file in your preferences folder.  
-Every time you attach a different monitor, or use a different screen size, a specific monitor preferences file will be used.
-If your monitor changes during use, Talon HUD will attempt to rebuild your configured widget positions on your main monitor.  
-But this isn't 100% foolproof, so you might have to drag and configure some widgets around.  
+- The scope debugging option allows you to see the current app and title, the current tags and the current modes, and updates the content as they change.
+- The speech debugging option allows you to see all recognized commands and their used time, with their used engine and microphone, so you can track down why recognition might have changed.
+- The list debugging option gives you a look inside a single list as it changes.
 
-All the non-position related settings are saved in the widget_settings.csv file in your preferences folder.
+## Customizing the HUD
 
-Using Talon HUD in your own packages
----
+While the base set up for the HUD is meant to be a good starting point, you will most likely want to tweak everything to fit your own unique needs. Below is a list of all the available changes you can make to widgets. For the explanations below, the <widget name> part is used to reference to the widget name that you want to change, in the last paragraph of this chapter is a list of available widgets and their names.
 
-The HUD provides a bunch of hubs like documentation and walkthroughs that you can leverage in your own packages.
-That way, if a user has the Talon HUD together with your own package, you can provide documentation and other niceties without having to worry about making your own user interfaces.
-Visit the [package enhancement documentation](docs/README.md) for more information.
+Some widgets can have alternative names too, which are the titles shown on top of them. In the case of a text box being titled 'Toolkit Options', you can say `toolkit options hide` to hide it.
 
-Updating widgets with content
----
+### Hiding and showing widgets
 
-If you want to add your own content to the widgets, visit the [content publishing documentation](content/README.md)
+You can hide specific widgets by saying `head up hide <widget name>`. Some content, like text that gets published, might still make that widget show up again, but you can also manually show the widget by saying `head up show <widget name>`.  
+You can also use the widget shorthand, which is `<widget name> hide` and `<widget name> show`. 
 
-Theming
----
+### Repositioning widgets
 
-If you want to add your own theme, simply copy and paste an existing theme folder over, give it a new name, define it in the commands.talon file and start changing values in the themes.csv file of your copied over directory.  
-In general, it is best to keep the images small for memory sake. But otherwise go nuts.
+Changing widgets' position can be done either by dragging them around the screen, or by saying `head up drag <widget name>`, confirming the position with `head up drop` or canceling it with `head up cancel`.  
+If you want to change multiple widgets at the same time, you can say `head up drag <widget name one> <widget name two>`, and they will be moved simultaneously.
 
-There are some values that have special settings, like event_log_ttl_duration_seconds, which can be set to -1 to have the logs stay without disappearing.
-As there is not a lot of theming going around, it is best to ask me on the Talon slack if you have questions about them.
+For some specific widgets like the cursor tracker where the position depends on the mouse cursor itself, saying `head up drag cursor tracker` will keep the widget in place, so you can change the position relative to the mouse cursor itself.
 
-Context aware Talon HUD environments
----
+### Changing the size of text and widgets
 
-You can change your HUD layout entirely using the context management of Talon.  
+Changing the font size of a widget to make the text more readable is done using the command `head up text scale <widget name>` and by dragging the mouse around. You can confirm the changes by saying `head up confirm` or cancel the changes by saying `head up cancel`.  
+
+Widgets have two kinds of sizes, their minimal size, and their maximum growable size.
+
+You can also change the minimal size that certain widgets take on by saying `head up resize <widget name>`, confirming it with `head up confirm` or canceling it with `head up cancel`. Note that changing the minimal size also resets the maximum growable size. And for some widgets, changing the size can also change the alignment of the content itself, as it is calculated using the two top points of the minimum and maximum growable size.
+
+To change the maximum growable size of a widget, hold your mouse in the direction from the widget where you want it to grow, and say `head up expand <widget name>`, with the same confirmation and cancelation commands as the other commands.
+
+Some widgets also have a more collapsed, minimized state, which you can activate by saying `head up minimize <widget name>` or `<widget name> minimize`. You can undo the minimization by saying `head up mazimize <widget name>` or `<widget name> maximize`.    
+
+### Changing alignment of widgets
+
+You can change the alignment of widgets by saying `head up align <widget name> <alignment>` where the alignment can be anything from `top`, `bottom`, `left`, `right` or in some widgets `center`. The alignment might also be connected to the minimal and maximal growth size as explained above as well.  
+
+###	Animations
+
+Most of the Talon HUD widgets have animations turned on by default, but you might not like those animations yourself. You can turn them off by saying `head up basic <widget name>`, or turn them back on by saying `head up fancy <widget name>`.
+
+### List of available widgets
+
+![Image showing the names of all the widgets next to them](/docs/widget_overview.png)
+
+(*) The name of these widgets may change based on the title of the panel.
+
+- Status bar: The bar on the bottom right of the screen with clickable icons.
+- Event log: The log that is shown above the status bar showing all the commands.
+- Text panel*: The text panel on the top right part of the screen.
+- Choices*: The choice panel that is shown in the center of the screen.
+- Documentation*: The documentation panel on the left.
+- Walkthrough: The documentation panel on the left.
+- Ability bar: An optional bar left of the status bar containing non-clickable icons.
+- Screen overlay: A widget that can put labels all over the screen. Only used in the focus tracker so far.
+- Cursor tracker: A widget that follows your mouse around. Currently has no available content.
+- Context menu: The right click menu of a widget.
+
+## Advanced usage
+
+You can tweak more about the HUD and use it in more advanced ways if you feel like tinkering around.
+For changing the appearance of the HUD, you can take a look at the [Changing appearance](APPEARANCE.md) page.  
+For customizing and creating your own content, you can have a look at the [Customization](CUSTOMIZATION.md) page.
+
+### Preferences folder
+
+The 'preferences' folder inside of the HUD contains all the changes the user has made to the HUD. All the files inside are non-critical, meaning that you can remove them and they will be regenerated based on the default settings when you next start up Talon.  
+The user preferences are split into two files, the monitor file which contains all the positional information based on the current monitor set up, and the widget_settings.csv file, which contains all the non-positional information like widget enabled status, alignment and attached content.  
+If you have another talon hud environment ( explained below ), you will have more files in the preferences folder as well, prefixed by the talon hud environment. These files are used purely for that environment.  
+
+On top of widget related settings, the preferences folder can also contain files that are used for the content creation. An example of this is the programming_languages.csv file which contains available programming languages, the walkthrough.csv file which keeps track of all finished walkthroughs, and the hud_preferred_microphone.txt file, which contains the prefered microphone to toggle to with the status bar microphone toggle.  
+
+If you want to customize the place where you keep your preferences, so you can bundle them all in one place for example, you can change the `configuration.py` file to change the directories there.
+
+### Talon HUD environments
+
+You can change your HUD layout entirely using the context management of Talon, saving you from having to say voice commands to set up your desired content and layout.  
 Let's say you want to change the placement and enabled widgets when you enter a browser.  
 This is entirely achievable using the 'user.talon_hud_environment' setting.  
 
@@ -173,15 +222,24 @@ settings():
     user.talon_hud_environment = "browser_hud"
 ```
 
-Changing the preferences folder
----
-You can change the folder in which your HUD preferences are saved by going to the preferences.py file and following the instructions at the top of the file.
+## Miscellaneous
 
-Development guidelines
-----
+### Roadmap
 
-The general idea of this repository is to seperate out three concepts, the users UI preferences, the content on display and the actual display logic.  
-These three silos are based on assumptions for three personas. The User, the Scripter and the Themer.
+These are ideas that I want to implement in no specific order and with no specific timeline in mind.
+
+- Making the HUD screen reader friendly
+- Bringing in tunable audio queues for stuff like mode switching, command registering et cetera
+- An image panel with a header and a close icon which displays image content
+- Splitting out or merging topics from widgets into separate widgets using voice
+- Better default image, dimension and font scaling based on physical dimensions of the screen
+
+If any of these ideas seem cool for you to work on, give me a message on the talon slack so we can coordinate stuff.
+
+### Development philosophy and guidelines
+
+The general idea of this repository is to separate out three concepts, the users UI preferences, the content on display and the actual display logic.  
+These three silos are based on assumptions for three persona's. The User, the Scripter and the Themer.
 
 The **User** wants to have their content displayed in a way that matches their intentions.  
 They decide where they want to place their widgets, what dimensions the widgets should have, what theme should be on display and what size the font should be. After all, the User might be colour blind or have a reduced field of vision. This repository aims to accomodate to them.  
@@ -192,35 +250,22 @@ The Scripter just sends their content over to the HUD, which knows where the use
 
 The **Themer** wants to make an amazing visual experience happen, but do not really want to deal with the nitty gritty details of the widgets themselves. They want to change icons, colours and other visual properties of the UI themselves. And they do not like being limited, preferably having as much freedom of expression as possible.  
 
-These three personas are the spirit of this repository. As such, when new content is added to this repository, it should try to adhere to the needs and wishes above.
+These three persona's are the spirit of this repository. As such, when new content is added to this repository, it should try to adhere to the needs and wishes above.
 
-**Voice command guidelines**
+#### Voice command guidelines
 
 This repository tries to adhere to "What you see is what you say". If there is a widget with a header title, we make sure the widget can be addressed with that header name.  
 Likewise, if there is a button on display on the screen, just reading the text on the button should activate it.  
 If these options aren't available, documentation must be supplied with easily parseable voice commands so the users workflow is impacted minimally by reading large swats of text.
 
-Roadmap
----
-
-These are ideas that I want to implement in no specific order and with no specific timeline in mind.
-
-- An image panel with a header and a close icon which displays image content
-- Improved theming experience and more styling options
-- Splitting out or merging topics from widgets into separate widgets
-- Better default image, dimension and font scaling based on physical dimensions of the screen
-
-Known issues
----
-- Multiple page walkthrough panel does not work properly with text indices
-
-If any of these ideas seem cool for you to work on, give me a message on the talon slack so we can coordinate stuff.
-
-Acknowledgements
----
+### Acknowledgements
 
 The icons used are taken from https://icons.getbootstrap.com/.  
 Some of the icons like the copy icon are taken from fontawesome.
 
 The language icons are made by https://www.freepik.com hosted on https://www.flaticon.com/.  
 If your language isn't in the themes, you can download icons for free with attribution of freepik.com and change their size to 35x35 before saving them as a .png file in your theme.
+
+The programming language icons are taken from various icon packs, including Pictonic Icons, Material design, File by John Gardner and LibreICONS Black by DiemenDesign. Initial work for turning the programming languages into an icon was done by [@Wen Kokke](https://github.com/wenkokke).
+
+The walkthrough system has been expanded with help and feedback from [@Tara roys](https://github.com/tararoys) and [@Pokey Rule](https://github.com/pokey) to be more user friendly to use and to create for.

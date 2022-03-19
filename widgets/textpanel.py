@@ -1,14 +1,15 @@
 from talon import skia, ui, cron, actions, clip
-from user.talon_hud.layout_widget import LayoutWidget
-from user.talon_hud.widget_preferences import HeadUpDisplayUserWidgetPreferences
-from user.talon_hud.utils import layout_rich_text, remove_tokens_from_rich_text, linear_gradient, hit_test_icon
-from user.talon_hud.content.typing import HudRichTextLine, HudPanelContent, HudButton, HudIcon
+from ..layout_widget import LayoutWidget
+from ..widget_preferences import HeadUpDisplayUserWidgetPreferences
+from ..utils import layout_rich_text, remove_tokens_from_rich_text, linear_gradient, hit_test_icon
+from ..content.typing import HudRichTextLine, HudPanelContent, HudButton, HudIcon
 from talon.types.point import Point2d
 
 icon_radius = 10
 def close_widget(widget):
     widget.disable(True)
-    
+    widget.event_dispatch.synchronize_widget_poller(widget.id)
+
 def minimize_toggle_widget(widget):
     widget.minimized = not widget.minimized
     widget.drag_positions = []
@@ -23,6 +24,11 @@ def minimize_toggle_widget(widget):
 class HeadUpTextPanel(LayoutWidget):
     preferences = HeadUpDisplayUserWidgetPreferences(type="text_box", x=1680, y=50, width=200, height=200, limit_x=1580, limit_y=50, limit_width=300, limit_height=400, enabled=False, alignment="left", expand_direction="down", font_size=18)
     mouse_enabled = True
+    
+    # New content topic types
+    topic_types = ["text"]
+    current_topics = []
+    subscriptions = ["*"]
 
     # Top, right, bottom, left, same order as CSS padding
     padding = [3, 20, 10, 8]
@@ -47,11 +53,7 @@ class HeadUpTextPanel(LayoutWidget):
         HudIcon("previous", "previous_icon", Point2d(0,0), icon_radius, lambda widget: widget.set_page_index(widget.page_index - 1))
     ]
 
-    subscribed_content = ["mode"]
-    content = {
-        'mode': 'command',
-    }
-    panel_content = HudPanelContent('', '', [''], [], 0, False)    
+    panel_content = HudPanelContent("", "", [""], [], 0, False)    
     animation_max_duration = 60
         
     def copy_contents(self):
@@ -69,8 +71,8 @@ class HeadUpTextPanel(LayoutWidget):
         super().set_preference(preference, value, persisted)
         
     def load_theme_values(self):
-        self.intro_animation_start_colour = self.theme.get_colour_as_ints('intro_animation_start_colour')
-        self.intro_animation_end_colour = self.theme.get_colour_as_ints('intro_animation_end_colour')
+        self.intro_animation_start_colour = self.theme.get_colour_as_ints("intro_animation_start_colour")
+        self.intro_animation_end_colour = self.theme.get_colour_as_ints("intro_animation_end_colour")
         self.blink_difference = [
             self.intro_animation_end_colour[0] - self.intro_animation_start_colour[0],
             self.intro_animation_end_colour[1] - self.intro_animation_start_colour[1],
@@ -204,9 +206,9 @@ class HeadUpTextPanel(LayoutWidget):
             # If we are dealing with a single line going over to the only other page
             # Just remove the footer to make up for space
             if len(layout_pages) == 1 and line_count == 1:
-                layout_pages[0]['line_count'] = layout_pages[0]['line_count'] + 1
-                layout_pages[0]['content_text'].extend(current_page_text)
-                layout_pages[0]['content_height'] += current_line_height
+                layout_pages[0]["line_count"] = layout_pages[0]["line_count"] + 1
+                layout_pages[0]["content_text"].extend(current_page_text)
+                layout_pages[0]["content_height"] += current_line_height
             else: 
                 width = min( self.limit_width, max(self.width, total_text_width + self.padding[1] + self.padding[3]))
                 content_height = header_height if self.minimized else total_text_height + self.padding[0] + self.padding[2] + header_height * 2
@@ -232,11 +234,11 @@ class HeadUpTextPanel(LayoutWidget):
         paint.style = paint.Style.FILL
         
         # Draw the background first
-        background_colour = self.theme.get_colour('text_box_background', 'F5F5F5')
+        background_colour = self.theme.get_colour("text_box_background", "F5F5F5")
         paint.color = background_colour
         self.draw_background(canvas, paint, dimensions["rect"])
         
-        paint.color = self.theme.get_colour('text_colour')
+        paint.color = self.theme.get_colour("text_colour")
         self.draw_content_text(canvas, paint, dimensions)
         self.draw_header(canvas, paint, dimensions)
         if not self.minimized and len(self.layout) > 1:
@@ -254,22 +256,22 @@ class HeadUpTextPanel(LayoutWidget):
                 if self.page_index > len(self.layout) - 1:
                     self.page_index = len(self.layout) -1
             
-            dimensions = self.layout[self.page_index]['rect']
+            dimensions = self.layout[self.page_index]["rect"]
             
             # Determine colour of the animation
             animation_progress = ( animation_tick - self.animation_max_duration ) / self.animation_max_duration
             red = self.intro_animation_start_colour[0] - int( self.blink_difference[0] * animation_progress )
             green = self.intro_animation_start_colour[1] - int( self.blink_difference[1] * animation_progress )
             blue = self.intro_animation_start_colour[2] - int( self.blink_difference[2] * animation_progress )
-            red_hex = '0' + format(red, 'x') if red <= 15 else format(red, 'x')
-            green_hex = '0' + format(green, 'x') if green <= 15 else format(green, 'x')
-            blue_hex = '0' + format(blue, 'x') if blue <= 15 else format(blue, 'x')
+            red_hex = "0" + format(red, "x") if red <= 15 else format(red, "x")
+            green_hex = "0" + format(green, "x") if green <= 15 else format(green, "x")
+            blue_hex = "0" + format(blue, "x") if blue <= 15 else format(blue, "x")
             paint.color = red_hex + green_hex + blue_hex
             
             if self.minimized:
                  self.draw_background(canvas, paint, dimensions)
             else:
-                 header_height = self.layout[self.page_index]['header_height']
+                 header_height = self.layout[self.page_index]["header_height"]
                  growth = (self.animation_max_duration - animation_tick ) / self.animation_max_duration
                  easeInOutQuint = 16 * growth ** 5 if growth < 0.5 else 1 - pow(-2 * growth + 2, 5) / 2
                  rect = ui.Rect(dimensions.x, dimensions.y, dimensions.width, max(header_height, dimensions.height * easeInOutQuint))
@@ -285,7 +287,7 @@ class HeadUpTextPanel(LayoutWidget):
         header_height = dimensions["header_height"]
         dimensions = dimensions["rect"]
         
-        paint.color = self.theme.get_colour('text_colour')
+        paint.color = self.theme.get_colour("text_colour")
         paint.font.embolden = True
         
         x = dimensions.x + self.padding[3]
@@ -293,7 +295,7 @@ class HeadUpTextPanel(LayoutWidget):
         
         # Small divider between the content and the header
         if not self.minimized:
-            paint.color = self.theme.get_colour('text_box_line', '000000')
+            paint.color = self.theme.get_colour("text_box_line", "000000")
             canvas.draw_rect(ui.Rect(x - self.padding[3], dimensions.y + header_height + self.padding[0] * 2, dimensions.width, 1))
 
     def draw_header_buttons(self, canvas, paint, dimensions):
@@ -308,12 +310,12 @@ class HeadUpTextPanel(LayoutWidget):
             self.icons[index].pos = icon_position
             paint.style = paint.Style.FILL
             if icon.id == "minimize":
-                hover_colour = self.theme.get_colour('button_hover_background', '999999') if self.icon_hovered == index \
-                    else self.theme.get_colour('button_background', 'CCCCCC')
+                hover_colour = self.theme.get_colour("button_hover_background", "999999") if self.icon_hovered == index \
+                    else self.theme.get_colour("button_background", "CCCCCC")
                 paint.shader = linear_gradient(self.x, self.y, self.x, self.y + header_height, (hover_colour, hover_colour))
                 canvas.draw_circle(icon_position.x, icon_position.y, self.icon_radius, paint)
                 
-                text_colour = self.theme.get_colour('icon_colour', '000000')
+                text_colour = self.theme.get_colour("icon_colour", "000000")
                 paint.shader = linear_gradient(self.x, self.y, self.x, self.y + header_height, (text_colour, text_colour))
         
                 if not self.minimized:
@@ -323,8 +325,8 @@ class HeadUpTextPanel(LayoutWidget):
                     canvas.draw_rect(ui.Rect( 1 + icon_position.x - self.icon_radius / 2, icon_position.y - self.icon_radius / 2, 
                         self.icon_radius - 2, self.icon_radius - 2))                
             elif icon.id == "close":
-                close_colour = self.theme.get_colour('close_icon_hover_colour') if self.icon_hovered == index else self.theme.get_colour('close_icon_accent_colour')            
-                paint.shader = linear_gradient(self.x, self.y, self.x, self.y + header_height, (self.theme.get_colour('close_icon_colour'), close_colour))
+                close_colour = self.theme.get_colour("close_icon_hover_colour") if self.icon_hovered == index else self.theme.get_colour("close_icon_accent_colour")            
+                paint.shader = linear_gradient(self.x, self.y, self.x, self.y + header_height, (self.theme.get_colour("close_icon_colour"), close_colour))
                 canvas.draw_circle(icon_position.x, icon_position.y, self.icon_radius, paint)
     
 
@@ -336,9 +338,9 @@ class HeadUpTextPanel(LayoutWidget):
         x = dimensions.x + self.padding[3]
         start_y = dimensions.y + dimensions.height - self.padding[0] - self.padding[2] / 2
         
-        paint.color = self.theme.get_colour('text_colour')
-        canvas.draw_text(str(self.page_index + 1 ) + ' of ' + str(len(self.layout)), x, start_y)
-        paint.color = self.theme.get_colour('text_box_line', '000000')        
+        paint.color = self.theme.get_colour("text_colour")
+        canvas.draw_text(str(self.page_index + 1 ) + " of " + str(len(self.layout)), x, start_y)
+        paint.color = self.theme.get_colour("text_box_line", "000000")        
         canvas.draw_rect(ui.Rect(x - self.padding[3], start_y - footer_height, dimensions.width, 1))
 
     def draw_footer_buttons(self, canvas, paint, dimensions):
@@ -354,9 +356,9 @@ class HeadUpTextPanel(LayoutWidget):
             self.footer_icons[index].pos = icon_position
             paint.style = paint.Style.FILL
             
-            hover_colour = self.theme.get_colour('button_hover_background', '999999') if self.footer_icon_hovered == index \
-                else self.theme.get_colour('button_background', 'CCCCCC')
-            paint.shader = linear_gradient(self.x, self.y, self.x, self.y + footer_height, ('AAAAAA', hover_colour))
+            hover_colour = self.theme.get_colour("button_hover_background", "999999") if self.footer_icon_hovered == index \
+                else self.theme.get_colour("button_background", "CCCCCC")
+            paint.shader = linear_gradient(self.x, self.y, self.x, self.y + footer_height, ("AAAAAA", hover_colour))
             canvas.draw_circle(icon_position.x, icon_position.y, self.icon_radius, paint)
             image = self.theme.get_image(icon.image)
             if image:

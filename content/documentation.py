@@ -1,16 +1,16 @@
-from talon import app, Module, actions, Context
+from talon import app, actions, Module, cron, fs
 import os
+from ..utils import md_to_richtext_content
 
 mod = Module()
-mod.tag("talon_hud_documentation_overview", desc="Whether or not the documentation overview is on display")
-mod.list("talon_hud_documentation_title", desc="List of titles of added documentation in Talon HUD")
-
-ctx = Context()
 
 class HeadUpDocumentation:
     order = None
     files = None
     descriptions = None
+    current_title = None
+    reload_job = None
+    development_mode = False
     
     def __init__(self):
         self.files = {}
@@ -25,15 +25,24 @@ class HeadUpDocumentation:
                 
             if title not in self.order:
                 self.order.append(title)
-                ctx.lists['user.talon_hud_documentation_title'] = self.order
         else:
             app.notify(filename + " could not be found")
 
     def load_documentation(self, title: str):
         if title in self.files:
+            if self.development_mode:
+                self.watch_documentation_file(False)
+            
+            self.current_title = title
+            
+            if self.development_mode:
+                self.watch_documentation_file(True)
+            
             text_file = open(self.files[title], "r")
             documentation = text_file.read()
             text_file.close()
+            if self.files[title].endswith(".md"):
+                documentation = md_to_richtext_content(documentation)
             actions.user.hud_publish_content(documentation, "documentation", title)
 
     def show_overview(self):
@@ -43,8 +52,32 @@ class HeadUpDocumentation:
             if order in self.descriptions:
                 documentation += ": " + self.descriptions[order]
             documentation += "\n"
-        
-        actions.user.hud_publish_content(documentation, "documentation", "Documentation panel", True, [], ["user.talon_hud_documentation_overview"])
+
+        voice_commands = {}
+        for title in self.order:
+            voice_commands[title] = lambda self=self, title=title: self.load_documentation(title)
+        actions.user.hud_publish_content(documentation, "documentation", "Documentation panel", True, [], voice_commands)
+        if self.development_mode:
+            self.watch_documentation_file(False)
+        self.current_title = None
+
+    def set_development_mode(self, enabled):
+        self.development_mode = enabled
+        self.watch_documentation_file(self.development_mode)
+    
+    def watch_documentation_file(self, watch=True):
+        if self.current_title is not None:
+            fs.unwatch(self.files[self.current_title], self.debounce_reload_documentation)    
+            if watch:
+                fs.watch(self.files[self.current_title], self.debounce_reload_documentation)
+                
+    def debounce_reload_documentation(self, _, __):
+        cron.cancel(self.reload_job)
+        self.reload_job = cron.after("50ms", self.reload_documentation)
+    
+    def reload_documentation(self):
+        if self.current_title is not None:
+            self.load_documentation(self.current_title)
 
 hud_documentation = HeadUpDocumentation()
 
@@ -55,6 +88,16 @@ class Actions:
         """Add a file to the documentation panel of the Talon HUD"""
         global hud_documentation
         hud_documentation.add_file(title, description, filename)
+        
+    def hud_watch_documentation_files():
+        """Enable watching for changes in the documentation files for quicker development"""
+        global hud_documentation
+        hud_documentation.set_development_mode(True)
+        
+    def hud_unwatch_documentation_files():
+        """Disable watching for changes in the documentation files for quicker development"""
+        global hud_documentation
+        hud_documentation.set_development_mode(False)
         
     def hud_show_documentation(title: str = ""):
         """Show the general documentation"""

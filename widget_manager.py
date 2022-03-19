@@ -3,25 +3,24 @@ import numpy
 import copy
 from typing import Dict
 from talon import ui, settings
-from user.talon_hud.preferences import HeadUpDisplayUserPreferences
-from user.talon_hud.base_widget import BaseWidget
-from user.talon_hud.widgets.statusbar import HeadUpStatusBar
-from user.talon_hud.widgets.eventlog import HeadUpEventLog
-from user.talon_hud.widgets.abilitybar import HeadUpAbilityBar
-from user.talon_hud.widgets.textpanel import HeadUpTextPanel
-from user.talon_hud.widgets.choicepanel import HeadUpChoicePanel
-from user.talon_hud.widgets.documentationpanel import HeadUpDocumentationPanel
-from user.talon_hud.widgets.walkthroughpanel import HeadUpWalkThroughPanel
-from user.talon_hud.widgets.contextmenu import HeadUpContextMenu
-from user.talon_hud.widgets.cursortracker import HeadUpCursorTracker
-from user.talon_hud.widgets.screenoverlay import HeadUpScreenOverlay
-from user.talon_hud.theme import HeadUpDisplayTheme
-from user.talon_hud.event_dispatch import HeadUpEventDispatch
+from .preferences import HeadUpDisplayUserPreferences
+from .base_widget import BaseWidget
+from .widgets.statusbar import HeadUpStatusBar
+from .widgets.eventlog import HeadUpEventLog
+from .widgets.abilitybar import HeadUpAbilityBar
+from .widgets.textpanel import HeadUpTextPanel
+from .widgets.choicepanel import HeadUpChoicePanel
+from .widgets.documentationpanel import HeadUpDocumentationPanel
+from .widgets.walkthroughpanel import HeadUpWalkthroughPanel
+from .widgets.contextmenu import HeadUpContextMenu
+from .widgets.cursortracker import HeadUpCursorTracker
+from .widgets.screenoverlay import HeadUpScreenOverlay
+from .theme import HeadUpDisplayTheme
+from .event_dispatch import HeadUpEventDispatch
+from .configuration import hud_get_configuration
 
-semantic_directory = os.path.dirname(os.path.abspath(__file__))
-user_preferences_file_dir =  semantic_directory + "/preferences/"
-old_user_preferences_file_location = user_preferences_file_dir + "preferences.csv"
-user_preferences_file_location = user_preferences_file_dir + "widget_settings.csv"
+user_preferences_file_dir = hud_get_configuration("user_preferences_folder")
+user_preferences_file_location = os.path.join(user_preferences_file_dir, "widget_settings.csv")
 
 class HeadUpWidgetManager:
     """Manages widgets and their positioning in relation to the available screens"""
@@ -75,31 +74,8 @@ class HeadUpWidgetManager:
     
     def initial_load_preferences(self):
         user_preferences_screen_file_path = self.preferences.get_screen_preferences_filepath(ui.screens())
-        
-        # Migration from old preferences file to new split files
-        # Remove in a few months to allow user to migrate?
-        if not os.path.exists(user_preferences_file_location) and os.path.exists(old_user_preferences_file_location):
-            fh = open(old_user_preferences_file_location, 'r')
-            lines = fh.readlines()
-            fh.close()
-            
-            monitor_lines = list(filter(lambda line: [line for ext in self.preferences.monitor_related_pref_endings if(ext in line)], lines))
-            screen_file_path = user_preferences_screen_file_path
-            fh = open(screen_file_path, 'w')
-            fh.write("".join(monitor_lines))
-            fh.close()
-            
-            setting_lines = list(filter(lambda line: line not in monitor_lines, lines))            
-            fh = open(user_preferences_file_location, 'w')
-            fh.write("".join(setting_lines))
-            fh.close()            
-            
-            # Remove the old preferences file
-            os.remove(old_user_preferences_file_location)
-        
         if not os.path.exists(user_preferences_file_location):
             self.preferences.persist_preferences(self.preferences.default_prefs, True)
-                
         self.preferences.load_preferences(user_preferences_screen_file_path)
     
     def reload_preferences(self, force_reload=False, current_hud_environment="") -> str:        
@@ -118,12 +94,15 @@ class HeadUpWidgetManager:
         dimensions_changed = dimensions_changed or len(current_screen_rects) != len(self.previous_screen_rects)
 
         # Reload the main preferences in case the Talon HUD mode changed
-        new_theme = self.preferences.prefs['theme_name']
-        if current_hud_environment != None and current_hud_environment != self.previous_talon_hud_environment:
+        new_theme = self.preferences.prefs["theme_name"]
+        environment_changed = current_hud_environment != self.previous_talon_hud_environment
+        if environment_changed:
             self.preferences.set_hud_environment(current_hud_environment)
-            self.preferences.load_preferences(self.preferences.get_main_preferences_filename())
+            
+            # Prevent two reloads after another if the monitor has also changed
+            if not dimensions_changed:
+                self.preferences.load_preferences(self.preferences.get_main_preferences_filename())
             self.previous_talon_hud_environment = current_hud_environment
-            new_theme = self.preferences.prefs['theme_name']
         
         if dimensions_changed:
             screen_preferences_file = self.preferences.get_screen_preferences_filepath(current_screen_rects)
@@ -146,15 +125,18 @@ class HeadUpWidgetManager:
             else:
                 self.preferences.load_preferences( screen_preferences_file )
                 
-        
+        if environment_changed:
+            new_theme = self.preferences.prefs["theme_name"]            
+
         # Apply the new preferences to the widgets directly
         for widget in self.widgets:
-            # First cancel any set up to make sure there won't be some weird collision going on with persistence
+            # First cancel any set up to make sure there won"t be some weird collision going on with persistence
             if widget.setup_type != "":
                 widget.start_setup("cancel")
-            widget.load(self.preferences.prefs, False, True)
-            widget.start_setup("reload")
-            
+            widget.load(self.preferences.prefs, False, environment_changed)
+            if widget.enabled:
+                widget.start_setup("reload")
+
         # Set the screen info to be used for comparison in case the screen changes later
         self.previous_screen_rects = current_screen_rects
         return new_theme
@@ -280,86 +262,85 @@ class HeadUpWidgetManager:
     
     def get_default_widgets(self):
         """Load widgets to give an optional default user experience that allows all the options"""
+        default_status_topics = ["mode_toggle", "mode_option", "microphone_toggle_option", "language_option", "programming_option", "focus_toggle_option"]
+        
         return [
-            self.load_widget("status_bar", "status_bar"),
-            self.load_widget("event_log", "event_log"),
-            self.load_widget("Text panel", "text_panel", {'topics': ['*']}),
+            self.load_widget("status_bar", "status_bar", ["*"], default_status_topics ),
+            self.load_widget("event_log", "event_log", ["command", "error", "warning", "event", "success"]),
+            self.load_widget("Text panel", "text_panel", ["*"]),
             # Extra text boxes can be defined to be assigned to different topics
-            # self.load_widget("Text box two", "text_panel", {'topics': ['your_topic_here'], 'current_topic': 'your_topic_here'}),
+            # self.load_widget("Text box two", "text_panel", ["scope"], ["scope"]),
 
-            self.load_widget("Documentation", "documentation_panel", {'topics': ['documentation']}),
-            self.load_widget("Choices", "choice_panel", {'topics': ['choice'], 'current_topic': 'choice'}),
-            self.load_widget("ability_bar", "ability_bar"),
-            self.load_widget("walk_through", "walk_through_panel", {'topics': ['walk_through']}),
+            self.load_widget("Documentation", "documentation_panel", ["documentation"]),
+            self.load_widget("Choices", "choice_panel", ["choice"]),
+            self.load_widget("ability_bar", "ability_bar", ["*"]),
+            self.load_widget("walkthrough", "walkthrough_panel", ["*"]),
             
             # Special widgets that have varying positions            
-            self.load_widget("context_menu", "context_menu"),
-            self.load_widget("cursor_tracker", "cursor_tracker"),
-            self.load_widget("screen_overlay", "screen_overlay"),            
+            self.load_widget("context_menu", "context_menu", ["*"]),
+            self.load_widget("cursor_tracker", "cursor_tracker", ["*"]),
+            self.load_widget("screen_overlay", "screen_overlay", ["*"]),
         ]
         
-    def load_widget(self, id: str, type: str, subscriptions = None) -> BaseWidget:
+    def load_widget(self, id: str, type: str, subscriptions = None, current_topics = None) -> BaseWidget:
         """Load a specific widget type with the id"""
         if type == "status_bar":
-            return self.load_status_bar(id, self.preferences.prefs)
+            return self.load_status_bar(id, self.preferences.prefs, subscriptions, current_topics)
         elif type == "ability_bar":
-            return self.load_ability_bar(id, self.preferences.prefs)
+            return self.load_ability_bar(id, self.preferences.prefs, subscriptions, current_topics)
         elif type == "event_log":
-            return self.load_event_log(id, self.preferences.prefs)
+            return self.load_event_log(id, self.preferences.prefs, subscriptions, current_topics)
         elif type == "context_menu":
-            return self.load_context_menu(id, self.preferences.prefs)
+            return self.load_context_menu(id, self.preferences.prefs, subscriptions, current_topics)
         elif type == "cursor_tracker":
-            return self.load_cursor_tracker(id, self.preferences.prefs)
+            return self.load_cursor_tracker(id, self.preferences.prefs, subscriptions, current_topics)
         elif type == "screen_overlay":
-            return self.load_screen_overlay(id, self.preferences.prefs)
-        
-        # All widgets with specific subscriptions tied to them        
+            return self.load_screen_overlay(id, self.preferences.prefs, subscriptions, current_topics)
         elif type == "text_panel":
-            return self.load_text_panel(id, self.preferences.prefs, subscriptions)
+            return self.load_text_panel(id, self.preferences.prefs, subscriptions, current_topics)
         elif type == "documentation_panel":
-            return self.load_documentation_panel(id, self.preferences.prefs, subscriptions)
+            return self.load_documentation_panel(id, self.preferences.prefs, subscriptions, current_topics)
         elif type == "choice_panel":
-            return self.load_choice_panel(id, self.preferences.prefs, subscriptions)
-        elif type == "walk_through_panel":
-            return self.load_walk_through_panel(id, self.preferences.prefs, subscriptions)
+            return self.load_choice_panel(id, self.preferences.prefs, subscriptions, current_topics)
+        elif type == "walkthrough_panel":
+            return self.load_walkthrough_panel(id, self.preferences.prefs, subscriptions, current_topics)
             
-    def load_status_bar(self, id, preferences=None):
+    def load_status_bar(self, id, preferences=None, subscriptions = None, current_topics = None):
         """Load a status bar widget with the given preferences"""
-        return HeadUpStatusBar(id, preferences, self.theme, self.event_dispatch)
+        return HeadUpStatusBar(id, preferences, self.theme, self.event_dispatch, subscriptions, current_topics)
 
-    def load_event_log(self, id, preferences=None):
+    def load_event_log(self, id, preferences=None, subscriptions = None, current_topics = None):
         """Load an event log widget with the given preferences"""
-        return HeadUpEventLog(id, preferences, self.theme, self.event_dispatch)
+        return HeadUpEventLog(id, preferences, self.theme, self.event_dispatch, subscriptions, current_topics)
 
-    def load_ability_bar(self, id, preferences=None):
+    def load_ability_bar(self, id, preferences=None, subscriptions = None, current_topics = None):
         """Load an ability bar widget with the given preferences"""
-        return HeadUpAbilityBar(id, preferences, self.theme, self.event_dispatch)
+        return HeadUpAbilityBar(id, preferences, self.theme, self.event_dispatch, subscriptions, current_topics)
         
-    def load_context_menu(self, id, preferences=None):
+    def load_context_menu(self, id, preferences=None, subscriptions = None, current_topics = None):
         """Load a context menu widget with the given preferences"""
-        return HeadUpContextMenu(id, preferences, self.theme, self.event_dispatch)
+        return HeadUpContextMenu(id, preferences, self.theme, self.event_dispatch, subscriptions, current_topics)
         
-    def load_cursor_tracker(self, id, preferences=None):
+    def load_cursor_tracker(self, id, preferences=None, subscriptions = None, current_topics = None):
         """Load a cursor tracker widget with the given preferences"""
-        return HeadUpCursorTracker(id, preferences, self.theme, self.event_dispatch)
+        return HeadUpCursorTracker(id, preferences, self.theme, self.event_dispatch, subscriptions, current_topics)
         
-    def load_screen_overlay(self, id, preferences=None):
+    def load_screen_overlay(self, id, preferences=None, subscriptions = None, current_topics = None):
         """Load a screen overlay widget with the given preferences"""
-        return HeadUpScreenOverlay(id, preferences, self.theme, self.event_dispatch)
+        return HeadUpScreenOverlay(id, preferences, self.theme, self.event_dispatch, subscriptions, current_topics)
 
-    def load_text_panel(self, id, preferences=None, subscriptions=None):
+    def load_text_panel(self, id, preferences=None, subscriptions = None, current_topics = None):
         """Load a text panel widget with the given preferences"""
-        return HeadUpTextPanel(id, preferences, self.theme, self.event_dispatch, subscriptions)
+        return HeadUpTextPanel(id, preferences, self.theme, self.event_dispatch, subscriptions, current_topics)
         
-    def load_documentation_panel(self, id, preferences=None, subscriptions=None):
+    def load_documentation_panel(self, id, preferences=None, subscriptions = None, current_topics = None):
         """Load a documentation panel widget with the given preferences"""
-        return HeadUpDocumentationPanel(id, preferences, self.theme, self.event_dispatch, subscriptions)
+        return HeadUpDocumentationPanel(id, preferences, self.theme, self.event_dispatch, subscriptions, current_topics)
         
-    def load_choice_panel(self, id, preferences=None, subscriptions=None):
+    def load_choice_panel(self, id, preferences=None, subscriptions = None, current_topics = None):
         """Load a choice panel widget with the given preferences"""
-        return HeadUpChoicePanel(id, preferences, self.theme, self.event_dispatch, subscriptions)
+        return HeadUpChoicePanel(id, preferences, self.theme, self.event_dispatch, subscriptions, current_topics)
         
-    def load_walk_through_panel(self, id, preferences=None, subscriptions=None):
+    def load_walkthrough_panel(self, id, preferences=None, subscriptions = None, current_topics = None):
         """Load a choice panel widget with the given preferences"""
-        return HeadUpWalkThroughPanel(id, preferences, self.theme, self.event_dispatch, subscriptions)
-    
+        return HeadUpWalkthroughPanel(id, preferences, self.theme, self.event_dispatch, subscriptions, current_topics)

@@ -6,13 +6,16 @@ from talon.scripting import Dispatch
 class HeadUpEventDispatch(Dispatch):
 
     def request_persist_preferences(self):
-        self.dispatch('persist_preferences', True)
+        self.dispatch("persist_preferences", True)
         
     def hide_context_menu(self):
-        self.dispatch('hide_context_menu', True)
+        self.dispatch("hide_context_menu", True)
         
     def show_context_menu(self, widget_id, position = None, buttons = None):
-        self.dispatch('show_context_menu', widget_id, position, buttons)
+        self.dispatch("show_context_menu", widget_id, position, buttons)
         
     def deactivate_poller(self, poller_name):
-        self.dispatch('deactivate_poller', poller_name)
+        self.dispatch("deactivate_poller", poller_name)
+        
+    def synchronize_widget_poller(self, widget_id):
+        self.dispatch("synchronize_poller", widget_id)
