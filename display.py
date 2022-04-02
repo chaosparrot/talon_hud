@@ -751,12 +751,13 @@ class HeadUpDisplay:
     def destroy(self):
         cron.cancel(self.disable_poller_job)
         cron.cancel(self.update_environment_debouncer)
-        self.event_dispatch.unregister("persist_preferences", self.debounce_widget_preferences)
-        self.event_dispatch.unregister("hide_context_menu", self.hide_context_menu)
-        self.event_dispatch.unregister("deactivate_poller", self.deactivate_poller)
-        self.event_dispatch.unregister("show_context_menu", self.move_context_menu)
-        self.event_dispatch.unregister("synchronize_poller", self.synchronize_widget_poller)    
-        self.event_dispatch = None
+        if self.event_dispatch is not None:
+            self.event_dispatch.unregister("persist_preferences", self.debounce_widget_preferences)
+            self.event_dispatch.unregister("hide_context_menu", self.hide_context_menu)
+            self.event_dispatch.unregister("deactivate_poller", self.deactivate_poller)
+            self.event_dispatch.unregister("show_context_menu", self.move_context_menu)
+            self.event_dispatch.unregister("synchronize_poller", self.synchronize_widget_poller)    
+            self.event_dispatch = None
         ui.unregister('screen_change', self.reload_preferences)
         settings.unregister("user.talon_hud_environment", self.hud_environment_change)
         
