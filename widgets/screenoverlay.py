@@ -7,6 +7,21 @@ from talon.types.point import Point2d
 import time
 import numpy
 
+def update_rising_circle(particle):
+    particle["tick"] -= 1
+    particle["center_y"] -= 2
+    
+    if particle["tick"] > 20:
+        particle["diameter"] += 1
+    elif particle["tick"] < 20:
+        particle["diameter"] -= 0.5
+        particle["center_y"] -= 0.5
+        
+        if particle["diameter"] < 2:
+            particle["tick"] = 0
+    
+    return particle
+
 class HeadUpScreenOverlay(BaseWidget):
 
     # In this widget the limit_width and limit_height variables are used to determine the size of the canvas
@@ -21,7 +36,7 @@ class HeadUpScreenOverlay(BaseWidget):
     preferences = HeadUpDisplayUserWidgetPreferences(type="screen_overlay", x=0, y=0, width=300, height=30, font_size=12, enabled=True, alignment="center", expand_direction="down", sleep_enabled=False)
     
     # New content topic types
-    topic_types = ["screen_regions"]
+    topic_types = ["screen_regions", "particles"]
     current_topics = []
     subscriptions = ["*"]
     
@@ -29,15 +44,44 @@ class HeadUpScreenOverlay(BaseWidget):
     active_regions = None
     canvases = None
     
+    particle_poller = None
+    particles = []
+    particle_canvases = []
+    
     def __init__(self, id, preferences_dict, theme, event_dispatch, subscriptions = None, current_topics = None):
         super().__init__(id, preferences_dict, theme, event_dispatch, subscriptions, current_topics)
         self.regions = []
         self.active_regions = []
+        self.particles = [{
+            "diameter": 5,
+            "tick": 30,
+            "center_x": 400,
+            "center_y": 400,
+            "colour": "FF0000",
+            "update_particle": update_rising_circle
+        }, {
+            "diameter": 10,
+            "tick": 25,
+            "center_x": 420,
+            "center_y": 450,
+            "colour": "FF0000",
+            "update_particle": update_rising_circle
+        }, {
+            "diameter": 10,
+            "tick": 20,
+            "center_x": 300,
+            "center_y": 350,
+            "colour": "FF0000",
+            "update_particle": update_rising_circle
+        }]
         self.canvases = []
+        self.particle_canvases = []
     
     def refresh(self, new_content):
         if "event" in new_content and new_content["event"].topic_type == "screen_regions":
             self.update_regions()
+        elif "event" in new_content and new_content["event"].topic_type == "particles":
+            self.update_particles()
         elif "event" in new_content and new_content["event"].topic_type == "variable" and new_content["event"].topic == "mode":
             if (new_content["event"].content == "sleep" and self.sleep_enabled == False):
                 self.soft_disable()
@@ -75,20 +119,51 @@ class HeadUpScreenOverlay(BaseWidget):
             
             self.start_setup("cancel")
             self.clear()
-    
+
     def soft_enable(self):
         if not self.soft_enabled:
             self.soft_enabled = True
             self.activate_mouse_tracking()
+            self.update_particles()
 
     def soft_disable(self):
         self.clear_canvases()
         if self.soft_enabled:
+            self.particles = []
+            cron.cancel(self.particle_poller)
+            self.particle_poller = None
+            self.update_particles()
             self.soft_enabled = False
             cron.cancel(self.mouse_poller)
             self.mouse_poller = None
             self.regions = []
             self.active_regions = []
+
+    def update_particles(self):
+        # TODO CREATE PROPER GRID CANVASES FOR PERFORMANCE
+        for particle in self.particles:
+            particle = particle["update_particle"](particle)
+        self.particles = [x for x in self.particles if x["tick"] > 0]
+        
+        if len(self.particle_canvases) == 0:
+            particle_canvas = canvas.Canvas(0, 0, 1920, 1080)
+            particle_canvas.register('draw', self.draw_particles)
+            self.particle_canvases.append(particle_canvas)
+
+        cron.cancel(self.particle_poller)
+        if len(self.particles) > 0:
+            for particle_canvas in self.particle_canvases:
+                particle_canvas.freeze()
+            self.particle_poller = cron.after("16ms", self.update_particles)
+            
+        # Clear all the particle canvases if no particles remain
+        else:
+            for particle_canvas in self.particle_canvases:
+                particle_canvas.unregister('draw', self.draw_particles)
+                particle_canvas = None
+            self.particle_canvases = []
+            self.particle_poller = None
+
 
     def update_regions(self):
         self.active_regions = []
@@ -193,7 +268,7 @@ class HeadUpScreenOverlay(BaseWidget):
                             
             return ui.Rect(x, y, self.limit_width, self.limit_height)
         else:
-            return ui.Rect(x, y, 0, 0)
+            return ui.Rect(0, 0, 0, 0)
     
     def compare_regions(self, region_a, region_b):
         return region_a.topic == region_b.topic and region_a.colour == region_b.colour and (
@@ -314,9 +389,8 @@ class HeadUpScreenOverlay(BaseWidget):
                 self.draw_rich_text(canvas, paint, content_text, text_x, text_y + 1, 0, True)
                 
                 paint.color = text_colour
-                self.draw_rich_text(canvas, paint, content_text, text_x, text_y, 0, True)            
-                
-        
+                self.draw_rich_text(canvas, paint, content_text, text_x, text_y, 0, True)
+
     def draw_icon(self, canvas, origin_x, origin_y, diameter, paint, region, active):
         radius = diameter / 2
         
@@ -362,6 +436,12 @@ class HeadUpScreenOverlay(BaseWidget):
             
             canvas.draw_text(text.text, x + text.x, y )
 
+    def draw_particles(self, canvas):
+        paint = canvas.paint
+        for particle in self.particles:
+            if particle["colour"]:
+                paint.color = particle["colour"]
+                canvas.draw_circle( particle["center_x"] - particle["diameter"] / 2, particle["center_y"] - particle["diameter"] / 2, particle["diameter"], paint)
 
     def start_setup(self, setup_type, mouse_position = None):
         """Starts a setup mode that is used for moving, resizing and other various changes that the user might setup"""    
@@ -486,4 +566,3 @@ class HeadUpScreenOverlay(BaseWidget):
             self.animation_tick = self.animation_max_duration if self.show_animations else 0
             for canvas_reference in self.canvases:
                 canvas_reference["canvas"].freeze()
-            

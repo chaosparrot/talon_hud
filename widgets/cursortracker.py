@@ -56,7 +56,10 @@ class HeadUpCursorTracker(BaseWidget):
             self.soft_enabled = True
             self.mouse_poller = cron.interval("30ms", self.poll_mouse_pos)
             if self.canvas:
-                self.canvas.resume()
+                pos = ctrl.mouse_pos()
+                self.x = pos[0] + self.limit_x
+                self.y = pos[1] + self.limit_y
+                self.canvas.move(self.x, self.y)
             
     def soft_disable(self):
         if self.soft_enabled:
@@ -64,7 +67,7 @@ class HeadUpCursorTracker(BaseWidget):
             cron.cancel(self.mouse_poller)
             self.mouse_poller = None
             if self.canvas:
-                self.canvas.resume()
+                self.canvas.freeze()
 
     def update_icons(self):
         soft_enable = False
