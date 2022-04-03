@@ -160,3 +160,12 @@ class HudStatusIcon:
     text: str = None
     accessible_text: str = None
     callback: Callable[[Any, Any], None] = None
+
+@dataclass
+class HudParticle:
+    type: str
+    colour: str = None
+    image: str = None
+    diameter: int = 10
+    x: int = 0
+    y: int = 0

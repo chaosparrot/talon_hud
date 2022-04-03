@@ -784,7 +784,7 @@ app.register('ready', hud_start)
 
 @mod.action_class
 class Actions:
-                
+
     def hud_enable():
         """Enables the HUD"""
         global hud
@@ -804,32 +804,32 @@ class Actions:
         """Enables a specific HUD element"""
         global hud        
         hud.enable_id(id)
-        
+
     def hud_set_widget_preference(id: str, property: str, value: Any):
         """Set a specific widget preference"""
         global hud        
         hud.set_widget_preference(id, property, value, True)        
-        
+
     def hud_widget_subscribe_topic(id: str, topic: str):
         """Subscribe to a specific type of content on a widget"""
         global hud
         hud.subscribe_content_id(id, topic)
-        
+
     def hud_widget_unsubscribe_topic(id: str, topic: str):
         """Unsubscribe from a specific type of content on a widget"""
         global hud
         hud.unsubscribe_content_id(id, topic)
-        
+
     def hud_disable_id(id: str):
         """Disables a specific HUD element"""
         global hud
         hud.disable_id(id)
-        
+
     def hud_switch_theme(theme_name: str):
         """Switches the UI theme"""
         global hud
         hud.switch_theme(theme_name)
-        
+
     def hud_set_setup_mode(id: str, setup_mode: str):
         """Starts a setup mode which can change position"""
         global hud
@@ -846,15 +846,15 @@ class Actions:
         
         for id in ids:
             hud.start_setup_id(id, setup_mode, mouse_pos)
-                
+
     def hud_show_context_menu(widget_id: str, pos_x: int, pos_y: int, buttons: list[HudButton]):
         """Show the context menu for a specific widget id"""
         hud.move_context_menu(widget_id, Point2d(pos_x, pos_y), buttons)
-        
+
     def hud_hide_context_menu():
         """Show the context menu for a specific widget id"""
         hud.hide_context_menu()
-        
+
     def hud_increase_widget_page(widget_id: str):
         """Increase the content page of the widget if it has pages available"""
         global hud
@@ -864,33 +864,33 @@ class Actions:
         """Decrease the content page of the widget if it has pages available"""
         global hud
         hud.decrease_widget_page(widget_id)
-        
+
     def hud_get_widget_pagination(widget_id: str) -> HudContentPage:
         """Get the pagination information of the widget"""
         global hud
         return hud.get_widget_pagination(widget_id)
-        
+
     def hud_widget_options(widget_id: str):
         """Connect the widget to the context menu to show the options"""
         global hud
         hud.connect_context_menu(widget_id)
-        
+
     def hud_activate_choice(choice_string: str):
         """Activate a choice available on the screen"""    
         global hud
         hud.activate_choice(choice_string)
-        
+
     def hud_activate_enabled_voice_command(enabled_voice_command: str):
         """Activate a defined voice command attached to an enabled widget"""
         global hud
         hud.activate_enabled_voice_command(enabled_voice_command)
-        
+
     def hud_activate_choices(choice_string_list: list[str]):
         """Activate multiple choices available on the screen"""    
         global hud
         for choice_string in choice_string_list:
             hud.activate_choice(choice_string)
-        
+
     def hud_add_poller(topic: str, poller: Poller, keep_alive: bool = False):
         """Add a content poller / listener to the HUD"""    
         global hud
@@ -907,27 +907,27 @@ class Actions:
         """Enables a poller and claims a widget"""
         global hud
         hud.activate_poller(topic)
-        
+
     def hud_deactivate_poller(topic: str):
         """Disables a poller"""    
         global hud
         hud.deactivate_poller(topic)
-        
+
     def hud_get_theme() -> HeadUpDisplayTheme:
         """Get the current theme object from the HUD"""
         global hud
         return hud.theme
-        
+
     def hud_register_theme(theme_name: str, theme_dir: str):
         """Add a theme directory from outside of the HUD to the possible themes"""
         global hud
         hud.add_theme(theme_name, theme_dir)
-        
+
     def hud_watch_directories():
         """Watch the theme and preferences directories for changes - This gives a performance penalty and should only be used during development"""
         global hud
         hud.watch_directories()
-        
+
     def hud_unwatch_directories():
         """Stop watching for changes in the theme directories"""
         global hud

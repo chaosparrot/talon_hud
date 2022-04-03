@@ -1,12 +1,13 @@
-from talon import actions, Module, ui, app
+from talon import actions, Module, ui, app, ctrl
 from talon.types.point import Point2d
 from talon_init import TALON_USER
 from talon.scripting import Dispatch
-from .typing import HudPanelContent, HudButton, HudChoice, HudChoices, HudScreenRegion, HudAudioCue, HudDynamicVoiceCommand, HudLogMessage, HudContentEvent, HudAbilityIcon, HudStatusIcon, HudStatusOption
+from .typing import HudPanelContent, HudButton, HudChoice, HudChoices, HudScreenRegion, HudAudioCue, HudDynamicVoiceCommand, HudLogMessage, HudContentEvent, HudAbilityIcon, HudStatusIcon, HudStatusOption, HudParticle
 from typing import Callable, Any, Union
 import time
 import os
 import copy
+import random
 
 max_log_length = 50
 mod = Module()
@@ -339,6 +340,16 @@ class Actions:
             image = choice_data["image"] if "image" in choice_data else ""
             choices.append(HudChoice(image, choice_data["text"], choice_data, "selected" in choice_data and choice_data["selected"], ui.Rect(0,0,0,0)))
         return HudChoices(choices, callback, multiple)
+
+    def hud_publish_mouse_particle(type:str, colour:str = None, image:str = None, diameter:int = 10):
+        """Create a particle to be shown on the screen overlay where the current mouse cursor is"""
+        pos = ctrl.mouse_pos()
+        actions.user.hud_publish_particle(type, colour, image, diameter, pos[0], pos[1])
+
+    def hud_publish_particle(type:str, colour:str = None, image:str = None, diameter:int = 10, pos_x:int = 0, pos_y:int = 0):
+        """Publish a particle to be shown in the screen overlay"""
+        global hud_content
+        hud_content.publish_event("particles", "particle", HudParticle(type, colour, image, diameter, pos_x, pos_y), "append")
         
     def hud_publish_choices(choices: HudChoices, title: str = "", content:str = ""):
         """Publish choices to a choice panel"""

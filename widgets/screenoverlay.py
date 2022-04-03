@@ -1,6 +1,6 @@
 from ..base_widget import BaseWidget
 from ..utils import layout_rich_text, hit_test_rect, is_light_colour, hex_to_ints
-from ..content.typing import HudScreenRegion
+from ..content.typing import HudScreenRegion, HudParticle
 from ..widget_preferences import HeadUpDisplayUserWidgetPreferences
 from talon import skia, ui, cron, ctrl, canvas
 from talon.types.point import Point2d
@@ -8,19 +8,25 @@ import time
 import numpy
 import math
 
-def update_rising_circle(particle):
+def update_float_up(particle):
     particle["tick"] -= 1
-    particle["center_y"] -= 2
+    particle["center_y"] -= 4
     
-    if particle["tick"] > 20:
-        particle["diameter"] += 1
-    elif particle["tick"] < 20:
-        particle["diameter"] -= 0.5
-        particle["center_y"] -= 0.5
+    if particle["tick"] > 10:
+        particle["diameter"] += 2
+    elif particle["tick"] < 10:
+        particle["diameter"] -= 1
+        particle["center_y"] -= 1
         
         if particle["diameter"] < 2:
             particle["tick"] = 0
     
+    return particle
+
+def add_particle_animation(particle, type):
+    if type == "float_up":
+        particle["tick"] = 15
+        particle["update_particle"] = update_float_up
     return particle
 
 class HeadUpScreenOverlay(BaseWidget):
@@ -45,7 +51,6 @@ class HeadUpScreenOverlay(BaseWidget):
     active_regions = None
     canvases = None
     
-    allow_particles = False
     particle_poller = None
     particles = []
     particle_canvases = []
@@ -54,28 +59,7 @@ class HeadUpScreenOverlay(BaseWidget):
         super().__init__(id, preferences_dict, theme, event_dispatch, subscriptions, current_topics)
         self.regions = []
         self.active_regions = []
-        self.particles = [{
-            "diameter": 5,
-            "tick": 30,
-            "center_x": 400,
-            "center_y": 400,
-            "colour": "FF0000",
-            "update_particle": update_rising_circle
-        }, {
-            "diameter": 10,
-            "tick": 25,
-            "center_x": 420,
-            "center_y": 450,
-            "colour": "FF0000",
-            "update_particle": update_rising_circle
-        }, {
-            "diameter": 10,
-            "tick": 20,
-            "center_x": 300,
-            "center_y": 350,
-            "colour": "FF0000",
-            "update_particle": update_rising_circle
-        }]
+        self.particles = []
         self.canvases = []
         self.particle_canvases = {}
     
@@ -83,7 +67,18 @@ class HeadUpScreenOverlay(BaseWidget):
         if "event" in new_content and new_content["event"].topic_type == "screen_regions":
             self.update_regions()
         elif "event" in new_content and new_content["event"].topic_type == "particles":
-            self.update_particles()
+            if new_content["event"].operation == "append":
+                particle_data = new_content["event"].content
+                self.particles.append(add_particle_animation({
+                    "diameter": particle_data.diameter,
+                    "colour": particle_data.colour,
+                    "image": None if not particle_data.image else particle_data.image,
+                    "center_x": particle_data.x,
+                    "center_y": particle_data.y,
+                }, particle_data.type))
+            
+            cron.cancel(self.particle_poller)
+            self.particle_poller = cron.after("16ms", self.update_particles)            
         elif "event" in new_content and new_content["event"].topic_type == "variable" and new_content["event"].topic == "mode":
             if (new_content["event"].content == "sleep" and self.sleep_enabled == False):
                 self.soft_disable()
@@ -143,20 +138,26 @@ class HeadUpScreenOverlay(BaseWidget):
 
     def update_particles(self):        
         # Determine the required canvas grid based on 400x400 chunks
-        chunk_size = 400
+        chunk_size = 500
         needed_chunks = {}
         for particle in self.particles:
             particle = particle["update_particle"](particle)            
             if particle["tick"] > 0:
-                x_chunk = int(math.floor(particle["center_x"] / chunk_size))
-                y_chunk = int(math.floor(particle["center_y"] / chunk_size))
-                chunk_key = str(x_chunk) + "x" + str(y_chunk)
-                needed_chunks[str(x_chunk) + "x" + str(y_chunk)] = [x_chunk * chunk_size, y_chunk * chunk_size, chunk_size, chunk_size]
+                topleft_chunk_x = int(math.floor((particle["center_x"] - particle["diameter"] / 2) / chunk_size))
+                topleft_chunk_y = int(math.floor((particle["center_y"] - particle["diameter"] / 2) / chunk_size))
+                bottomright_chunk_x = int(math.floor((particle["center_x"] + particle["diameter"] / 2) / chunk_size))
+                bottomright_chunk_y = int(math.floor((particle["center_y"] + particle["diameter"] / 2) / chunk_size))                
+                
+                chunk_key = str(topleft_chunk_x) + "x" + str(topleft_chunk_y)
+                needed_chunks[chunk_key] = [topleft_chunk_x * chunk_size, topleft_chunk_y * chunk_size, chunk_size, chunk_size]
+                chunk_key = str(bottomright_chunk_x) + "x" + str(bottomright_chunk_y)
+                needed_chunks[chunk_key] = [bottomright_chunk_x * chunk_size, bottomright_chunk_y * chunk_size, chunk_size, chunk_size]
+
         self.particles = [x for x in self.particles if x["tick"] > 0]
         
         chunks = needed_chunks.keys()
         for chunk_key in chunks:
-            if chunk_key not in self.particle_canvases:
+            if chunk_key not in self.particle_canvases or self.particle_canvases[chunk_key] is None:
                 chunk_data = needed_chunks[chunk_key]
                 particle_canvas = canvas.Canvas(chunk_data[0], chunk_data[1], chunk_data[2], chunk_data[3])
                 particle_canvas.register('draw', self.draw_particles)
@@ -165,19 +166,17 @@ class HeadUpScreenOverlay(BaseWidget):
         cron.cancel(self.particle_poller)
         if len(self.particles) > 0:
             for chunk_key in self.particle_canvases:
-                self.particle_canvases[chunk_key].freeze()
-            self.particle_poller = cron.after("16ms", self.update_particles)
+                if self.particle_canvases[chunk_key] is not None:
+                    self.particle_canvases[chunk_key].freeze()
+            self.particle_poller = cron.after("32ms", self.update_particles)
         # Clear all the particle canvases if no particles remain
         else:
             for chunk_key in self.particle_canvases:
-                self.particle_canvases[chunk_key].unregister('draw', self.draw_particles)
-                self.particle_canvases[chunk_key] = None
-            self.particle_canvases = {}
+                if self.particle_canvases[chunk_key] is not None:
+                    self.particle_canvases[chunk_key].close()
+                    self.particle_canvases[chunk_key].unregister('draw', self.draw_particles)
+                    self.particle_canvases[chunk_key] = None
             self.particle_poller = None
-
-        # Make sure to not render the particles on the initial creation 
-        # to fix issues with stalling animations at the start
-        self.allow_particles = len(self.particles) > 0
 
     def update_regions(self):
         self.active_regions = []
@@ -451,8 +450,6 @@ class HeadUpScreenOverlay(BaseWidget):
             canvas.draw_text(text.text, x + text.x, y )
 
     def draw_particles(self, canvas):
-        if not self.allow_particles:
-            return
         paint = canvas.paint
         for particle in self.particles:
             if particle["colour"]:
@@ -545,7 +542,6 @@ class HeadUpScreenOverlay(BaseWidget):
                 canvas_rect = self.align_region_canvas_rect(canvas_reference["region"])
                 canvas_reference["canvas"].rect = canvas_rect            
                 canvas_reference["canvas"].freeze()
-            
 
     def setup_draw_cycle(self, canvas):
         """Drawing cycle that mimics a screen region set up"""
