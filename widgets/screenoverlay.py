@@ -12,13 +12,22 @@ def update_float_up(particle):
     particle["tick"] -= 1
     particle["center_y"] -= 4
     
+    colour = None
+    if particle["colour"] is not None:
+        colour = particle["colour"][:6]
+    
     if particle["tick"] > 10:
         particle["diameter"] += 2
-    elif particle["tick"] < 10:
+    elif particle["tick"] < 10 and particle["tick"] > 0:
         particle["diameter"] -= 1
         particle["center_y"] -= 1
         
-        if particle["diameter"] < 2:
+        if colour is not None:
+            opacity_value = int(min(255, 255 - (255 * ( 1 / particle["tick"]))))
+            opacity_hex = "0" + format(opacity_value, "x") if opacity_value <= 15 else format(opacity_value, "x")
+            particle["colour"] = colour + opacity_hex
+        
+        if particle["diameter"] < 1:
             particle["tick"] = 0
     
     return particle
