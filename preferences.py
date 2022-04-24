@@ -19,7 +19,9 @@ class HeadUpDisplayUserPreferences:
         "version": "0.6",
         "show_animations": True,
         "enabled": False,
-        "theme_name": "light"
+        "theme_name": "light",
+        "audio_enabled": False,
+        "audio_cue_volume": "75"        
     }
     
     # Keep the base preferences available as well

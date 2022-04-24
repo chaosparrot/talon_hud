@@ -118,7 +118,7 @@ dwell_toolbar_poller = DwellToolbarPoller()
 def register_dwell_toolbar_poller():
     actions.user.hud_add_poller("dwell_toolbar", dwell_toolbar_poller)
 
-app.register('ready', register_dwell_toolbar_poller)
+#app.register('ready', register_dwell_toolbar_poller)
 
 mod = Module()
 @mod.action_class

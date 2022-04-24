@@ -773,6 +773,49 @@ class HeadUpDisplay:
             self.widget_manager.widgets = []
         self.widget_manager = None
 
+    # ---------- AUDIO RELATED METHODS ---------- #
+    def register_cue(self, cue):
+        if self.audio_manager:
+            self.audio_manager.register_cue(cue)
+        
+        # Debounce the updating of the cues to prevent to many context values changing in rapid succession
+        cron.cancel(self.update_cue_context_debouncer)
+        self.update_cue_context_debouncer = cron.after("100ms", self.update_cue_context)
+        
+    def unregister_cue(self, cue):
+        if self.audio_manager:
+            self.audio_manager.unregister_cue(cue)
+        
+        # Debounce the updating of the cues to prevent to many context values changing in rapid succession
+        cron.cancel(self.update_cue_context_debouncer)
+        self.update_cue_context_debouncer = cron.after("100ms", self.update_cue_context)
+    
+    def update_cue_context(self):
+        cue_list = {}
+        for cue in self.audio_manager.cues:
+            cue_list[string_to_speakable_string(cue)] = cue
+        ctx.lists["user.talon_hud_audio_cue"] = cue_list
+
+    def audio_enable(self, id = None, trigger_automatically = True):
+        if self.audio_manager:
+            if not id:
+                self.audio_manager.enable(True)
+                self.display_state.register("trigger_audio_cue", self.audio_manager.trigger_cue)
+            else:
+                self.audio_manager.enable_id(id, trigger_automatically)
+        
+    def audio_disable(self, id = None):
+        if self.audio_manager:
+            if not id:
+                self.audio_manager.disable(True)
+                self.display_state.unregister("trigger_audio_cue", self.audio_manager.trigger_cue)            
+            else:
+                self.audio_manager.disable_id(id)
+        
+    def audio_set_volume(self, volume, id = None):
+        if self.audio_manager:
+            self.audio_manager.set_volume(volume, True, id)
+
 preferences = HeadUpDisplayUserPreferences("", CURRENT_TALON_HUD_VERSION) 
 hud = HeadUpDisplay(preferences)
 
@@ -932,3 +975,15 @@ class Actions:
         """Stop watching for changes in the theme directories"""
         global hud
         hud.unwatch_directories()
+        
+    def hud_register_audio_cue(cue_type: str, title: str, description: str, file: str, enabled: Union[bool, int] = True):
+        """Register an audio cue"""
+        global hud
+        cue_id = (cue_type + " " + title).lower().replace(" ", "_")
+        hud.register_cue(HudAudioCue(cue_id, cue_type, title, description, file, 75, enabled > 0))
+
+    def hud_unregister_audio_cue(cue_type: str, title: str = None):
+        """Unregister an audio cue"""
+        global hud
+        cue_id = (cue_type + " " + title).lower().replace(" ", "_") if title is not None else None
+        hud.unregister_cue(cue_type, cue_id)

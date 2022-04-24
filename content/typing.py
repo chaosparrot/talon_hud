@@ -169,3 +169,13 @@ class HudParticle:
     diameter: int = 10
     x: int = 0
     y: int = 0
+    
+@dataclass
+class HudAudioCue:
+    id: str
+    type: str
+    title: str
+    description: str
+    file: str
+    volume: int = 75
+    enabled: bool = False
