@@ -14,6 +14,10 @@ def talon_hud_ready():
         actions.user.hud_add_documentation("Widget settings", 
             "shows the general Talon HUD commands related to widgets",
             documentation_dir + "/hud_widget_documentation.txt")
+        
+        actions.user.hud_add_documentation("Audio management", 
+            "shows the commands used to manage audio coming from the Talon HUD.",
+            documentation_dir + "/audio_management_documentation.txt")
 
         # Add a walkthrough to the Toolkit walkthrough options
         actions.user.hud_add_walkthrough("Head up display", 

@@ -4,6 +4,7 @@ from .content.typing import HudAudioEvent, HudAudioGroup, HudAudioCue
 from .theme import HeadUpDisplayTheme
 from .preferences import HeadUpDisplayUserPreferences
 from .event_dispatch import HeadUpEventDispatch
+from typing import Any, Union
 import os
 import threading
 import functools
@@ -109,7 +110,7 @@ default_audio_path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "
 class HeadUpAudioManager:
     preferences: HeadUpDisplayUserPreferences = None
     theme: HeadUpDisplayTheme = None
-    event_dispatch: HeadUpEventDispatch
+    event_dispatch: HeadUpEventDispatch = None
     
     cues = {}
     groups = {}
@@ -148,8 +149,8 @@ class HeadUpAudioManager:
             self.event_dispatch.audio_settings_change(self.enabled, self.global_cue_volume, self.groups, self.cues)
 
     def load_preferences(self, preferences: HeadUpDisplayUserPreferences):
-        if "audio_cue_volume" in preferences.prefs:
-            self.global_cue_volume = min(max(0,int(preferences.prefs["audio_cue_volume"])), 100)
+        if "audio_volume" in preferences.prefs:
+            self.global_cue_volume = min(max(0,int(preferences.prefs["audio_volume"])), 100)
             
         # Only set the enabled flag when the HUD is enabled later so we have the audio cue triggered
         if "audio_enabled" in preferences.prefs:
@@ -170,13 +171,13 @@ class HeadUpAudioManager:
             cue.enabled = int(self.preferences.prefs[audio_cue_enabled_name]) > 0
             
     def load_group_preferences(self, group: HudAudioGroup):
-        audio_group_type_volume_name = "audio_group_" + group.id + "_volume"
-        audio_group_type_enabled_name = "audio_group_" + group.id + "_enabled"
+        audio_group_volume_name = "audio_group_" + group.id + "_volume"
+        audio_group_enabled_name = "audio_group_" + group.id + "_enabled"
         
-        if audio_cue_volume_name in self.preferences.prefs:
+        if audio_group_volume_name in self.preferences.prefs:
             group.volume = min(max(0, int(self.preferences.prefs[audio_group_volume_name])), 100)
-        if audio_cue_enabled_name in self.preferences.prefs:
-            group.enabled = int(self.preferences.prefs[audio_group_volume_name]) > 0
+        if audio_group_enabled_name in self.preferences.prefs:
+            group.enabled = int(self.preferences.prefs[audio_group_enabled_name]) > 0
 
     def persist_preferences(self):
         dict = {
@@ -248,14 +249,18 @@ class HeadUpAudioManager:
         self.event_dispatch.audio_settings_change(self.enabled, self.global_cue_volume, self.groups, self.cues)
 
     def register_cue(self, cue: HudAudioCue):
-        self.load_cue_preferences(cue)
+        if self.preferences:
+            self.load_cue_preferences(cue)
         self.cues[cue.id] = cue
-        self.event_dispatch.audio_settings_change(self.enabled, self.global_cue_volume, self.groups, self.cues)
+        if self.event_dispatch:
+            self.event_dispatch.audio_settings_change(self.enabled, self.global_cue_volume, self.groups, self.cues)
         
     def register_group(self, group: HudAudioGroup):
-        self.load_group_preferences(group)
-        self.group[group.id] = group
-        self.event_dispatch.audio_settings_change(self.enabled, self.global_cue_volume, self.groups, self.cues)
+        if self.preferences:
+            self.load_group_preferences(group)
+        self.groups[group.id] = group
+        if self.event_dispatch:
+            self.event_dispatch.audio_settings_change(self.enabled, self.global_cue_volume, self.groups, self.cues)
 
     def get_cue_path(self, cue: HudAudioCue):
         return self.theme.get_audio_path(cue.file, os.path.join(default_audio_path, cue.file + ".wav"))
@@ -301,3 +306,16 @@ class Actions:
             'cues': audio_manager.cues,
             'groups': audio_manager.groups
         }
+        
+    def hud_add_audio_group(title: str, description: str, enabled: Union[bool, int] = True):
+        """Add an audio group"""
+        global audio_manager
+        group_id = title.lower().replace(" ", "_")
+        audio_manager.register_group(HudAudioGroup(group_id, title, description, 75, enabled > 0))
+        
+    def hud_add_audio_cue(group: str, title: str, description: str, file: str, enabled: Union[bool, int] = True):
+        """Add an audio cue"""
+        global audio_manager
+        cue_id = title.lower().replace(" ", "_")
+        group_id = group.lower().replace(" ", "_")
+        audio_manager.register_cue(HudAudioCue(cue_id, group_id, title, description, file, 75, enabled > 0))

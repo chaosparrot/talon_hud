@@ -2,7 +2,7 @@ from talon import actions, Module, ui, app, ctrl
 from talon.types.point import Point2d
 from talon_init import TALON_USER
 from talon.scripting import Dispatch
-from .typing import HudPanelContent, HudButton, HudChoice, HudChoices, HudScreenRegion, HudAudioCue, HudDynamicVoiceCommand, HudLogMessage, HudContentEvent, HudAbilityIcon, HudStatusIcon, HudStatusOption, HudParticle
+from .typing import HudPanelContent, HudButton, HudChoice, HudChoices, HudScreenRegion, HudAudioCue, HudDynamicVoiceCommand, HudLogMessage, HudContentEvent, HudAbilityIcon, HudStatusIcon, HudStatusOption, HudParticle, HudAudioEvent
 from typing import Callable, Any, Union
 import time
 import os
@@ -213,7 +213,7 @@ class HeadUpDisplayContent(Dispatch):
         else:
             super().dispatch(type, event)
 
-    def trigger_audio_cues(titles: list[str]):
+    def trigger_audio_cues(self, titles: list[str]):
         cues = []
         for title in titles:
             cues.append(title.lower().replace(" ", "_"))

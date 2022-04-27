@@ -163,6 +163,7 @@ class HudParticle:
 
 @dataclass
 class HudAudioGroup:
+    id: str
     title: str
     description: str
     volume: int = 75

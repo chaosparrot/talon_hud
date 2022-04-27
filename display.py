@@ -99,7 +99,6 @@ class HeadUpDisplay:
     enabled_voice_commands = {}
     update_preferences_debouncer = None
     update_context_debouncer = None
-    update_cue_context_debouncer = None
     update_environment_debouncer = None
     
     watching_directories = False
@@ -747,6 +746,15 @@ class HeadUpDisplay:
         ctx.lists["user.talon_hud_choices"] = choices
         ctx.lists["user.talon_hud_quick_choices"] = quick_choices
         ctx.lists["user.talon_hud_themes"] = themes
+
+        if self.audio_manager:
+            cue_list = {}        
+            for cue in self.audio_manager.cues:
+                cue_list[string_to_speakable_string(cue)] = cue
+                
+            for group in self.audio_manager.groups:
+                cue_list[string_to_speakable_string(group)] = group
+            ctx.lists["user.talon_hud_audio"] = cue_list
         
         self.enabled_voice_commands = enabled_voice_commands
         ctx.lists["user.talon_hud_widget_enabled_voice_commands"] = enabled_voice_commands.keys()
@@ -802,31 +810,6 @@ class HeadUpDisplay:
     def trigger_audio(self, event: HudAudioEvent):
         if self.audio_manager:
             self.audio_manager.trigger_audio(event)
-    
-    def register_audio_group(self, group):
-        if self.audio_manager:
-            self.audio_manager.register_group(group)
-
-            # Debounce the updating of the cues to prevent to many context values changing in rapid succession        
-            cron.cancel(self.update_cue_context_debouncer)
-            self.update_cue_context_debouncer = cron.after("100ms", self.update_audio_context)
-
-    def register_audio_cue(self, cue):
-        if self.audio_manager:
-            self.audio_manager.register_cue(cue)
-        
-            # Debounce the updating of the cues to prevent to many context values changing in rapid succession
-            cron.cancel(self.update_cue_context_debouncer)
-            self.update_cue_context_debouncer = cron.after("100ms", self.update_cue_context)
-
-    def update_audio_context(self):
-        cue_list = {}
-        for cue in self.audio_manager.cues:
-            cue_list[string_to_speakable_string(cue)] = cue
-            
-        for group in self.audio_manager.groups:
-            cue_list[string_to_speakable_string(cue)] = cue
-        ctx.lists["user.talon_hud_audio"] = cue_list
 
     def audio_enable(self, group_id = None, id = None, trigger_automatically = True):
         if self.audio_manager:
@@ -1005,16 +988,3 @@ class Actions:
         """Stop watching for changes in the theme directories"""
         global hud
         hud.unwatch_directories()
-        
-    def hud_register_audio_group(title: str, description: str, enabled: Union[bool, int] = True):
-        """Register an audio group"""
-        global hud
-        group_id = title.lower().replace(" ", "_")
-        hud.register_audio_group(HudAudioGroup(group_id, title, description, 75, enabled > 0))
-        
-    def hud_register_audio_cue(group: str, title: str, description: str, file: str, enabled: Union[bool, int] = True):
-        """Register an audio cue"""
-        global hud
-        cue_id = title.lower().replace(" ", "_")
-        group_id = group.lower().replace(" ", "_")
-        hud.register_audio_cue(HudAudioCue(cue_id, group_id, title, description, file, 75, enabled > 0))
