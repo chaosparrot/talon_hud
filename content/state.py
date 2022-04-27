@@ -25,6 +25,7 @@ class HeadUpDisplayContent(Dispatch):
     throttled_logs = None
     save_up_events = True
     saved_events = None
+    saved_audio = None
     
     topic_types = {
         "variable": {
@@ -199,18 +200,24 @@ class HeadUpDisplayContent(Dispatch):
         
         for event in self.saved_events:
             self.dispatch(event["type"], event["event"])
+        
+    # Get a full content dump to be used in refreshing widgets after a code update
+    def get_content_dump(self) -> HudContentEvent:
+        return HudContentEvent("content_dump", "", {"topic_types": copy.copy(self.topic_types)}, "dump")
 
-    def dispatch(self, type: str, event: HudContentEvent):
+    def dispatch(self, type: str, event):
         if self.save_up_events:
             if self.saved_events == None:
                 self.saved_events = []
             self.saved_events.append({"type": type, "event": event})
         else:
             super().dispatch(type, event)
-        
-    # Get a full content dump to be used in refreshing widgets after a code update
-    def get_content_dump(self) -> HudContentEvent:
-        return HudContentEvent("content_dump", "", {"topic_types": copy.copy(self.topic_types)}, "dump")
+
+    def trigger_audio_cues(titles: list[str]):
+        cues = []
+        for title in titles:
+            cues.append(title.lower().replace(" ", "_"))
+        self.dispatch("trigger_audio", HudAudioEvent(cues))
 
     def destroy(self):
         pass
@@ -361,3 +368,13 @@ class Actions:
         content = HudPanelContent("choice", title, [content], [], time.time(), True, choices)
         global hud_content
         hud_content.publish("choice", content)
+
+    def hud_trigger_audio_cue(title: str):
+        """Trigger a single audio cue"""
+        global hud_content
+        hud_content.trigger_audio_cues([title])
+        
+    def hud_trigger_audio_cues(titles: list[str]):
+        """Trigger multiple audio cues in succession"""
+        global hud_content
+        hud_content.trigger_audio_cues(titles)

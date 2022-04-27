@@ -19,3 +19,11 @@ class HeadUpEventDispatch(Dispatch):
         
     def synchronize_widget_poller(self, widget_id):
         self.dispatch("synchronize_poller", widget_id)
+        
+    def audio_settings_change(self, enabled, volume, groups, cues):
+        self.dispatch("audio_settings_change", {
+            'enabled': enabled,
+            'volume': volume,
+            'groups': groups,
+            'cues': cues
+        })

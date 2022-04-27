@@ -74,16 +74,7 @@ class HudScreenRegion:
     hover_visibility: int = HOVER_VISIBILITY_OFF
     text_colour: str = None
     vertical_centered: bool = True
-    
-@dataclass
-class HudAudioCue:
-    id: str
-    title: str
-    description: str
-    file: str
-    volume: int = 75
-    enabled: bool = False
-    
+
 # One-indexed page with result
 @dataclass
 class HudContentPage:
@@ -169,13 +160,24 @@ class HudParticle:
     diameter: int = 10
     x: int = 0
     y: int = 0
-    
+
+@dataclass
+class HudAudioGroup:
+    title: str
+    description: str
+    volume: int = 75
+    enabled: bool = False
+
 @dataclass
 class HudAudioCue:
     id: str
-    type: str
+    group: str
     title: str
     description: str
     file: str
     volume: int = 75
     enabled: bool = False
+    
+@dataclass
+class HudAudioEvent:
+    cues: list[str]
