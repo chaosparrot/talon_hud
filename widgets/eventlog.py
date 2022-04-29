@@ -1,4 +1,4 @@
-from user.talon_hud.base_widget import BaseWidget
+from ..base_widget import BaseWidget
 from talon import skia, ui, cron
 import time
 import numpy
