@@ -1,6 +1,7 @@
 from typing import Dict
 from talon.scripting import Dispatch
 
+
 # Class for general communication between the different layers of the HUD
 # NOTE - THIS USES A TALON API THAT IS SUBJECT TO CHANGE AND MIGHT BREAK IN FUTURE VERSIONS
 class HeadUpEventDispatch(Dispatch):
@@ -20,10 +21,5 @@ class HeadUpEventDispatch(Dispatch):
     def synchronize_widget_poller(self, widget_id):
         self.dispatch("synchronize_poller", widget_id)
         
-    def audio_settings_change(self, enabled, volume, groups, cues):
-        self.dispatch("audio_settings_change", {
-            'enabled': enabled,
-            'volume': volume,
-            'groups': groups,
-            'cues': cues
-        })
+    def audio_state_change(self, audio_state):
+        self.dispatch("audio_state_change", audio_state)

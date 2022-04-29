@@ -182,3 +182,11 @@ class HudAudioCue:
 @dataclass
 class HudAudioEvent:
     cues: list[str]
+    
+@dataclass
+class HudAudioState:
+    enabled: bool = True
+    volume: int = 75
+    groups: list[HudAudioGroup] = None
+    cues: list[HudAudioCue] = None
+    

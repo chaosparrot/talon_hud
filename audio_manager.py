@@ -1,6 +1,6 @@
 from talon import scope, cron, app, actions, Module, Context
 from talon.lib import cubeb
-from .content.typing import HudAudioEvent, HudAudioGroup, HudAudioCue
+from .content.typing import HudAudioEvent, HudAudioGroup, HudAudioCue, HudAudioState
 from .theme import HeadUpDisplayTheme
 from .preferences import HeadUpDisplayUserPreferences
 from .event_dispatch import HeadUpEventDispatch
@@ -136,17 +136,15 @@ class HeadUpAudioManager:
         if not self.enabled:
             self.enabled = True
             if persisted:
-                self.preferences.persist_preferences({"audio_enabled": "1"})
+                self.audio_settings_change()
             self.trigger_cue("enabled")
-            self.event_dispatch.audio_settings_change(self.enabled, self.global_cue_volume, self.groups, self.cues)
 
     def disable(self, persisted=False):
         clear_audio()
         if self.enabled:
             self.enabled = False
             if persisted:
-                self.preferences.persist_preferences({"audio_enabled": "0"})
-            self.event_dispatch.audio_settings_change(self.enabled, self.global_cue_volume, self.groups, self.cues)
+                self.audio_settings_change()
 
     def load_preferences(self, preferences: HeadUpDisplayUserPreferences):
         if "audio_volume" in preferences.prefs:
@@ -179,88 +177,79 @@ class HeadUpAudioManager:
         if audio_group_enabled_name in self.preferences.prefs:
             group.enabled = int(self.preferences.prefs[audio_group_enabled_name]) > 0
 
-    def persist_preferences(self):
+    def get_persistence_dict(self):
         dict = {
             "audio_cue_volume": str(self.global_cue_volume),
             "audio_enabled": "1" if self.enabled else "0"
         }
         
-        for id in self.groups:
-            group = self.groups[id]
-            dict["audio_group_" + id + "_volume"] = str(group.volume)
-            dict["audio_group_" + id + "_enabled"] = "1" if group.enabled else "0"
+        for group_id in self.groups:
+            group = self.groups[group_id]
+            dict["audio_group_" + group.id + "_volume"] = str(group.volume)
+            dict["audio_group_" + group.id + "_enabled"] = "1" if group.enabled else "0"
         
-        for id in self.cues:
-            cue = self.cues[id]
-            dict["audio_cue_" + id + "_volume"] = str(cue.volume)
-            dict["audio_cue_" + id + "_enabled"] = "1" if cue.enabled else "0"
-        
-        self.preferences.persist_preferences(dict)
+        for cue_id in self.cues:
+            cue = self.cues[cue_id]        
+            dict["audio_cue_" + cue.id + "_volume"] = str(cue.volume)
+            dict["audio_cue_" + cue.id + "_enabled"] = "1" if cue.enabled else "0"    
+        return dict
+
+    def audio_settings_change(self):
+        audio_state = HudAudioState(self.enabled, self.global_cue_volume, list(self.groups.values()), list(self.cues.values()))
+        if self.event_dispatch:
+            self.event_dispatch.audio_state_change(audio_state)
 
     def enable_audio(self, group_id = None, cue_id = None, trigger = False):
-        if group_id is None:
+        if group_id in self.groups and not self.groups[group_id].enabled:
             self.groups[group_id].enabled = True
-            self.preferences.persist_preferences({"audio_group_" + group_id + "_enabled": "1"})
             
             if trigger:
                 for cue_id in self.cues:
                     if self.cues[cue_id].group == group_id and self.cues[cue_id].enabled:
                         self.trigger_cue(cue_id)
                         break
-    
-        elif id in self.cues and not self.cues[id].enabled:
-            self.cues[id].enabled = True
-            self.preferences.persist_preferences({"audio_cue_" + id + "_enabled": "1"})
+        elif cue_id in self.cues and not self.cues[cue_id].enabled:
+            self.cues[cue_id].enabled = True
             
             if trigger:
-                self.trigger_cue(id)
-        self.event_dispatch.audio_settings_change(self.enabled, self.global_cue_volume, self.groups, self.cues)
+                self.trigger_cue(cue_id)
+        self.audio_settings_change()
 
-    def disable_audio(self, group_id = None, id = None):
-        if group_id is None:
-            self.groups[id].enabled = True
-            self.preferences.persist_preferences({"audio_group_" + group_id + "_enabled": "0"})
+    def disable_audio(self, group_id = None, cue_id = None):
+        if group_id in self.groups and self.groups[group_id].enabled:
+            self.groups[group_id].enabled = False
+        elif cue_id in self.cues and self.cues[cue_id].enabled:
+            self.cues[cue_id].enabled = False
+        self.audio_settings_change()
 
-        elif id in self.cues and self.cues[id].enabled:
-            self.cues[id].enabled = False
-            self.preferences.persist_preferences({"audio_cue_" + id + "_enabled": "0"})
-        self.event_dispatch.audio_settings_change(self.enabled, self.global_cue_volume, self.groups, self.cues)
-
-    def set_volume(self, cue_volume, trigger=False, group_id=None, id=None):
-        if not id and not type:
-            self.global_cue_volume = min(max(0,cue_volume), 100)
-            self.preferences.persist_preferences({"audio_cue_volume": str(self.global_cue_volume)})
+    def set_volume(self, volume, trigger=False, group_id=None, cue_id=None):
+        if not cue_id and not group_id:
+            self.global_cue_volume = min(max(0,volume), 100)
             if trigger:
                 self.trigger_cue("enabled")
-        elif id is None and group_id is not None and group_id in self.groups:
-            self.groups[group_id].volume = min(max(0,cue_volume), 100)
-            self.preferences.persist_preferences({"audio_group_" + group_id + "_volume": str(self.groups[group_id].volume)})
+        elif cue_id is None and group_id is not None and group_id in self.groups:
+            self.groups[group_id].volume = min(max(0,volume), 100)
             
             if trigger:
                 for cue_id in self.cues:
                     if self.cues[cue_id].group == group_id and self.cues[cue_id].enabled:
                         self.trigger_cue(cue_id)
                         break
-        elif id is not None and id in self.cues:
-            self.cues[id].volume = min(max(0,cue_volume), 100)
-            self.preferences.persist_preferences({"audio_cue_" + id + "_volume": str(self.global_cue_volume)})
+        elif cue_id is not None and cue_id in self.cues:
+            self.cues[cue_id].volume = min(max(0,volume), 100)
             if trigger:
-                self.trigger_cue(id)
-        self.event_dispatch.audio_settings_change(self.enabled, self.global_cue_volume, self.groups, self.cues)
+                self.trigger_cue(cue_id)
+        self.audio_settings_change()
 
     def register_cue(self, cue: HudAudioCue):
         if self.preferences:
             self.load_cue_preferences(cue)
         self.cues[cue.id] = cue
-        if self.event_dispatch:
-            self.event_dispatch.audio_settings_change(self.enabled, self.global_cue_volume, self.groups, self.cues)
         
     def register_group(self, group: HudAudioGroup):
         if self.preferences:
             self.load_group_preferences(group)
         self.groups[group.id] = group
-        if self.event_dispatch:
-            self.event_dispatch.audio_settings_change(self.enabled, self.global_cue_volume, self.groups, self.cues)
 
     def get_cue_path(self, cue: HudAudioCue):
         return self.theme.get_audio_path(cue.file, os.path.join(default_audio_path, cue.file + ".wav"))
@@ -282,7 +271,7 @@ class HeadUpAudioManager:
             
             if volume > 0:
                 play_wav( self.get_cue_path(cue), volume)
-                
+
     def destroy(self):
         pass
 
@@ -300,12 +289,8 @@ class Actions:
     def hud_get_audio_state():
         """Get the full state of the registered audio data"""
         global audio_manager
-        return {
-            'enabled': audio_manager.enabled,
-            'volume': audio_manager.global_cue_volume,
-            'cues': audio_manager.cues,
-            'groups': audio_manager.groups
-        }
+        return HudAudioState(audio_manager.enabled, audio_manager.global_cue_volume,\
+            list(audio_manager.groups.values()), list(audio_manager.cues.values()))
         
     def hud_add_audio_group(title: str, description: str, enabled: Union[bool, int] = True):
         """Add an audio group"""
