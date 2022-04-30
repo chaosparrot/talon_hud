@@ -10,13 +10,17 @@ semantic_directory = os.path.dirname(os.path.abspath(__file__))
 class HeadUpDisplayTheme:
 
     name = ''
-    image_dict = {}
-    audio_dict = {}
-    values = {}
-    colours = {}
+    image_dict = None
+    audio_dict = None
+    values = None
+    colours = None
     theme_dir = ''
 
     def __init__(self, theme_name, theme_dir=None):
+        self.image_dict = {}
+        self.audio_dict = {}
+        self.values = {}
+        self.colours = {}    
         self.name = theme_name
         base_theme_dir = os.path.join(os.path.join(semantic_directory, "themes"), "_base_theme")
         if theme_dir is None:
