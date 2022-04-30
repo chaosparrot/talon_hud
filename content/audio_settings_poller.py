@@ -26,11 +26,11 @@ class AudioSettingsPoller(Poller):
     def initialize_panel(self):
         audio_state = actions.user.hud_get_audio_state()
         panel_content = self.generate_audio_state_content(audio_state, True)
-        self.content.publish_event("text", "audio_settings", "replace", panel_content, True, True)
+        self.content.publish_event("text", "audio_settings", "replace", panel_content, True)
     
     def update_panel(self, audio_state):
-        panel_content = self.generate_audio_state_content(audio_state, True)
-        self.content.publish_event("text", "audio_settings", "replace", panel_content, True, True)        
+        panel_content = self.generate_audio_state_content(audio_state, False)
+        self.content.publish_event("text", "audio_settings", "replace", panel_content, False)        
     
     def generate_audio_state_content(self, audio_state: HudAudioState, show=False):
         content = "Voice commands for audio management can be found inside the <*toolkit documentation/>.\n\n"

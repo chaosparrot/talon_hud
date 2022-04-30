@@ -111,14 +111,17 @@ class HeadUpAudioManager:
     preferences: HeadUpDisplayUserPreferences = None
     theme: HeadUpDisplayTheme = None
     event_dispatch: HeadUpEventDispatch = None
-    
-    cues = {}
-    groups = {}
+    cues = None
+    groups = None
     
     # Volume goes from 0 to 100 where 75 is the non-altered audio volume    
     baseline_volume = 75
     global_cue_volume = 75
     enabled = False
+    
+    def __init__(self):
+        self.cues = {}
+        self.groups = {}
     
     def start(self, preferences: HeadUpDisplayUserPreferences, theme: HeadUpDisplayTheme, event_dispatch: HeadUpEventDispatch):
         self.cues["enabled"] = HudAudioCue("default", "enabled", "HUD Audio Enabled", \
@@ -179,8 +182,8 @@ class HeadUpAudioManager:
 
     def get_persistence_dict(self):
         dict = {
-            "audio_cue_volume": str(self.global_cue_volume),
-            "audio_enabled": "1" if self.enabled else "0"
+            "audio_volume": str(self.global_cue_volume),
+            "audio_enabled": self.enabled
         }
         
         for group_id in self.groups:
@@ -223,12 +226,20 @@ class HeadUpAudioManager:
         self.audio_settings_change()
 
     def set_volume(self, volume, trigger=False, group_id=None, cue_id=None):
+        new_volume = min(max(0,volume), 100)
+    
         if not cue_id and not group_id:
-            self.global_cue_volume = min(max(0,volume), 100)
+            self.global_cue_volume = new_volume
             if trigger:
                 self.trigger_cue("enabled")
         elif cue_id is None and group_id is not None and group_id in self.groups:
-            self.groups[group_id].volume = min(max(0,volume), 100)
+            old_volume = self.groups[group_id].volume
+            self.groups[group_id].volume = new_volume
+                        
+            for cue_id in self.cues:
+                if self.cues[cue_id].group == group_id and \
+                    self.cues[cue_id].volume > new_volume or self.cues[cue_id].volume == old_volume:
+                    self.cues[cue_id].volume = new_volume
             
             if trigger:
                 for cue_id in self.cues:
@@ -236,7 +247,7 @@ class HeadUpAudioManager:
                         self.trigger_cue(cue_id)
                         break
         elif cue_id is not None and cue_id in self.cues:
-            self.cues[cue_id].volume = min(max(0,volume), 100)
+            self.cues[cue_id].volume = new_volume
             if trigger:
                 self.trigger_cue(cue_id)
         self.audio_settings_change()
@@ -261,12 +272,10 @@ class HeadUpAudioManager:
     def trigger_cue(self, id):
         if self.enabled and id in self.cues and self.cues[id].enabled:
             cue = self.cues[id]
-            if cue.group in self.groups and self.groups[cue.group].enabled:
+            if cue.group in self.groups and not self.groups[cue.group].enabled:
                 return
             
             volume = self.global_cue_volume / self.baseline_volume           
-            if cue.group in self.groups:
-                volume = volume * self.groups[cue.group].volume / self.baseline_volume
             volume = volume * cue.volume / self.baseline_volume
             
             if volume > 0:

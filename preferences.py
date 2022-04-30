@@ -21,7 +21,7 @@ class HeadUpDisplayUserPreferences:
         "enabled": False,
         "theme_name": "light",
         "audio_enabled": False,
-        "audio_cue_volume": "75"        
+        "audio_volume": "75"        
     }
     
     # Keep the base preferences available as well
