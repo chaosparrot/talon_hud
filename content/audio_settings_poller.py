@@ -34,12 +34,12 @@ class AudioSettingsPoller(Poller):
     
     def generate_audio_state_content(self, audio_state: HudAudioState, show=False):
         content = "Voice commands for audio management can be found inside the <*toolkit documentation/>.\n\n"
-        content += "Global audio <+<*(" + str(audio_state.volume) + "/100)/>/>\n\n" if audio_state.enabled else "Global audio <!!<*muted/>/>\n\n"
+        content += "Global audio <+<*(" + str(audio_state.volume) + "/100)/>/>" if audio_state.enabled else "Global audio <!!<*muted/>/>"
 
         for group in audio_state.groups:
             cues_in_group = [x for x in audio_state.cues if x.group == group.id]
             if len(cues_in_group) > 0:
-                content += "Group: <*" + group.title + "/>"
+                content += "\n\nGroup: <*" + group.title + "/>"
                 content += " <+<*(" + str(group.volume) + "/100)/>/>" if group.enabled else " <!!<*muted/>/>"
                 content += "\n</" + group.description + "/>\n"
                 
@@ -54,11 +54,6 @@ class AudioSettingsPoller(Poller):
         return self.content.create_panel_content(content, "audio_settings", "Toolkit audio", show)
         
 def on_ready():
-    actions.user.hud_add_audio_group("Modes", "Sounds that get triggered when a mode becomes active", True)
-    actions.user.hud_add_audio_cue("Modes", "Command mode", "", "command_mode", True)
-    actions.user.hud_add_audio_cue("Modes", "Dictation mode", "", "pen", True)
-    actions.user.hud_add_audio_cue("Modes", "Sleep mode", "", "sleep_mode", True)
-
     actions.user.hud_add_poller("audio_settings", AudioSettingsPoller())
 
 app.register("ready", on_ready)
