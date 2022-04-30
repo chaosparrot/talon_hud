@@ -38,8 +38,8 @@ tag: user.talon_hud_available
 ^head up audio enable$: user.hud_audio_enable()
 ^head up audio (disable|mute)$: user.hud_audio_disable()
 ^head up audio volume {user.talon_hud_volume_number} [percent]$: user.hud_audio_set_volume(talon_hud_volume_number)
-^head up audio {user.talon_hud_audio} enable$: user.hud_audio_enable(talon_hud_audio)
-^head up audio {user.talon_hud_audio} (disable|mute)$: user.hud_audio_disable(talon_hud_audio)
+^head up audio enable {user.talon_hud_audio}$: user.hud_audio_enable(talon_hud_audio)
+^head up audio (disable|mute) {user.talon_hud_audio}$: user.hud_audio_disable(talon_hud_audio)
 ^head up audio {user.talon_hud_audio} volume {user.talon_hud_volume_number} [percent]$: user.hud_audio_set_volume(talon_hud_volume_number, talon_hud_audio)
 
 # Head up development commands - Sets watchers on certain configurations, like themes, so development is quicker

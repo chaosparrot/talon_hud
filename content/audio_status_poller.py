@@ -48,6 +48,8 @@ class AudioStatusPoller(Poller):
         
         if active_mic != "None":
             current_mode = actions.user.hud_determine_mode()
+            if current_mode.startswith("user."):
+                current_mode = current_mode[5:]
             if current_mode != self.current_mode or mic_changed or forced:
                 self.current_mode = current_mode
                 self.content.trigger_audio_cue(current_mode.capitalize() + " mode")

@@ -6,12 +6,12 @@
 
 Every audio cue can also be separately altered to either be muted, enabled or have their volume levels changed.
 
-<*head up audio <cue_name> enable/> enables, while <*head up audio <cue_name> mute/> mutes the audio of a single audio cue.
+<*head up audio enable <cue_name>/> enables, while <*head up audio mute <cue_name>/> mutes the audio of a single audio cue.
 <*head up audio <cue_name> volume <number>/> sets the volume level from 0 to 100 of a single audio cue.
 
 But you can also mute, enable or change the volume levels of the audio group that the audio cue is in.
 
-<*head up audio <group> enable/> and <*head up audio <group> mute/> manage the groups audio enabling.
+<*head up audio enable <group>/> and <*head up audio mute <group>/> manage the groups audio enabling.
  mutes the audio of a single audio cue.
 <*head up audio <group> volume <number>/> sets the volume level from 0 to 100 of a single audio cue.
 
