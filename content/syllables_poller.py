@@ -34,24 +34,24 @@ class SyllablesPoller(Poller):
                 
     def run_syllables(self, message: str):
         vowel_map = {
-            "o": "Syllable one",
-            "oo": "Syllable one",
-            "ou": "Syllable one",            
-            "u": "Syllable one",
-            "a": "Syllable two",
-            "ai": "Syllable two",
-            "ea": "Syllable two",
-            "e": "Syllable three",
-            "ee": "Syllable three",
-            "ie": "Syllable three",
-            "y": "Syllable three",
-            "ai": "Syllable four",
-            "oi": "Syllable four",
-            "i": "Syllable four"
+            "o": "Pitch mid",
+            "oo": "Pitch low",
+            "uou": "Pitch low",            
+            "ou": "Pitch low",
+            "u": "Pitch low",
+            "io": "Pitch low mid",            
+            "a": "Pitch mid",
+            "ea": "Pitch mid",
+            "e": "Pitch mid high",
+            "ee": "Pitch mid",
+            "ei": "Pitch mid",            
+            "ie": "Pitch mid",
+            "y": "Pitch high",
+            "ai": "Pitch mid high",
+            "oi": "Pitch high",
+            "i": "Pitch high"
         }
     
-        # TODO DETERMINE SYLLABLES
-        # TODO TRIGGER SYLLABLES
         syllables = []
         words = message.split(" ")
         for word in words:
@@ -108,11 +108,12 @@ def on_ready():
     global syllables_poller
     
     actions.user.hud_add_audio_group("Syllables", "Mimicks the syllables of a voice command said", False)
-    actions.user.hud_add_audio_cue("Syllables", "Silence", "", "silence", True)    
-    actions.user.hud_add_audio_cue("Syllables", "Syllable one", "", "1", True)
-    actions.user.hud_add_audio_cue("Syllables", "Syllable two", "", "2", True)
-    actions.user.hud_add_audio_cue("Syllables", "Syllable three", "", "3", True)
-    actions.user.hud_add_audio_cue("Syllables", "Syllable four", "", "4", True)
+    actions.user.hud_add_audio_cue("Syllables", "Pitch high", "Eye, oy in oyster", "4", True)
+    actions.user.hud_add_audio_cue("Syllables", "Pitch mid high", "Ai in air, e in lend", "3", True)
+    actions.user.hud_add_audio_cue("Syllables", "Pitch mid", "A in start, o in otter, ea in meat, i in switch", "2", True)
+    actions.user.hud_add_audio_cue("Syllables", "Pitch low mid", "A in metal, er in mermaid", "1", True)
+    actions.user.hud_add_audio_cue("Syllables", "Pitch low", "Oo in moon, o in stone, u in tube", "0", True)
+    actions.user.hud_add_audio_cue("Syllables", "Silence", "", "silence", True)
 
     actions.user.hud_add_poller("syllables", syllables_poller, True)
     actions.user.hud_activate_poller("syllables")
