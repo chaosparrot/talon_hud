@@ -144,14 +144,15 @@ class Actions:
             for index, active_mode in enumerate(active_modes):
                 if (active_mode.replace("user.", "") in languages.keys()):
                     return active_mode.replace("user.", "")
-        
+
+        active_tags = scope.get("tag")
+        if (active_tags is not None):
+            for index, active_tag in enumerate(active_tags):
+                if (active_tag.replace("user.", "") in languages.keys()):
+                    return active_tag.replace("user.", "")
+
         lang = actions.code.language()
         if not lang:
-            active_tags = scope.get("tag")
-            if (active_tags is not None):
-                for index, active_tag in enumerate(active_tags):
-                    if (active_tag.replace("user.", "") in languages.keys()):
-                        return active_tag.replace("user.", "")
             return ""
         else:
             return lang if lang else ""
