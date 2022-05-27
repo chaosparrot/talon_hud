@@ -80,9 +80,9 @@ class HudContentBuilder():
         """Trigger an audio cue"""
         self._content.trigger_audio_cues([title])
         
-    def trigger_audio_cues(self, titles: list[str]):
+    def trigger_audio_cues(self, titles: list[str], multipliers: list[float] = None):
         """Trigger multiple audio cues in succession"""
-        self._content.trigger_audio_cues(titles)
+        self._content.trigger_audio_cues(titles, multipliers)
         
     def publish_event(self, topic_type: str, topic:str, operation: str, data: Any = None, show: bool = False, claim: int = None):
         """Publish created content to the central HUD content object"""

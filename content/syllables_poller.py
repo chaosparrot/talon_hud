@@ -34,33 +34,40 @@ class SyllablesPoller(Poller):
                 
     def run_syllables(self, message: str):
         vowel_map = {
-            "o": "Pitch mid",
-            "oo": "Pitch low",
-            "uou": "Pitch low",            
-            "ou": "Pitch low",
-            "u": "Pitch low",
-            "io": "Pitch low mid",            
-            "a": "Pitch mid",
-            "ea": "Pitch mid",
-            "e": "Pitch mid high",
-            "ee": "Pitch mid",
-            "ei": "Pitch mid",            
-            "ie": "Pitch mid",
-            "y": "Pitch high",
-            "ai": "Pitch mid high",
-            "oi": "Pitch high",
-            "i": "Pitch high"
+            "o": ["Pitch mid"],
+            "oo": ["Pitch low"],
+            "uou": ["Pitch low"],            
+            "ou": ["Pitch low"],
+            "u": ["Pitch low"],
+            "io": ["Pitch low mid"],
+            "ia": ["Pitch mid high", "Pitch mid"],
+            "a": ["Pitch mid"],
+            "au": ["Pitch mid", "Pitch low"],            
+            "ea": ["Pitch mid"],
+            "e": ["Pitch mid high"],
+            "ee": ["Pitch mid"],
+            "ei": ["Pitch mid"],            
+            "ie": ["Pitch mid"],
+            "y": ["Pitch high"],
+            "ai": ["Pitch mid high"],
+            "oi": ["Pitch high"],
+            "i": ["Pitch high"]
         }
     
+        multipliers = []
         syllables = []
         words = message.split(" ")
         for word in words:
             current_vowels = ""
             if len(word) == 1:
                 syllables.append("Syllable one")
+                multipliers.append(1.0)
                 syllables.append("Silence")
+                multipliers.append(1.0)
                 syllables.append("Silence")
+                multipliers.append(1.0)                
             elif len(word) > 1:
+                first_vowel = True
                 previous_is_vowel = False
                 for index, char in enumerate(word):
                     final_char = (index + 1) == len(word)
@@ -69,15 +76,29 @@ class SyllablesPoller(Poller):
                     if final_char or char not in "iaeuo":
                         if current_vowels in vowel_map:
                             if not (final_char and char == "e" and current_vowels == "e"):
-                                syllables.append(vowel_map[current_vowels])
-                                syllables.append("Silence")
+                                syllable = vowel_map[current_vowels]
+                                syllables.extend(vowel_map[current_vowels])
+                                
+                                if first_vowel:
+                                    multipliers.append(1.0)
+                                    for sound_index, sound in enumerate(syllable):
+                                        if sound_index > 0:
+                                            multipliers.append(0.4)
+                                    first_vowel = False
+                                else:
+                                    for sound_index, sound in enumerate(syllable):
+                                        multipliers.append(0.4)
                         elif final_char and char == "y":
-                            syllables.append(vowel_map[char])
-                            syllables.append("Silence")
+                            syllables.extend(vowel_map[char])
+                            multipliers.append(0.4)
                         current_vowels = ""
                 syllables.append("Silence")
+                multipliers.append(1.0)
                 syllables.append("Silence")
-        self.content.trigger_audio_cues(syllables)        
+                multipliers.append(1.0)
+                syllables.append("Silence")
+                multipliers.append(1.0)
+        self.content.trigger_audio_cues(syllables, multipliers)        
         self.last_message = message
                 
     def audio_update(self, audio_state):

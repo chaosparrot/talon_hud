@@ -266,10 +266,13 @@ class HeadUpAudioManager:
         return self.theme.get_audio_path(cue.file, os.path.join(default_audio_path, cue.file + ".wav"))
 
     def trigger_audio(self, event: HudAudioEvent):
-        for cue_id in event.cues:
-            self.trigger_cue(cue_id)
+        for cue_index, cue_id in enumerate(event.cues):
+            multiplier = 1.0
+            if event.volumes is not None and cue_index < len(event.volumes):
+                multiplier = event.volumes[cue_index]
+            self.trigger_cue(cue_id, multiplier)
 
-    def trigger_cue(self, id):
+    def trigger_cue(self, id, multiplier = 1.0):
         if self.enabled and id in self.cues and self.cues[id].enabled:
             cue = self.cues[id]
             if cue.group in self.groups and not self.groups[cue.group].enabled:
@@ -277,6 +280,7 @@ class HeadUpAudioManager:
             
             volume = self.global_cue_volume / self.baseline_volume           
             volume = volume * cue.volume / self.baseline_volume
+            volume = volume * multiplier
             
             if volume > 0:
                 play_wav( self.get_cue_path(cue), volume)

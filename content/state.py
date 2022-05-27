@@ -213,11 +213,11 @@ class HeadUpDisplayContent(Dispatch):
         else:
             super().dispatch(type, event)
 
-    def trigger_audio_cues(self, titles: list[str]):
+    def trigger_audio_cues(self, titles: list[str], multipliers: list[float] = None):
         cues = []
         for title in titles:
             cues.append(title.lower().replace(" ", "_"))
-        self.dispatch("trigger_audio", HudAudioEvent(cues))
+        self.dispatch("trigger_audio", HudAudioEvent(cues, multipliers))
 
     def destroy(self):
         pass
@@ -374,7 +374,7 @@ class Actions:
         global hud_content
         hud_content.trigger_audio_cues([title])
         
-    def hud_trigger_audio_cues(titles: list[str]):
+    def hud_trigger_audio_cues(titles: list[str], multipiers: list[float] = None):
         """Trigger multiple audio cues in succession"""
         global hud_content
-        hud_content.trigger_audio_cues(titles)
+        hud_content.trigger_audio_cues(titles, multipliers)

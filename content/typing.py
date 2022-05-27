@@ -182,6 +182,7 @@ class HudAudioCue:
 @dataclass
 class HudAudioEvent:
     cues: list[str]
+    volumes: list[float] = None
     
 @dataclass
 class HudAudioState:
