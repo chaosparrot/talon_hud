@@ -150,7 +150,7 @@ class BaseWidget(metaclass=ABCMeta):
     def enable(self, persisted=False):
         if not self.enabled:
             self.enabled = True
-            self.canvas = canvas.Canvas(min(self.x, self.limit_x), min(self.y, self.limit_y), max(self.width, self.limit_width), max(self.height, self.limit_height))
+            self.canvas = self.generate_canvas(min(self.x, self.limit_x), min(self.y, self.limit_y), max(self.width, self.limit_width), max(self.height, self.limit_height))
             if self.mouse_enabled:
                 self.canvas.blocks_mouse = True
                 self.canvas.register("mouse", self.on_mouse)
@@ -443,3 +443,9 @@ class BaseWidget(metaclass=ABCMeta):
     def click_button(self, button_index):
         if button_index > -1 and button_index < len(self.buttons):
             self.buttons[button_index].callback(self)
+
+    def generate_canvas(self, x, y, width, height):
+        canvas_options = {
+        #    "backend": "software"
+        }
+        return canvas.Canvas(x, y, width, height, **canvas_options)

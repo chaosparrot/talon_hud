@@ -126,21 +126,27 @@ class Actions:
 
     def hud_can_toggle_programming_language() -> bool:
         """Check if we should be able to toggle the programming language from the status bar"""
+        active_modes = scope.get("mode")
+        if (active_modes is not None):
+            for index, active_mode in enumerate(active_modes):
+                if (active_mode.replace("user.", "") in languages.keys()):
+                    return True
         return False
 
     def hud_toggle_programming_language():
         """Toggle the programming language manually in the status bar"""
-        pass
+        actions.user.code_clear_language_mode()
         
     def hud_get_programming_language() -> str:
         """Get the programming language to be displayed in the status bar - By default tries to mimic knausj"""
+        active_modes = scope.get("mode")
+        if (active_modes is not None):
+            for index, active_mode in enumerate(active_modes):
+                if (active_mode.replace("user.", "") in languages.keys()):
+                    return active_mode.replace("user.", "")
+        
         lang = actions.code.language()
         if not lang:
-            active_modes = scope.get("mode")
-            if (active_modes is not None):
-                for index, active_mode in enumerate(active_modes):
-                    if (active_mode.replace("user.", "") in languages.keys()):
-                        return active_mode.replace("user.", "")
             active_tags = scope.get("tag")
             if (active_tags is not None):
                 for index, active_tag in enumerate(active_tags):

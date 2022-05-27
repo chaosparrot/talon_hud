@@ -211,13 +211,8 @@ class WalkthroughPoller:
                 self.watch_walkthrough_file(True)
             
             if walkthrough_title in self.walkthrough_steps:
-            
-                # If we have started a walkthrough but haven"t finished it - continue where we left off
-                if walkthrough_title in self.walkthrough_steps and self.walkthrough_steps[walkthrough_title]["current"] < len(self.current_walkthrough.steps):
-                    self.current_stepnumber = self.walkthrough_steps[walkthrough_title]["current"] - 1
-                # Otherwise, just start over
-                else:
-                    self.current_stepnumber = -1
+                # Always start a walkthrough over so there is less chance of inconsistent state
+                self.current_stepnumber = -1
             self.next_step()
 
     def next_step_or_page(self):

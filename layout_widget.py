@@ -34,13 +34,14 @@ class LayoutWidget(BaseWidget):
     
     def generate_canvases(self):
         if self.mouse_enabled:
-            self.mouse_capture_canvas = canvas.Canvas(min(self.x, self.limit_x), min(self.y, self.limit_y), max(self.width, self.limit_width), max(self.height, self.limit_height))            
+            # Keep this canvas using the default backend to make clicks happen properly
+            self.mouse_capture_canvas = canvas.Canvas(min(self.x, self.limit_x), min(self.y, self.limit_y), max(self.width, self.limit_width), max(self.height, self.limit_height))
             self.mouse_capture_canvas.blocks_mouse = True
             self.mouse_capture_canvas.register("mouse", self.on_mouse)
             self.mouse_capture_canvas.freeze()
         
         # Copied over from base widget enabled to make sure blocks_mouse setting isn"t changed
-        self.canvas = canvas.Canvas(min(self.x, self.limit_x), min(self.y, self.limit_y), max(self.width, self.limit_width), max(self.height, self.limit_height))
+        self.canvas = self.generate_canvas(min(self.x, self.limit_x), min(self.y, self.limit_y), max(self.width, self.limit_width), max(self.height, self.limit_height))
         self.canvas.register("draw", self.draw_cycle)
         self.animation_tick = self.animation_max_duration if self.show_animations else 0
         self.canvas.resume()
@@ -129,8 +130,13 @@ class LayoutWidget(BaseWidget):
             self.enable(True)
         
         if self.enabled:
+            topic_changed = self.panel_content is None or self.panel_content.topic != panel_content.topic
+        
             self.panel_content = panel_content
             self.mark_layout_invalid = True
+            if topic_changed:
+                self.page_index = 0
+
             if not self.canvas:
                 self.generate_canvases()
             self.canvas.resume()
