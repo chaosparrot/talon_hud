@@ -152,7 +152,7 @@ class HeadUpScreenOverlay(BaseWidget):
         for index, region in enumerate(self.regions):
             if index not in region_indices_used:
                 canvas_rect = self.align_region_canvas_rect(region)
-                canvas_reference = {"canvas": canvas.Canvas(canvas_rect.x, canvas_rect.y, canvas_rect.width, canvas_rect.height)}
+                canvas_reference = {"canvas": self.generate_canvas(canvas_rect.x, canvas_rect.y, canvas_rect.width, canvas_rect.height)}
                 canvas_reference["callback"] = lambda canvas, self=self, region=region: self.draw_region(canvas, region)
                 canvas_reference["region"] = region
                 canvas_reference["canvas"].register("draw", canvas_reference["callback"])
@@ -432,7 +432,7 @@ class HeadUpScreenOverlay(BaseWidget):
             self.y = canvas_rect.y
             
             if not self.canvas:
-                self.canvas = canvas.Canvas(self.x, self.y, self.limit_width, self.limit_height)
+                self.canvas = self.generate_canvas(self.x, self.y, self.limit_width, self.limit_height)
                 self.canvas.register("draw", self.setup_draw_cycle)            
             self.canvas.move(self.x, self.y)
             self.canvas.resume()
