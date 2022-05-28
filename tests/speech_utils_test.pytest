@@ -1,0 +1,324 @@
+import unittest
+import speech_utils as su
+
+words_to_expect = {
+   # O
+   "strong": ["ɒ"],
+   "stone": ["əʊ"],
+   "stroll": ["ɒ"],
+   "stole": ["əʊ"],
+   "obligated": ["ɒ", "i:", "eɪ", "ə"],
+   "option": ["ɒ", "ə"],
+   "rob": ["ɒ"],
+   "robe": ["əʊ"],
+   # OW
+   "blown": ["əʊ"],
+   "low": ["əʊ"],
+   "bowel": ["aʊ", "ə"],
+   "town": ["aʊ"],
+   "power": ["aʊ", "ə"],
+   "grown": ["əʊ"],
+   "down": ["aʊ"],
+   # OO
+   "coordinate": ["əʊ", "ɒ", "ɪ", "eɪ"],
+   "sooth": ["u:"],
+   "book": ["u:"],
+   "zoo": ["u:"],
+   #"blood": ["ʌ"], Maybe put this one in a harder section as it seems to be an outlier
+   "floor": ["ɔː"],
+   "wood": ["u:"],
+   "loose": ["u:"],
+   "noon": ["u:"],
+   "loot": ["u:"],
+   # OU
+   "should": ["ʊ"],
+   "loud": ["aʊ"],
+   "proud": ["aʊ"],
+   "stout": ["aʊ"],
+   "noun": ["aʊ"],
+   "could": ["ʊ"],
+   "courageous": ["ʊ", "e", "ə"],
+   # OI
+   "toil": ["ɔɪ"],
+   "oil": ["ɔɪ"],
+   "steroids": ["ɪə", "ɔɪ"],
+   "coin": ["ɔɪ"],
+   "coincidence": ["əʊ", "ɪ", "ɪ", "ə"],
+   "going": ["əʊ", "ɪ"],
+   "noise": ["ɔɪ"],
+   "heroic": ["ɪə", "əʊ", "ɪ"],
+   # OA
+   "board": ["ɔː"],
+   "roar": ["ɔː"],
+   "goal": ["əʊ"],
+   "coal": ["əʊ"],
+   "coast": ["əʊ"],
+   "loader": ["əʊ", "ə"],
+   "approach": ["ə", "əʊ"],
+   "coalition": ["əʊ", "ə", "ɪ", "ə"],
+   # IOA
+   "radioactive": ["eɪ", "i:", "əʊ", "e", "ɪ"],
+   # Y
+   "happy": ["ae", "i:"],
+   "year": ["ɪə"],
+   "synth": ["ɪ"],
+   "style": ["aɪ"],
+   "my": ["aɪ"],
+   "cry": ["aɪ"],
+   "country": ["aʊ", "i:"],
+   "physically": ["ɪ", "ɪ", "ɑ:", "i:"],
+   # YI
+   "dying": ["aɪ", "ɪ"],
+   "yikes": ["aɪ"],
+   "trying": ["aɪ", "ɪ"],
+   "emptying": ["e", "i:", "ɪ"],
+   # YA
+   "cyan": ["aɪ", "ə"],
+   # EY
+   "eye": ["aɪ"],
+   "money": ["ɒ", "i:"], # Leave the ʌ out to simplify output
+   "keyboard": ["i:", "ɔː"],
+   # EYI
+   "surveying": ["ɜ:", "eɪ", "ɪ"],
+   # UY
+   "buy": ["aɪ"],
+   "guys": ["aɪ"],
+   # UYI
+   "buying": ["aɪ", "ɪ"],
+   # OY
+   "boy": ["ɔɪ"],
+   "joy": ["ɔɪ"],
+   "employer": ["e", "ɔɪ", "ə"],
+   "oyster": ["ɔɪ", "ə"],
+   # OYE
+   "employed": ["e", "ɔɪ"],           
+   # AY
+   "stay": ["eɪ"],
+   "away": ["ə", "eɪ"],
+   # AYE
+   "played": ["eɪ"],
+   "prayer": ["eɪ", "ə"],
+   "layer": ["eɪ", "ə"],   
+   # AYO
+   "mayo": ["eɪ", "əʊ"],
+   # UI
+   "guide": ["aɪ"],
+   "build": ["ɪ"],
+   "fluid": ["u:", "ɪ"],
+   "liquid": ["ɪ", "ɪ"],
+   "guitar": ["ɪ", "ɔ:"],           
+   "circuit": ["ɜ:", "ɪ"],
+   "grapefruit": ["eɪ", "u:"],
+   # UIE
+   "quiet": ["aɪ", "ə"],
+   # UIA
+   "colloquial": ["əʊ", "əʊ", "i:", "ə"],
+   # UIU
+   "colloquium": ["əʊ", "əʊ", "i:", "ə"],
+   # UO
+   "quote": ["əʊ"],
+   "buoyant": ["ɔɪ", "ə"],
+   # UOU
+   "virtuous": ["ɜ:", "u:", "ə"],
+   "ambiguous": ["æ", "ɪ", "u:", "ə"],
+   # UE
+   "rescue": ["e", "u:"],
+   "league": ["i:"],
+   # UEUE
+   "queue": ["u:"],           
+   # UU
+   "vacuum": ["u:"],
+   # U
+   "stupid": ["u:", "ɪ"],
+   "cute": ["u:"],
+   "lunar": ["u:", "ə"],
+   "under": ["ʌ", "ə"],
+   "mum": ["ʌ"],           
+   "super": ["u:", "ə"],
+   "structure": ["ʌ", "ʌ"],
+   "universe": ["u:", "i:", "ɜ:"],
+   "function": ["ʌ", "ə"],
+   # AA
+   "naan": ["ɑ:"],
+   # AE
+   "aesthetics": ["æ", "æ", "ɪ"],
+   "aeroplane": ["æ", "əʊ", "eɪ"],
+   "caesar": ["i:", "ə"],
+   # AI
+   "stain": ["eɪ"],
+   "tail": ["eɪ"],           
+   "train": ["eɪ"],
+   "faith": ["eɪ"],
+   "praise": ["eɪ"],
+   "repair": ["i:", "eə"],           
+   "air": ["e"],
+   "pain": ["eɪ"],
+   "brain": ["eɪ"], 
+   "straight": ["eɪ"],
+   # "certain": ["ə", "ə"], - Outlier
+   "hair": ["e"],
+   "millionaires": ["ɪ", "ə", "e"],
+   "algebraic": ["æ", "ə", "eɪ", "ɪ"],
+   # AU
+   "automation": ["ɔ:", "əʊ", "eɪ", "ə"],
+   "trauma": ["ɔ:", "ə"],
+   "slaughter": ["ɔ:", "ə"],
+   # "laugh": ["e"], - Outlier
+   "authority": ["ɔ:", "ɔ:", "ɪ", "i:"],
+   # AO
+   "chaos": ["eɪ", "ɒ"],
+   "extraordinary": ["e", "ɔː", "ɪ", "e", "i:"],
+   # A
+   "appartment": ["ə", "ɑ:", "ə"],
+   "ape": ["eɪ"],
+   "app": ["æ"],
+   "cat": ["æ"],
+   "antagonist": ["æ", "æ", "əʊ", "ɪ"],
+   "approximant": ["ə", "ɒ", "ɪ", "ə"],
+   "stalemate": ["eɪ", "eɪ"],
+   # IA
+   "giant": ["aɪ", "ə"],
+   "media": ["i:" "i:", "ə"],
+   "alias": ["eɪ", "i:", "ə"],
+   "diary": ["aɪ", "ə", "i:"],
+   "phobia": ["əʊ", "i:", "ə"],
+   "cordial": ["ɔ:", "i:", "ə"],
+   "diagram": ["aɪ", "ə", "æ"],
+   "enviable": ["e", "i:", "ə", "ə"],
+   "varience": ["æ", "i:", "ə"],
+   "initiate": ["ɪ", "ɪ", "i:", "eɪ"],           
+   # IE
+   "field": ["i:"],
+   "plier": ["aɪ", "ə"],
+   "fiend": ["i:"],
+   "orient": ["ɒ", "i:", "e"],
+   "retrieve": ["i:", "i:"],
+   "soldier": ["ɒ", "ə"],
+   "view": ["uː"],
+   "movie": ["ʊ", "i:"],
+   "die": ["aɪ"],
+   "tried": ["aɪ"],
+   "piece": ["i:"],
+   "deficiencies": ["i:", "ɪ", "ə" "i:"],
+   # IO
+   "union": ["ʊ", "ə"],
+   "riot": ["aɪ", "ə"],
+   "audio": ["ɔ:", "i:", "əʊ"],
+   "biography": ["aɪ", "ɔ:", "ɑ:", "i:"],
+   "biome": ["aɪ", "ɔ:"],
+   "ion": ["aɪ", "ɔ:"],           
+   # II 
+   "skiing": ["i:", "ɪ"],
+   # IU
+   "triumph": ["aɪ", "ə"],
+   "radius": ["eɪ", "i:", "ə"],
+   "helium": ["i:", "i:", "ə"],
+   # I
+   "time": ["aɪ"],
+   "in": ["ɪ"],
+   "bin": ["ɪ"],
+   "stick": ["ɪ"],
+   "strike": ["aɪ"],
+   "liking": ["aɪ", "ɪ"],
+   "hire": ["aɪ"],
+   "idea": ["aɪ", "i:", "ə"],
+   "big": ["ɪ"],
+   "mind": ["aɪ"],
+   "high": ["aɪ"],
+   "give": ["ɪ"],
+   "ilk": ["ɪ"],
+   # EO
+   "video": ["ɪ", "i:", "ɔ:"],
+   "neon": ["i:", "ɔ:"],
+   "pigeon": ["ɪ", "ə"],
+   "reopen": ["i:", "əʊ", "ə"],
+   # EAU
+   "beauty": ["u:", "i:"],
+   # EU
+   "neutral": ["u:", "ə"],
+   "europe": ["u:", "ə"],
+   # EI
+   "vein": ["eɪ"],
+   "reintegrate": ["i:", "ɪ", "ə", "eɪ"],
+   "weight": ["eɪ"],
+   "seize": ["i:"],
+   "weird": ["ɪ", "ə"],
+   "being": ["i:", "ɪ"],
+   "reign": ["eɪ"],
+   "veined": ["eɪ"],
+   # EE
+   "green": ["i:"],
+   "free": ["i:"],
+   "reentry": ["i:", "e", "i:"],
+   "need": ["i:"],
+   "agree": ["ɑ:","i:"],
+   "keep": ["i:"],
+   "beer": ["ɪə"],
+   "engineer": ["e", "ɪ", "ɪə"],
+   # EA
+   "fear": ["ɪə"],
+   "near": ["ɪə"],
+   "death": ["e"],
+   "heart": ["ɔ:"],
+   "heard": ["ɜ:"],
+   "feast": ["i:"],
+   "beat": ["i:"],
+   "head": ["e"],
+   "weather": ["e", "ə"],
+   "great": ["eɪ"],
+   "real": ["i:"],
+   "realistic": ["i:", "ə", "ɪ", "ɪ"],
+   "reaction": ["i:", "æ", "ə"],
+   "appear": ["ə", "eɪ"],
+   "create": ["i:", "eɪ"],
+   "repeat": ["i:", "i:"],
+   "repeated": ["i:", "i:", "ə"],
+   # E
+   "desert": ["e", "ə"],
+   "prepare": ["i:", "e"],
+   "stable": ["eɪ", "ə"],
+   "make": ["eɪ"],
+   "maker": ["eɪ", "ə"],
+   "center": ["e", "ə"],
+   "enter": ["e", "ə"],
+   "sense": ["e"],
+   "senses": ["e", "ə"],
+   "blend": ["e"],
+   "end": ["e"],
+   "elk": ["e"],
+   "every": ["e", "ə", "i:"],
+   "serve": ["ɜ:"],
+   "five": ["aɪ"],
+   "nurse": ["ɜ:"],
+   "late": ["eɪ"],
+   "later": ["eɪ", "ə"],
+}
+
+class TestStringMethods(unittest.TestCase):
+
+    def test_english_abbreviations_to_ipa_vowels(self):
+        acronym_to_expected = {
+           "fbi": ["e", "i:", "aɪ"],
+           "abs": ["eɪ", "i:", "e"],
+           "tnt": ["i:", "e", "i:"],
+           "abc": ["eɪ", "i:", "i:"],
+           "ABC": ["eɪ", "i:", "i:"],
+           "wwe": ["ʌ", "ə", "u", "ʌ", "ə", "u", "i:"],
+           "ymtd": ["aɪ", "e", "i:", "i:"],
+        }
+        
+        for item in acronym_to_expected.items():
+            with self.subTest(item=item):
+                acronym = item[0]
+                expected = item[1]
+                self.assertEqual(su.acronym_to_approx_vowels(acronym, "en"), expected)
+
+    def test_english_words_to_ipa_vowels(self):
+        for item in words_to_expect.items():
+            with self.subTest(item=item):
+                word = item[0]
+                expected = item[1]
+                self.assertEqual(su.word_to_approx_vowels(word, "en"), expected)
+
+if __name__ == '__main__':
+    unittest.main()
