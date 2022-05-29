@@ -1,18 +1,21 @@
+from english_syllables import english_vowel_cluster_determine_map
+from speech_types import WordInfo, VowelCluster
+
 def string_to_speakable_string(str: str) -> str:
     return re.sub(r"([!?-_\,\.])", " ", str.lower()).strip()
     
 english_ipa_vowels = {
-    "e": "/ae/", # wEnt, ExpEnsive
-    "æ": "/ae/", # cAt
-    "ʌ": "/uh/", # fUn, mOney
-    "ʊ": "/oo/", # lOOk, shOUld
-    "ɒ": "/oh/", # rOb, tOrn
-    "ə": "/er/", # strangER
-    "ɪ": "/ih/", # sIt, kIt, Inn
+    "e": "/ae/",  # wEnt, ExpEnsive
+    "æ": "/ae/",  # cAt
+    "ʌ": "/uh/",  # fUn, mOney
+    "ʊ": "/oo/",  # lOOk, bOOt, shOUld
+    "ɒ": "/oh/",  # rOb, tOrn
+    "ə": "/er/",  # strangER
+    "ɪ": "/ih/",  # sIt, kIt, Inn
     "i:": "/iy/", # nEEd, lEAn
     "ɜ:": "/eu/", # nUrse, sErvice, bIrd
     "ɔ:": "/oh/", # tAlk, jAw
-    "u:": "/u/", # bOOt, qUEUE
+    "u:": "/u/",  # qUEUE
     "ɑ:": "/ah/", # fAst, cAr
     "ɪə": "/iy/", # fEAr, bEEr
     "eə": "/ae/", # hAIr, stAre
@@ -59,7 +62,6 @@ def acronym_to_approx_vowels(acronym: str, lang:str = "en") -> list:
         vowels.extend(english_letters_to_ipa_vowels[letter.lower()].split(" "))
     return vowels
 
-
 vowel_map = {
     "o": ["ɒ"],
     "oo": ["u:"],
@@ -67,7 +69,6 @@ vowel_map = {
     "oi": ["ɔɪ"],
     "oa": ["əʊ"],
     "ioa": ["i:", "əʊ", "e"],
-    "uou": ["u:", "ə"],
     "y": ["i:"],
     "yi": ["aɪ", "ɪ"],
     "ya": ["aɪ", "ə"],
@@ -111,12 +112,41 @@ vowel_map = {
     "e": ["ə"],
 }
 
+def get_word_info(word: str, lang:str = "en") -> list:
+    """Takes a word and turns it into an approximate list of syllable clusters containing vowels"""
+    info = WordInfo(word, len(word), [])
+    current_vowels = ""
+    for index, char in enumerate(word):
+        final_char = (index + 1) == len(word)
+        if char in "iaeuowy":
+            current_vowels += char
+        if final_char or char not in "iaeuowy":
+            # Remove Y and W from the start of syllable clusters
+            if current_vowels.startswith("w"):
+                current_vowels = current_vowels[1:]
+            if current_vowels.startswith("y") and len(current_vowels) > 1:
+                current_vowels = current_vowels[1:]
+            if len(current_vowels) > 0:
+                info.vowel_clusters.append(VowelCluster(current_vowels, index - len(current_vowels), index))
+            current_vowels = ""
+    return info
+
 def word_to_approx_vowels(word: str, lang:str = "en") -> list:
     """Takes a word and turns it into an approximate list of IPA vowels"""
     vowels = []
     first_vowel = True
     previous_is_vowel = False
-    current_vowels = ""
+    
+    info = get_word_info(word)
+    
+    # If there are no vowel clusters, immediately go for an acronym spelling
+    if len(info.vowel_clusters) == 0:
+        return acronym_to_approx_vowels(word, lang)
+    elif len(info.vowel_clusters) == 1:
+        cluster = info.vowel_clusters[0]
+        if cluster.vowels in english_vowel_cluster_determine_map:
+            return english_vowel_cluster_determine_map[cluster.vowels](info, 0)
+    current_vowels = ""    
     for index, char in enumerate(word):
         final_char = (index + 1) == len(word)
         if char in "iaeuo":

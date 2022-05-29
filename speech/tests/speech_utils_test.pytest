@@ -122,7 +122,9 @@ words_to_expect = {
    "virtuous": ["ɜ:", "u:", "ə"],
    "ambiguous": ["æ", "ɪ", "u:", "ə"],
    # UE
+   "continue": ["ɒ", "ɪ", "u:"],
    "rescue": ["e", "u:"],
+   "quest": ["e"],
    "league": ["i:"],
    # UEUE
    "queue": ["u:"],           
@@ -313,12 +315,13 @@ class TestStringMethods(unittest.TestCase):
                 expected = item[1]
                 self.assertEqual(su.acronym_to_approx_vowels(acronym, "en"), expected)
 
-    def test_english_words_to_ipa_vowels(self):
+    def test_single_cluster_english_words_to_ipa_vowels(self):
         for item in words_to_expect.items():
-            with self.subTest(item=item):
-                word = item[0]
-                expected = item[1]
-                self.assertEqual(su.word_to_approx_vowels(word, "en"), expected)
+            if len(su.get_word_info(item[0]).vowel_clusters) == 1:
+                with self.subTest(item=item):
+                    word = item[0]
+                    expected = item[1]
+                    self.assertEqual(su.word_to_approx_vowels(word, "en"), expected)
 
 if __name__ == '__main__':
     unittest.main()
