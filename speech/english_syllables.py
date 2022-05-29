@@ -3,7 +3,7 @@ from speech_types import WordInfo
 def determine_oo(info: WordInfo, index: int) -> list:
     r_pos = info.vowel_clusters[index].end_pos + 1
     c_pos = info.vowel_clusters[index].start_pos - 1
-    # dOOr
+    # dOOr, flOOr
     if r_pos < info.word_len and info.word[r_pos] == "r":
         return ["ɔː"]
     # cOOrdinate
@@ -63,7 +63,10 @@ def determine_oi(info: WordInfo, index: int) -> list:
 
 def determine_ow(info: WordInfo, index: int) -> list:
     pushing_pos = info.vowel_clusters[index].start_pos - 1
-    trailing_pos = info.vowel_clusters[index].end_pos + 1
+
+    # OWn
+    if info.word == "own":
+        return ["əʊ"]
     
     # rOW, grOW, blOW, stOW, glOW, thrOW, lOW
     previous_two_letters = ""
@@ -77,12 +80,72 @@ def determine_ow(info: WordInfo, index: int) -> list:
 
     # cOW, OWl, brOWn, tOWn
     return ["aʊ"]
+    
+def determine_owe(info: WordInfo, index: int) -> list:
+    syllable = determine_ow(info, index)
+    trailing_pos = info.vowel_clusters[index].end_pos + 1
+    
+    # pOWEr, grOWer, slOWer, bOWEl
+    if trailing_pos < info.word_len and info.word[trailing_pos] in "rnl":
+        syllable.append("ə")    
+
+    return syllable
+    
+def determine_owi(info: WordInfo, index: int) -> list:
+    # grOWIng
+    syllable = determine_ow(info, index)
+    syllable.append("ɪ")
+    return syllable
+    
+def determine_ou(info: WordInfo, index: int) -> list:
+    trailing_pos = info.vowel_clusters[index].end_pos + 1
+    pushing_pos = info.vowel_clusters[index].start_pos - 1
+    
+    # anonymOUs
+    if trailing_pos < info.word_len and info.word[trailing_pos] in "s":
+        return ["ə"]
+
+    # trOUble, cOUrage
+    elif trailing_pos < info.word_len and info.word[trailing_pos] in "rb" and \
+        pushing_pos >= 0 and info.word[pushing_pos] in "cr":
+        return ["ʌ"]
+    elif trailing_pos + 1 < info.word_len and \
+        info.word[trailing_pos] + info.word[trailing_pos + 1] == "ld":
+        
+        # cOUld, shOUld, wOUld
+        if any(info.word in s for s in ["could", "should", "would"]):
+            return ["ʊ"]
+        # bOUlder, shOUlder
+        else:
+            return ["əʊ"]            
+            
+    # sOUnd, mOUth, OUt, lOUd
+    return ["aʊ"]
+    
+def determine_oa(info: WordInfo, index: int) -> list:
+    trailing_pos = info.vowel_clusters[index].end_pos + 1
+
+    # bOArd
+    if trailing_pos < info.word_len and info.word[trailing_pos] == "r":
+        return ["ɔː"]
+    pushing_pos = info.vowel_clusters[index].start_pos - 1
+
+    # cOAlition
+    if len(info.vowel_clusters) > 1 and pushing_pos >= 0 and info.word[pushing_pos] in "c":
+       return ["əʊ", "ə"]
+    
+    # lOAn, grOAn
+    return ["əʊ"]
 
 english_vowel_cluster_determine_map = {
     "oo": determine_oo,
     "oe": determine_oe,
     "oi": determine_oi,
-    "ow": determine_ow, 
+    "ow": determine_ow,
+    "owe": determine_owe,
+    "owi": determine_owi,
+    "ou": determine_ou,
+    "oa": determine_oa,
 }
 
 unambiguous_syllables = {
@@ -98,6 +161,7 @@ unambiguous_syllables = {
     "ewi": ["u:", "ɪ"],
     "uy": ["aɪ"],
     "uyi": ["aɪ", "ɪ"],
+    "eou": ["ə"],
     "uou": ["u:", "ə"],
     "ueue": ["u:"],
     "uei": ["u:", "ɪ"],
@@ -108,8 +172,9 @@ unambiguous_syllables = {
     "uie": ["aɪ", "ə"],
     "uia": ["i:", "ə"],
     "uiu": ["i:", "ə"],    
-    "ioa": ["i:", "əʊ", "e"],   
+    "ioa": ["i:", "əʊ", "e"],
     "ooi": ["u:", "ɪ"],
+    "oei": ["əʊ", "ɪ"],    
 }
 
 for item in unambiguous_syllables.items():

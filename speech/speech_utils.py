@@ -127,7 +127,7 @@ def get_word_info(word: str, lang:str = "en") -> list:
             if current_vowels.startswith("y") and len(current_vowels) > 1:
                 current_vowels = current_vowels[1:]
             if len(current_vowels) > 0:
-                info.vowel_clusters.append(VowelCluster(current_vowels, index - len(current_vowels), index))
+                info.vowel_clusters.append(VowelCluster(current_vowels, index - len(current_vowels), index - 1))
             current_vowels = ""
     return info
 
