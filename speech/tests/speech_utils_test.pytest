@@ -59,7 +59,7 @@ words_to_expect = {
    # IOA
    "radioactive": ["eɪ", "i:", "əʊ", "e", "ɪ"],
    # Y
-   "happy": ["ae", "i:"],
+   "happy": ["æ", "i:"],
    "year": ["ɪə"],
    "synth": ["ɪ"],
    "style": ["aɪ"],
@@ -71,7 +71,7 @@ words_to_expect = {
    "dying": ["aɪ", "ɪ"],
    "yikes": ["aɪ"],
    "trying": ["aɪ", "ɪ"],
-   "emptying": ["e", "i:", "ɪ"],
+   # "emptying": ["e", "i:", "ɪ"], - Outlier
    # YA
    "cyan": ["aɪ", "ə"],
    # EY
@@ -106,7 +106,7 @@ words_to_expect = {
    "build": ["ɪ"],
    "fluid": ["u:", "ɪ"],
    "liquid": ["ɪ", "ɪ"],
-   "guitar": ["ɪ", "ɔ:"],           
+   "guitar": ["ɪ", "ɑ:"],           
    "circuit": ["ɜ:", "ɪ"],
    "grapefruit": ["eɪ", "u:"],
    # UIE
@@ -129,7 +129,7 @@ words_to_expect = {
    # UEUE
    "queue": ["u:"],           
    # UU
-   "vacuum": ["u:"],
+   "vacuum": ["æ", "u:"],
    # U
    "stupid": ["u:", "ɪ"],
    "cute": ["u:"],
@@ -148,18 +148,18 @@ words_to_expect = {
    "caesar": ["i:", "ə"],
    # AI
    "stain": ["eɪ"],
-   "tail": ["eɪ"],           
+   "tail": ["eɪ"],
    "train": ["eɪ"],
    "faith": ["eɪ"],
    "praise": ["eɪ"],
    "repair": ["i:", "eə"],           
-   "air": ["e"],
+   "air": ["eə"],
    "pain": ["eɪ"],
    "brain": ["eɪ"], 
    "straight": ["eɪ"],
    # "certain": ["ə", "ə"], - Outlier
-   "hair": ["e"],
-   "millionaires": ["ɪ", "ə", "e"],
+   "hair": ["eə"],
+   "millionaires": ["ɪ", "ə", "eə"],
    "algebraic": ["æ", "ə", "eɪ", "ɪ"],
    # AU
    "automation": ["ɔ:", "əʊ", "eɪ", "ə"],
@@ -180,7 +180,7 @@ words_to_expect = {
    "stalemate": ["eɪ", "eɪ"],
    # IA
    "giant": ["aɪ", "ə"],
-   "media": ["i:" "i:", "ə"],
+   "media": ["i:", "i:", "ə"],
    "alias": ["eɪ", "i:", "ə"],
    "diary": ["aɪ", "ə", "i:"],
    "phobia": ["əʊ", "i:", "ə"],
@@ -193,26 +193,26 @@ words_to_expect = {
    "field": ["i:"],
    "plier": ["aɪ", "ə"],
    "fiend": ["i:"],
-   "orient": ["ɒ", "i:", "e"],
+   "orient": ["ɔ:", "i:", "v"],
    "retrieve": ["i:", "i:"],
-   "soldier": ["ɒ", "ə"],
-   "view": ["uː"],
-   "movie": ["ʊ", "i:"],
+   # "soldier": ["ɒ", "ə"], Outlier
+   "view": ["u:"],
+   "movie": ["u:", "i:"],
    "die": ["aɪ"],
    "tried": ["aɪ"],
    "piece": ["i:"],
    "deficiencies": ["i:", "ɪ", "ə" "i:"],
    # IO
-   "union": ["ʊ", "ə"],
+   "union": ["u:", "ə"],
    "riot": ["aɪ", "ə"],
    "audio": ["ɔ:", "i:", "əʊ"],
    "biography": ["aɪ", "ɔ:", "ɑ:", "i:"],
-   "biome": ["aɪ", "ɔ:"],
-   "ion": ["aɪ", "ɔ:"],           
+   "biome": ["aɪ", "əʊ"],
+   "ion": ["aɪ", "ɒ"],
    # II 
    "skiing": ["i:", "ɪ"],
    # IU
-   "triumph": ["aɪ", "ə"],
+   "triumph": ["aɪ", "ʌ"],
    "radius": ["eɪ", "i:", "ə"],
    "helium": ["i:", "i:", "ə"],
    # I
@@ -230,10 +230,10 @@ words_to_expect = {
    "give": ["ɪ"],
    "ilk": ["ɪ"],
    # EO
-   "video": ["ɪ", "i:", "ɔ:"],
-   "neon": ["i:", "ɔ:"],
+   "video": ["ɪ", "i:", "əʊ"],
+   "neon": ["i:", "ɒ"],
    "pigeon": ["ɪ", "ə"],
-   "reopen": ["i:", "əʊ", "ə"],
+   # "reopen": ["i:", "əʊ", "ə"], OUTLIER
    # EAU
    "beauty": ["u:", "i:"],
    # EU
@@ -244,16 +244,16 @@ words_to_expect = {
    "reintegrate": ["i:", "ɪ", "ə", "eɪ"],
    "weight": ["eɪ"],
    "seize": ["i:"],
-   "weird": ["ɪ", "ə"],
+   "weird": ["ɪə"],
    "being": ["i:", "ɪ"],
    "reign": ["eɪ"],
    "veined": ["eɪ"],
    # EE
    "green": ["i:"],
    "free": ["i:"],
-   "reentry": ["i:", "e", "i:"],
+   # "reentry": ["i:", "e", "i:"], - Outlier
    "need": ["i:"],
-   "agree": ["ɑ:","i:"],
+   "agree": ["ə","i:"],
    "keep": ["i:"],
    "beer": ["ɪə"],
    "engineer": ["e", "ɪ", "ɪə"],
@@ -261,7 +261,7 @@ words_to_expect = {
    "fear": ["ɪə"],
    "near": ["ɪə"],
    "death": ["e"],
-   "heart": ["ɔ:"],
+   "heart": ["ɑ:"],
    "heard": ["ɜ:"],
    "feast": ["i:"],
    "beat": ["i:"],
@@ -271,13 +271,12 @@ words_to_expect = {
    "real": ["i:"],
    "realistic": ["i:", "ə", "ɪ", "ɪ"],
    "reaction": ["i:", "æ", "ə"],
-   "appear": ["ə", "eɪ"],
+   "appear": ["ə", "ɪə"],
    "create": ["i:", "eɪ"],
    "repeat": ["i:", "i:"],
    "repeated": ["i:", "i:", "ə"],
    # E
-   "desert": ["e", "ə"],
-   "prepare": ["i:", "e"],
+   "prepare": ["i:", "æ"],
    "stable": ["eɪ", "ə"],
    "make": ["eɪ"],
    "maker": ["eɪ", "ə"],
@@ -318,6 +317,14 @@ class TestStringMethods(unittest.TestCase):
     def test_single_cluster_english_words_to_ipa_vowels(self):
         for item in words_to_expect.items():
             if len(su.get_word_info(item[0]).vowel_clusters) == 1:
+                with self.subTest(item=item):
+                    word = item[0]
+                    expected = item[1]
+                    self.assertEqual(su.word_to_approx_vowels(word, "en"), expected)
+
+    def test_double_cluster_english_words_to_ipa_vowels(self):
+        for item in words_to_expect.items():
+            if len(su.get_word_info(item[0]).vowel_clusters) == 2:
                 with self.subTest(item=item):
                     word = item[0]
                     expected = item[1]

@@ -10,7 +10,7 @@ english_ipa_vowels = {
     "ʌ": "/uh/",  # fUn, mOney
     "ʊ": "/oo/",  # lOOk, bOOt, shOUld
     "ɒ": "/oh/",  # rOb, tOrn
-    "ə": "/er/",  # strangER
+    "ə": "/er/",  # evEn
     "ɪ": "/ih/",  # sIt, kIt, Inn
     "i:": "/iy/", # nEEd, lEAn
     "ɜ:": "/eu/", # nUrse, sErvice, bIrd
@@ -62,56 +62,6 @@ def acronym_to_approx_vowels(acronym: str, lang:str = "en") -> list:
         vowels.extend(english_letters_to_ipa_vowels[letter.lower()].split(" "))
     return vowels
 
-vowel_map = {
-    "o": ["ɒ"],
-    "oo": ["u:"],
-    "ou": ["aʊ"],    
-    "oi": ["ɔɪ"],
-    "oa": ["əʊ"],
-    "ioa": ["i:", "əʊ", "e"],
-    "y": ["i:"],
-    "yi": ["aɪ", "ɪ"],
-    "ya": ["aɪ", "ə"],
-    "ey": ["i:"],
-    "eyi": ["ɜ:", "eɪ", "ɪ"],
-    "uy": ["aɪ"],
-    "uyi": ["aɪ", "ɪ"],
-    "oy": ["ɔɪ"],
-    "oye": ["ɔɪ"],
-    "ay": ["eɪ"],
-    "aye": ["eɪ"],    
-    "ayo": ["eɪ", "əʊ"],
-    "ui": ["ɪ"],
-    "uie": ["aɪ", "ə"],
-    "uia": ["i:", "ə"],
-    "uiu": ["i:", "ə"],    
-    "uo": ["əʊ"],
-    "uou": ["u:", "ə"],
-    "ue": ["u:"],
-    "ueue": ["u:"],
-    "uu": ["u:"],
-    "u": ["ʌ"],
-    "aa": ["ɑ:"],
-    "ae": ["æ"],
-    "ai": ["eɪ"],
-    "au": ["ɔ:"],
-    "ao": ["ɔː"],
-    "a": ["eɪ"],
-    "ia": ["i:", "ə"],    
-    "ie": ["i:", "ə"],    
-    "io": ["ə"],
-    "ii": ["i:", "ɪ"],
-    "iu": ["i:", "ə"],
-    "i": ["ɪ"],
-    "eo": ["i:", "ɔ:"],
-    "eau": ["u:"],
-    "eu": ["u:"],
-    "ei": ["eɪ"],
-    "ee": ["i:"],
-    "ea": ["ɪə"],
-    "e": ["ə"],
-}
-
 def get_word_info(word: str, lang:str = "en") -> list:
     """Takes a word and turns it into an approximate list of syllable clusters containing vowels"""
     info = WordInfo(word, len(word), [])
@@ -127,40 +77,29 @@ def get_word_info(word: str, lang:str = "en") -> list:
             if current_vowels.startswith("y") and len(current_vowels) > 1:
                 current_vowels = current_vowels[1:]
             if len(current_vowels) > 0:
-                info.vowel_clusters.append(VowelCluster(current_vowels, index - len(current_vowels), index - 1))
+                start_pos = info.word_len - len(current_vowels) if final_char and char in "iaeuowy" else index - len(current_vowels)            
+                end_pos = start_pos + len(current_vowels) - 1
+                info.vowel_clusters.append(VowelCluster(current_vowels, start_pos, end_pos))
             current_vowels = ""
+            
     return info
 
 def word_to_approx_vowels(word: str, lang:str = "en") -> list:
     """Takes a word and turns it into an approximate list of IPA vowels"""
     vowels = []
     first_vowel = True
-    previous_is_vowel = False
     
     info = get_word_info(word)
     
     # If there are no vowel clusters, immediately go for an acronym spelling
     if len(info.vowel_clusters) == 0:
         return acronym_to_approx_vowels(word, lang)
-    elif len(info.vowel_clusters) == 1:
-        cluster = info.vowel_clusters[0]
-        if cluster.vowels in english_vowel_cluster_determine_map:
-            return english_vowel_cluster_determine_map[cluster.vowels](info, 0)
-    current_vowels = ""    
-    for index, char in enumerate(word):
-        final_char = (index + 1) == len(word)
-        if char in "iaeuo":
-            current_vowels += char
-        if final_char or char not in "iaeuo":
-            if current_vowels in vowel_map:
-                if not (final_char and char == "e" and current_vowels == "e"):
-                    syllable = vowel_map[current_vowels]
-                    vowels.extend(syllable)
-                    if first_vowel:
-                        first_vowel = False
-            elif final_char and char == "y":
-                vowels.extend(vowel_map[char])
-            current_vowels = ""
+    else:
+        for index in range(0, len(info.vowel_clusters)):
+            cluster = info.vowel_clusters[index]
+            if cluster.vowels in english_vowel_cluster_determine_map:
+                new_vowels = english_vowel_cluster_determine_map[cluster.vowels](info, index)
+                vowels.extend(list(filter(bool,new_vowels)))
     
     return vowels
     
