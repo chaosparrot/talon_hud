@@ -7,7 +7,7 @@ words_to_expect = {
    "stone": ["əʊ"],
    "stroll": ["ɒ"],
    "stole": ["əʊ"],
-   "obligated": ["ɒ", "i:", "eɪ", "ə"],
+   "obligated": ["ɒ", "ɪ", "eɪ", "ə"],
    "option": ["ɒ", "ə"],
    "rob": ["ɒ"],
    "robe": ["əʊ"],
@@ -41,12 +41,12 @@ words_to_expect = {
    # OI
    "toil": ["ɔɪ"],
    "oil": ["ɔɪ"],
-   "steroids": ["ɪə", "ɔɪ"],
+   # "steroids": ["e", "ɔɪ"], Outlier
    "coin": ["ɔɪ"],
    "coincidence": ["əʊ", "ɪ", "ɪ", "ə"],
    "going": ["əʊ", "ɪ"],
    "noise": ["ɔɪ"],
-   "heroic": ["ɪə", "əʊ", "ɪ"],
+   "heroic": ["ə", "əʊ", "ɪ"],
    # OA
    "board": ["ɔː"],
    "roar": ["ɔː"],
@@ -71,7 +71,7 @@ words_to_expect = {
    "dying": ["aɪ", "ɪ"],
    "yikes": ["aɪ"],
    "trying": ["aɪ", "ɪ"],
-   # "emptying": ["e", "i:", "ɪ"], - Outlier
+   "emptying": ["e", "i:", "ɪ"],
    # YA
    "cyan": ["aɪ", "ə"],
    # EY
@@ -137,8 +137,8 @@ words_to_expect = {
    "under": ["ʌ", "ə"],
    "mum": ["ʌ"],           
    "super": ["u:", "ə"],
-   "structure": ["ʌ", "ʌ"],
-   "universe": ["u:", "i:", "ɜ:"],
+   "structure": ["ʌ", "ɜ:"],
+   "universe": ["u:", "ə", "ɜ:"],
    "function": ["ʌ", "ə"],
    # AA
    "naan": ["ɑ:"],
@@ -163,7 +163,7 @@ words_to_expect = {
    "algebraic": ["æ", "ə", "eɪ", "ɪ"],
    # AU
    "automation": ["ɔ:", "əʊ", "eɪ", "ə"],
-   "trauma": ["ɔ:", "ə"],
+   "trauma": ["ɔ:", "ɑ:"],
    "slaughter": ["ɔ:", "ə"],
    # "laugh": ["e"], - Outlier
    "authority": ["ɔ:", "ɔ:", "ɪ", "i:"],
@@ -180,10 +180,10 @@ words_to_expect = {
    "stalemate": ["eɪ", "eɪ"],
    # IA
    "giant": ["aɪ", "ə"],
-   "media": ["i:", "i:", "ə"],
+   "media": ["i:", "i:", "ɑ:"],
    "alias": ["eɪ", "i:", "ə"],
    "diary": ["aɪ", "ə", "i:"],
-   "phobia": ["əʊ", "i:", "ə"],
+   "phobia": ["əʊ", "i:", "ɑ:"],
    "cordial": ["ɔ:", "i:", "ə"],
    "diagram": ["aɪ", "ə", "æ"],
    "enviable": ["e", "i:", "ə", "ə"],
@@ -193,7 +193,7 @@ words_to_expect = {
    "field": ["i:"],
    "plier": ["aɪ", "ə"],
    "fiend": ["i:"],
-   "orient": ["ɔ:", "i:", "v"],
+   "orient": ["ɔ:", "i:", "ə"],
    "retrieve": ["i:", "i:"],
    # "soldier": ["ɒ", "ə"], Outlier
    "view": ["u:"],
@@ -201,12 +201,12 @@ words_to_expect = {
    "die": ["aɪ"],
    "tried": ["aɪ"],
    "piece": ["i:"],
-   "deficiencies": ["i:", "ɪ", "ə" "i:"],
+   "deficiencies": ["i:", "ɪ", "i:", "ə", "i:"],
    # IO
    "union": ["u:", "ə"],
    "riot": ["aɪ", "ə"],
    "audio": ["ɔ:", "i:", "əʊ"],
-   "biography": ["aɪ", "ɔ:", "ɑ:", "i:"],
+   "biography": ["aɪ", "əʊ", "æ", "i:"],
    "biome": ["aɪ", "əʊ"],
    "ion": ["aɪ", "ɒ"],
    # II 
@@ -238,7 +238,7 @@ words_to_expect = {
    "beauty": ["u:", "i:"],
    # EU
    "neutral": ["u:", "ə"],
-   "europe": ["u:", "ə"],
+   "europe": ["u:", "əʊ"],
    # EI
    "vein": ["eɪ"],
    "reintegrate": ["i:", "ɪ", "ə", "eɪ"],
@@ -329,6 +329,15 @@ class TestStringMethods(unittest.TestCase):
                     word = item[0]
                     expected = item[1]
                     self.assertEqual(su.word_to_approx_vowels(word, "en"), expected)
+
+    def test_multi_cluster_english_words_to_ipa_vowels(self):
+        for item in words_to_expect.items():
+            if len(su.get_word_info(item[0]).vowel_clusters) > 2:
+                with self.subTest(item=item):
+                    word = item[0]
+                    expected = item[1]
+                    self.assertEqual(su.word_to_approx_vowels(word, "en"), expected)
+
 
 if __name__ == '__main__':
     unittest.main()
