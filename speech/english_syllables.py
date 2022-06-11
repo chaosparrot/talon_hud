@@ -614,7 +614,7 @@ def determine_y(info: WordInfo, index: int) -> list:
     syllable = ""
     start_pos = info.vowel_clusters[index].start_pos
     end_pos = info.vowel_clusters[index].end_pos
-    for char_index in range(max(0, start_pos - 1), min(info.word_len, end_pos + 2)):
+    for char_index in range(max(0, start_pos - 2), min(info.word_len, end_pos + 2)):
         if char_index == start_pos or char_index == end_pos or ( char_index < start_pos and info.word[char_index] not in "aeiouy" ):
             syllable += info.word[char_index]
     
@@ -622,8 +622,8 @@ def determine_y(info: WordInfo, index: int) -> list:
     if "sy" in syllable and "psy" not in syllable:
         return ["ɪ"]
 
-    # crYpt, apocalYpse, crYstal, analYsis, analYtical
-    if "ypt" in syllable or "yps" in syllable or "ypt" in syllable or "lys" in syllable or "lyt" in syllable:
+    # crYpt, apocalYpse, crYstal, analYsis, analYtical, phYsisian, phYsics
+    if "ypt" in syllable or "yps" in syllable or "ypt" in syllable or "lys" in syllable or "lyt" in syllable or "phy" in syllable:
         return ["ɪ"]
         
     # hYper, psYcho, pYro, thYroid, cYcle, dYnamic
@@ -679,13 +679,17 @@ def determine_o(info: WordInfo, index: int) -> list:
         if char_index >= start_pos or ( char_index < start_pos and info.word[char_index] not in "aeiouy" ):
             syllable += info.word[char_index]
 
-    # imprOve, twO, intO, mOve, tOday
+    # autOmate
+    if index > 0 and "to" in syllable and info.vowel_clusters[index - 1].vowels == "au":
+        return ["əʊ"]
+
+    # imprOve, twO, intO, mOve, tOday    
     if ( "to" in syllable and "oto" not in syllable and "e" not in syllable ) or "two" in syllable \
         or "mov" in syllable or "prove" in syllable:
         return ["u:"]
     
     # becOme, sOme, becOming, nOne, One, 
-    if "some" in syllable or "com" in syllable or \
+    if "some" in syllable or "com" in syllable or "ox" in syllable or \
         ( "one" in syllable and not "zone" in syllable and not "drone" in syllable and not "tone" in syllable ):
         return ["ɒ"]
     
@@ -696,6 +700,12 @@ def determine_o(info: WordInfo, index: int) -> list:
         "cro" in syllable or ( "pro" in syllable and "prop" not in syllable ) or \
         "ost" in syllable or "i" in syllable:
         return ["əʊ"]
+
+    # aerOplane
+    if index + 1 < len(info.vowel_clusters):
+        result = english_vowel_cluster_determine_map[info.vowel_clusters[index + 1].vowels](info, index + 1)
+        if result[0].startswith("eɪ"):
+           return ["əʊ"]
 
     # Other, mOther, mOth, cOntemporary, cOmpatible, Optics, cOnsOlidate
     # pOpulation, dOcumentation, apprOximate, respOnsible, mOdification, prOper, lOgic
@@ -711,8 +721,11 @@ def determine_a(info: WordInfo, index: int) -> list:
     if trailing_pos < info.word_len:
         if info.word[trailing_pos] == "r":
             if info.word != "are" and trailing_pos + 1 < info.word_len and info.word[trailing_pos + 1] in "eri":
+                # vArience, secondAries, primAries
+                if trailing_pos + 2 < info.word_len and info.word[trailing_pos + 1] + info.word[trailing_pos + 2] == "ie":
+                    return ["æ"]            
                 # pArent, prepAre, Arrow, nArrow, embArrassment
-                if ( pushing_pos >= 0 and info.word[pushing_pos] == "p" ) or info.word[trailing_pos + 1] == "r":
+                elif ( pushing_pos >= 0 and info.word[pushing_pos] == "p" ) or info.word[trailing_pos + 1] == "r":
                     return ["æ"]
                 # wAres, stAre, flAre, declAre
                 else:
@@ -721,7 +734,7 @@ def determine_a(info: WordInfo, index: int) -> list:
             # contemporAry
             if trailing_pos + 1 < info.word_len and info.word[trailing_pos + 1] in "y":
                 return ["ə"]
-
+                
             # pArticular, bArd, Art, chArcoal, Arches, smArt, gnArliest, nArwal
             # Armament, wArmer, wArning, Arbiter, phArmacy, Argue
             # Ardeous, bArd, lArd, stArt, mArt, gArment, Art, cArdio
@@ -733,7 +746,7 @@ def determine_a(info: WordInfo, index: int) -> list:
                 return ["ə"]
             # caesAr, lunAr
             elif index == len(info.vowel_clusters) - 1 and info.word[pushing_pos] in "ns":
-                return ["ə"]                
+                return ["ə"]
             # chAracter, Arab, compArable
             elif index == 0 and ( info.word[trailing_pos + 1] in "a" or \
                 ( pushing_pos >= 0 and info.word[pushing_pos] == "p" ) ):
@@ -742,8 +755,9 @@ def determine_a(info: WordInfo, index: int) -> list:
             else:
                 return ["ɑ:"]
         
-        # neutrAl, retrievAl
-        if index == len(info.vowel_clusters) - 1 and info.word.endswith("al"):
+        # neutrAl, retrievAl, approximAnt, elephAnt
+        if index == len(info.vowel_clusters) - 1 and info.word.endswith("al") or info.word.endswith("als") or \
+            info.word.endswith("ant") or info.word.endswith("ants"):
             return ["ə"]
         
         # cyAn
@@ -778,7 +792,7 @@ def determine_a(info: WordInfo, index: int) -> list:
     # pAck, Anticompetitive, Action, fAct, And, Amplify, bAss, bAstard, lAss, disAster, fAscination, charActer
     # pAssion, mAsquerade, clAssifier, rAspberry, smAsh, glAss, cAscade, Ash, pAstel, fAshion, embarrAssment
     if trailing_pos + 1 < info.word_len and info.word[trailing_pos + 1] not in "aeiouy" and \
-        info.word[trailing_pos] + info.word[trailing_pos + 1] != "bl":
+        info.word[trailing_pos] + info.word[trailing_pos + 1] != "bl" and "cal" not in syllable:
         return ["æ"]
         
     next_syllable = None
@@ -786,8 +800,12 @@ def determine_a(info: WordInfo, index: int) -> list:
         next_syllable = english_vowel_cluster_determine_map[info.vowel_clusters[index + 1].vowels](info, index + 1)[0]
 
     # cAlm, fAll, infrAstructure
-    if "fra" in syllable or ( "al" in syllable and ( "alm" in syllable or "all" in syllable ) ):
+    if "fra" in syllable or ( "al" in syllable and ( "alm" in syllable or ( "all" in syllable and "cal" not in syllable ) ) ):
         return ["ɑ:"]
+    
+    # physicAlly, psychicAlly
+    if "cal" in syllable and ( next_syllable == None or next_syllable == "i:" ):
+        return [""]
 
     if next_syllable == "" or next_syllable == "ɜ:" or next_syllable == "i:" or next_syllable == "ə":
         # trainAble, flamAble, unbeatAbly
@@ -799,7 +817,7 @@ def determine_a(info: WordInfo, index: int) -> list:
         # bAthe, fAme, lAme, flAme, hAste, lAte, lAser, hAsten, wAver, Able, tAble
         # translAte, Ate, fAte, rAte, rAce, trAce, pAce, mAde, fAde, blAme, phAse, occAsion, wAste
         else:
-            return ["eɪ"]        
+            return ["eɪ"]
 
     # stAtistics, hAs, diagrAm, fAmiliar
     return ["æ"]
@@ -834,16 +852,27 @@ def determine_i(info: WordInfo, index: int) -> list:
                 
             # dyIng, lyIng, flyIng, tryIng, petrifyIng
             return ["aɪ", "ɪ"]
+    
     syllable = ""
     start_pos = info.vowel_clusters[index].start_pos
     for char_index in range(max(0, start_pos - 2), min(info.word_len, trailing_pos + 2)):
         if char_index >= start_pos or ( char_index < start_pos and info.word[char_index] not in "aeiouy" ):
             syllable += info.word[char_index]
 
+    next_vowel = "" if index + 1 >= len(info.vowel_clusters) else info.vowel_clusters[index + 1].vowels
+    if next_vowel == "i":
+        next_vowel_trailing = info.vowel_clusters[index + 1].end_pos + 1
+
+        # realIzing, suffIcing
+        if next_vowel_trailing + 1 < info.word_len and info.word[next_vowel_trailing] + info.word[next_vowel_trailing + 1] == "ng":
+            return ["aɪ"]
+        # realIstic, debIlitating            
+        else:
+            return ["ɪ"]
+
     # sIde, wIfe, lIfe, strIfe, thrIve, Island, fIve, alIve,
     # Ideas, Ideology, lIne, fIne, hIgh, mIghty, realIzing, kInd, wInd, fInd, mInd
-    # wIdely, prIce, prIcing, Ice, suffIce, realIse, Idea, Ideology
-    next_vowel = "" if index + 1 >= len(info.vowel_clusters) else info.vowel_clusters[index + 1].vowels
+    # wIdely, prIce, prIcing, Ice, suffIce, realIse, Idea, Ideology    
     if "fiv" in syllable or "ind" in syllable or "igh" in syllable or "ign" in syllable or \
         ( ("ic" in syllable or "is" in syllable or "iz" in syllable ) and ( next_vowel == "e" or next_vowel == "i" ) ) or \
         ( ( next_vowel == "e" or next_vowel == "i" ) and ( "riv" in syllable or "iv" not in syllable ) ) or \
@@ -876,8 +905,8 @@ def determine_e(info: WordInfo, index: int) -> list:
                 info.word == "very":
                 return ["e"]
                 
-            # stErn, tErm, Ernest, cErtain, concErn, govErn, sErve, swErve, stErling
-            elif trailing_pos + 1 < info.word_len and info.word[trailing_pos + 1] in "nmtvl":
+            # stErn, tErm, Ernest, cErtain, concErn, govErn, sErve, swErve, stErling, univErse
+            elif trailing_pos + 1 < info.word_len and info.word[trailing_pos + 1] in "nmtvls":
                 return ["ɜ:"]
             # staplEr, givEr, takEr, fakEr, evEry, chaptErs, ovEr, genEral, wintEr, hEr
             else:
@@ -962,6 +991,8 @@ def determine_e(info: WordInfo, index: int) -> list:
     if trailing_pos + 1 < info.word_len and info.word[trailing_pos + 1] not in "aeoiuy":
         # lEdge, Edge, Entity, Enter, mEnding, assEss, Effort, lEtting, Employ
         # bEtter, rEckoning, assEssment, dEsert, dEsperate
+        if index == 0 and syllable.startswith("re") or syllable.startswith("pre"):
+            return ["i:"]
         return ["e"]
     
     # TODO dEsert, dEsk, dEtermining, dEsperate, dEck, dEscribe, dEsolation, dEstruction, dEstablize, dEsign, dEspite

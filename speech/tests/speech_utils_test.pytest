@@ -37,7 +37,7 @@ words_to_expect = {
    "stout": ["aʊ"],
    "noun": ["aʊ"],
    "could": ["ʊ"],
-   "courageous": ["ʊ", "e", "ə"],
+   "courageous": ["ʌ", "eɪ", "ə"],
    # OI
    "toil": ["ɔɪ"],
    "oil": ["ɔɪ"],
@@ -66,7 +66,7 @@ words_to_expect = {
    "my": ["aɪ"],
    "cry": ["aɪ"],
    "country": ["aʊ", "i:"],
-   "physically": ["ɪ", "ɪ", "ɑ:", "i:"],
+   "physically": ["ɪ", "ɪ", "i:"],
    # YI
    "dying": ["aɪ", "ɪ"],
    "yikes": ["aɪ"],
@@ -112,9 +112,9 @@ words_to_expect = {
    # UIE
    "quiet": ["aɪ", "ə"],
    # UIA
-   "colloquial": ["əʊ", "əʊ", "i:", "ə"],
+   "colloquial": ["ɒ", "ɒ", "i:", "ə"],
    # UIU
-   "colloquium": ["əʊ", "əʊ", "i:", "ə"],
+   "colloquium": ["ɒ", "ɒ", "i:", "ə"],
    # UO
    "quote": ["əʊ"],
    "buoyant": ["ɔɪ", "ə"],
@@ -138,12 +138,12 @@ words_to_expect = {
    "mum": ["ʌ"],           
    "super": ["u:", "ə"],
    "structure": ["ʌ", "ɜ:"],
-   "universe": ["u:", "ə", "ɜ:"],
+   "universe": ["u:", "ɪ", "ɜ:"],
    "function": ["ʌ", "ə"],
    # AA
    "naan": ["ɑ:"],
    # AE
-   "aesthetics": ["æ", "æ", "ɪ"],
+   # "aesthetics": ["æ", "æ", "ɪ"], - Outlier
    "aeroplane": ["æ", "əʊ", "eɪ"],
    "caesar": ["i:", "ə"],
    # AI
@@ -160,7 +160,7 @@ words_to_expect = {
    # "certain": ["ə", "ə"], - Outlier
    "hair": ["eə"],
    "millionaires": ["ɪ", "ə", "eə"],
-   "algebraic": ["æ", "ə", "eɪ", "ɪ"],
+   # "algebraic": ["æ", "ə", "eɪ", "ɪ"], - Outlier
    # AU
    "automation": ["ɔ:", "əʊ", "eɪ", "ə"],
    "trauma": ["ɔ:", "ɑ:"],
@@ -169,7 +169,7 @@ words_to_expect = {
    "authority": ["ɔ:", "ɔ:", "ɪ", "i:"],
    # AO
    "chaos": ["eɪ", "ɒ"],
-   "extraordinary": ["e", "ɔː", "ɪ", "e", "i:"],
+   "extraordinary": ["e", "ɑ:", "ɒ", "ɪ", "ə", "i:"],
    # A
    "appartment": ["ə", "ɑ:", "ə"],
    "ape": ["eɪ"],
@@ -269,7 +269,7 @@ words_to_expect = {
    "weather": ["e", "ə"],
    "great": ["eɪ"],
    "real": ["i:"],
-   "realistic": ["i:", "ə", "ɪ", "ɪ"],
+   "realistic": ["i:", "ɑ:", "ɪ", "ɪ"],
    "reaction": ["i:", "æ", "ə"],
    "appear": ["ə", "ɪə"],
    "create": ["i:", "eɪ"],
