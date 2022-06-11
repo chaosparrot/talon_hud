@@ -3,12 +3,13 @@ from speech_types import WordInfo
 def determine_oo(info: WordInfo, index: int) -> list:
     r_pos = info.vowel_clusters[index].end_pos + 1
     c_pos = info.vowel_clusters[index].start_pos - 1
-    # dOOr, flOOr
-    if r_pos < info.word_len and info.word[r_pos] == "r":
-        return ["ɔː"]
     # cOOrdinate
-    elif len(info.vowel_clusters) > 1 and c_pos > 0 and info.word[c_pos] == "c":
+    if len(info.vowel_clusters) > 1 and c_pos >= 0 and info.word[c_pos] == "c":
         return ["əʊ", "ɒ"]
+    # dOOr, flOOr
+    elif r_pos < info.word_len and info.word[r_pos] == "r":
+        return ["ɔː"]
+
     # bOOt
     else:
         return ["u:"]
@@ -53,7 +54,7 @@ def determine_oi(info: WordInfo, index: int) -> list:
                return ["ʊ", "ɪ"]
             # gOIng
             else:
-               return ["əʊ", "ɪ"]            
+               return ["əʊ", "ɪ"]
         
         # cOIntegrate
         elif info.word[pushing_pos] == "c" and len(info.vowel_clusters) > 1:
@@ -869,6 +870,14 @@ def determine_i(info: WordInfo, index: int) -> list:
         # realIstic, debIlitating            
         else:
             return ["ɪ"]
+        
+    # coincidEnce, incidEnt, confidEnce
+    if index > 0 and next_vowel == "e":
+        nv_trailing = info.vowel_clusters[index + 1].end_pos + 1
+        if nv_trailing + 1 < info.word_len:
+            next_syllable_end = info.word[nv_trailing] + info.word[nv_trailing + 1]
+            if next_syllable_end == "nt" or next_syllable_end == "nc":
+                return ["ɪ"]
 
     # sIde, wIfe, lIfe, strIfe, thrIve, Island, fIve, alIve,
     # Ideas, Ideology, lIne, fIne, hIgh, mIghty, realIzing, kInd, wInd, fInd, mInd
@@ -941,13 +950,13 @@ def determine_e(info: WordInfo, index: int) -> list:
             return ["ə"]
             
         # determEnt, stainlEss, commEnt, featurelEssnEss
-        elif "ness" in syllable or "less" in syllable or "ment" in syllable:
+        elif "ness" in syllable or "less" in syllable or "ent" in syllable:
             return ["ə"]
             
         # elatEd, molassEs, drivEl, evEn, stevEn, tunnEl, teachEs, ledgEs
         # urgEs, chancEs, fencEs, biggEst, strongEst, studEnt, marshEs, boardEd
         elif "ded" in syllable or "ted" in syllable or "ses" in syllable or "ces" in syllable or \
-            "ches" in syllable or "ges" in syllable or "ent" in syllable or \
+            "ches" in syllable or "ges" in syllable or \
             ( "est" in syllable and "test" not in syllable ) or "hes" in syllable or "el" in syllable or "let" in syllable:
             return ["ə"]
             
@@ -960,6 +969,10 @@ def determine_e(info: WordInfo, index: int) -> list:
         # internEt
         else:
             return ["e"]
+            
+    # coincidEnce
+    if "enc" in syllable and index < len(info.vowel_clusters) - 1 and info.vowel_clusters[index + 1].vowels == "e":
+        return ["ə"]
        
     if index > 0 and index <= len(info.vowel_clusters) - 2:
         # enEmy, tragEdy, stratEgy
@@ -990,8 +1003,8 @@ def determine_e(info: WordInfo, index: int) -> list:
     
     if trailing_pos + 1 < info.word_len and info.word[trailing_pos + 1] not in "aeoiuy":
         # lEdge, Edge, Entity, Enter, mEnding, assEss, Effort, lEtting, Employ
-        # bEtter, rEckoning, assEssment, dEsert, dEsperate
-        if index == 0 and syllable.startswith("re") or syllable.startswith("pre"):
+        # bEtter, rEckoning, assEssment, dEsert, dEsperate, rEscue
+        if index == 0 and ( syllable.startswith("re") or syllable.startswith("pre") ) and not "sc" in syllable:
             return ["i:"]
         return ["e"]
     
