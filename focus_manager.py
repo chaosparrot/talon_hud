@@ -1,5 +1,6 @@
 from typing import Dict
-from talon import ui
+from talon import ui, actions, app
+from .utils import string_to_speakable_string
 
 class HeadUpFocusManager:
     
@@ -35,6 +36,7 @@ class HeadUpFocusManager:
                 self.widget = widget
                 self.focused_widget_id = widget.id
                 self.widget.focus(self.focused_widget_item)
+                actions.user.hud_add_log("success", "Head up display " + string_to_speakable_string(widget.id) )
                 return
         
         # If no widget was focused, retry by focusing the first enabled widget
@@ -44,27 +46,35 @@ class HeadUpFocusManager:
     def on_blur(self):
         if self.widget:
             self.widget.blur()
+            self.focused_widget_item = None
 
     def handle_base_focus_controls(self, evt) -> bool:
         key_string = evt.key
         for mod in evt.mods: 
             key_string = mod + "-" + key_string
+        
+        new_focus = False
         handled = True
         if key_string == "alt-tab":
             if self.widget != None and evt.event == "keydown":
                 self.widget.blur()
         elif key_string == "esc":
-            if focused_widget_item == None and evt.event == "keydown":
-                if self.widget != None:
-                    self.widget.blur()
-            elif self.widget:
-                self.focused_widget_item = self.widget.focus_up()
+            if self.focused_widget_item == None and evt.event == "keydown":
+                # Do a crude alt-tab to switch the focus back to the previous window
+                if app.platform != "mac":
+                    actions.key("alt-tab")
+                    
+                # TODO test on macos to see if this method works
+                else:
+                    actions.key("cmd-tab")
+            elif self.widget and evt.event == "keydown":
+                new_focus = self.widget.focus_up()
         elif key_string == "tab" and self.widget:
             if evt.event == "keydown":
-                self.focused_widget_item = self.widget.focus_next()
-        elif key_string == "shift-tab" and self.widget:
+                new_focus = self.widget.focus_next()
+        elif key_string == "shift-backtab" and self.widget:
             if evt.event == "keydown":
-                self.focused_widget_item = self.widget.focus_previous()
+                new_focus = self.widget.focus_previous()
         elif key_string == "left" and self.focused_widget_item == None:
             if evt.event == "keydown":
                 previous_widget = None
@@ -78,8 +88,7 @@ class HeadUpFocusManager:
                     self.widget.blur()
                     self.widget = previous_widget
                     self.focused_widget_id = self.widget.id
-                    print( self.focused_widget_id )                    
-                    self.focused_widget_item = self.widget.focus()
+                    new_focus = self.widget.focus()
                 else:
                     print( "NO PREVIOUS WIDGET - SOUND ERROR" )
         # Focus next widget if available
@@ -97,8 +106,7 @@ class HeadUpFocusManager:
                     self.widget.blur()
                     self.widget = next_widget
                     self.focused_widget_id = self.widget.id
-                    print( self.focused_widget_id )
-                    self.focused_widget_item = self.widget.focus()
+                    new_focus = self.widget.focus()
                 else:
                     print( "NO NEXT WIDGET - SOUND ERROR" )
         elif key_string == "space" and self.focused_widget_item is not None:
@@ -106,5 +114,9 @@ class HeadUpFocusManager:
                 self.widget.activate_focus()
         else:
             handled = False
+            
+        if new_focus != False:
+            self.focused_widget_item = new_focus
+            actions.user.hud_add_log("success", string_to_speakable_string(self.widget.id) if not new_focus else string_to_speakable_string(new_focus))
             
         return handled

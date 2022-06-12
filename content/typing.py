@@ -191,3 +191,10 @@ class HudAudioState:
     groups: list[HudAudioGroup] = None
     cues: list[HudAudioCue] = None
     
+@dataclass
+class HudAccessibleNode:
+    name: str
+    role: str = None
+    value: str = None
+    state: str = None
+    nodes: list = None

@@ -289,3 +289,14 @@ class HeadUpStatusBar(BaseWidget):
             self.intro_animation_end_colour[1] - self.intro_animation_start_colour[1],
             self.intro_animation_end_colour[2] - self.intro_animation_start_colour[2]
         ]
+
+    def get_accessible_nodes(self):
+        nodes = []
+        if not self.minimized:
+            for icon in self.icons:
+                nodes.append( self.generate_accessible_node(icon.accessible_text, "button" if icon.callback else "image") )
+        
+        for button in self.buttons:
+            nodes.append( self.generate_accessible_node(button.text, "button") )
+        
+        return nodes

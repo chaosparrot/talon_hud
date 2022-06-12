@@ -2,6 +2,7 @@ from talon import skia, cron, ctrl, scope, canvas, ui
 from talon.types import Point2d
 from abc import ABCMeta
 import numpy
+from .content.typing import HudAccessibleNode
 from .widget_preferences import HeadUpDisplayUserWidgetPreferences
 from .content.partial_content import HudPartialContent
 import copy
@@ -157,7 +158,6 @@ class BaseWidget(metaclass=ABCMeta):
             if self.mouse_enabled:
                 self.canvas.blocks_mouse = True
                 self.canvas.register("mouse", self.on_mouse)
-                self.canvas.register("key", self.on_key)
                 self.canvas.register("focus", self.on_focus_change)
             self.canvas.register("draw", self.draw_cycle)
             self.animation_tick = self.animation_max_duration if self.show_animations else 0
@@ -271,7 +271,8 @@ class BaseWidget(metaclass=ABCMeta):
                 if self.setup_type == "position":
                     self.start_setup("")
                 else:
-                    self.focus_widget()
+                    self.current_focus = None
+                    self.canvas.focused = True
                 self.drag_position = []
         if len(self.drag_position) > 0 and event.event == "mousemove":
             if self.setup_type != "position":
@@ -300,7 +301,7 @@ class BaseWidget(metaclass=ABCMeta):
         if self.focus_callbacks and "key" in self.focus_callbacks:
             handled = self.focus_callbacks["key"](evt)
             if not handled:
-                print( "TODO LET THROUGH" )
+                print( "TODO LET THROUGH?" )
     
     def draw(self, canvas) -> bool:
         """Implement your canvas drawing logic here, returning False will stop the rendering, returning True will continue it"""
@@ -490,36 +491,74 @@ class BaseWidget(metaclass=ABCMeta):
             "key": on_key
         }
 
-    def focus_widget(self):
-        """Implement canvas focusing"""
-        if self.focus_callbacks and "focus" in self.focus_callbacks:
-            self.focus_callbacks["focus"](self)
-
     def focus(self, item = None) -> str:
         """Implement focus rendering"""
+        focus_change = not self.focused
         if not self.focused or item != self.current_focus:
             self.focused = True
-            if self.enabled and self.canvas:
+            if self.enabled and self.canvas:  
+                # Only register the key events when we are focusing for the first time            
+                if focus_change:
+                    self.canvas.register("key", self.on_key)
                 self.canvas.focused = True
                 self.canvas.resume()
+                
+            self.current_focus = item
+            print( "FOCUS " + self.id, self.current_focus )
         
         return self.current_focus
 
     def focus_next(self) -> str:
         """Implement selecting next focusable item"""
-        return None
+        nodes = self.get_accessible_nodes()
+        select_next_item = False
+        for node in nodes:
+            if node.name == self.current_focus:
+                select_next_item = True
+            elif select_next_item == True:
+                return self.focus(node.name)
+        
+        # If the focus is not set yet, select the first item
+        if not select_next_item and len(nodes) > 0:
+            return self.focus(nodes[0].name)
+        
+        # Loop back to the main tab bar
+        else:
+            return self.focus(None)
 
     def focus_previous(self) -> str:
         """Implement selecting previous focusable item"""
-        return None
+        nodes = self.get_accessible_nodes()
+        previous_item_name = None
+        if self.current_focus is not None:
+            for node in nodes:
+                if node.name == self.current_focus:
+                    return self.focus(previous_item_name)
+                else:
+                    previous_item_name = node.name
+            
+            # Loop back to the main tab bar if we have reached the bottom            
+            return self.focus(None)
+        
+        # If the focus is not set yet, select the last item
+        return self.focus(nodes[-1].name)
 
     def focus_up(self) -> str:
         """Implement moving out of a focused item"""
-        return None
+        if self.current_focus is not None:
+            return self.focus(None)
 
     def activate_focus(self):
         """Implement focus activation"""
         pass
+        
+    def generate_accessible_node(self, name, role = None, value = None, nodes = None):
+        """Generate an accessible node ment for keyboard and screen reader usage"""
+        return HudAccessibleNode(name, role, value, nodes if nodes is not None else [])
+        
+    def get_accessible_nodes(self) -> list[HudAccessibleNode]:
+        """Get the accessible nodes available"""
+        return []
 
     def blur(self):
         """Implement focus rendering / canvas unfocusing"""
@@ -527,3 +566,6 @@ class BaseWidget(metaclass=ABCMeta):
         if self.enabled and self.canvas:
             self.canvas.focused = False
             self.canvas.resume()
+            
+            # Do not block any keyboard events anymore
+            self.canvas.unregister("key", self.on_key)
