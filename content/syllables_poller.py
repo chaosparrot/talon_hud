@@ -1,6 +1,7 @@
 from talon import actions, cron, app, Module
 from .poller import Poller
 from .typing import HudAudioState
+from ..speech.speech_utils import word_to_approx_vowels
 import time
 
 # Generates sounds mimicking syllables according to the commands said
@@ -33,71 +34,46 @@ class SyllablesPoller(Poller):
             self.run_syllables(event.content.message)
                 
     def run_syllables(self, message: str):
-        vowel_map = {
-            "o": ["Pitch mid"],
-            "oo": ["Pitch low"],
-            "uou": ["Pitch low"],            
-            "ou": ["Pitch low"],
-            "u": ["Pitch low"],
-            "io": ["Pitch low mid"],
-            "ia": ["Pitch mid high", "Pitch mid"],
-            "a": ["Pitch mid"],
-            "au": ["Pitch mid", "Pitch low"],            
-            "ea": ["Pitch mid"],
-            "e": ["Pitch mid high"],
-            "ee": ["Pitch mid"],
-            "ei": ["Pitch mid"],            
-            "ie": ["Pitch mid"],
-            "y": ["Pitch high"],
-            "ai": ["Pitch mid high"],
-            "oi": ["Pitch high"],
-            "i": ["Pitch high"]
+    
+        vowel_to_sound_map = {
+            "e": ["Pitch mid high"],  # wEnt, ExpEnsive
+            "æ": ["Pitch mid high"],  # cAt
+            "ʌ": ["Pitch low mid"],   # fUn, mOney
+            "ʊ": ["Pitch low"],       # lOOk, bOOt, shOUld
+            "ɒ": ["Pitch mid"],       # rOb, tOrn
+            "ə": ["Pitch low mid"],   # evEn
+            "ɪ": ["Pitch mid"],       # sIt, kIt, Inn
+            "i:": ["Pitch high"],     # nEEd, lEAn
+            "ɜ:": ["Pitch low mid"],  # nUrse, sErvice, bIrd
+            "ɔ:": ["Pitch mid"],      # tAlk, jAw
+            "u:": ["Pitch low"],      # qUEUE
+            "ɑ:": ["Pitch mid"],      # fAst, cAr
+            "ɪə": ["Pitch high"],     # fEAr, bEEr
+            "eə": ["Pitch mid high"], # hAIr, stAre
+            "eɪ": ["Pitch mid high"], # spAce, stAIn, EIght
+            "ɔɪ": ["Pitch mid high"], # jOY, fOIl
+            "aɪ": ["Pitch high"],     # mY, stYle, kInd, rIght
+            "əʊ": ["Pitch mid"],      # nO, blOWn, grOWn, rObe
+            "aʊ": ["Pitch mid"],      # mOUth, tOWn, OUt, lOUd
         }
     
         multipliers = []
         syllables = []
         words = message.split(" ")
         for word in words:
-            current_vowels = ""
-            if len(word) == 1:
-                syllables.append("Syllable one")
-                multipliers.append(1.0)
-                syllables.append("Silence")
-                multipliers.append(1.0)
-                syllables.append("Silence")
-                multipliers.append(1.0)                
-            elif len(word) > 1:
-                first_vowel = True
-                previous_is_vowel = False
-                for index, char in enumerate(word):
-                    final_char = (index + 1) == len(word)
-                    if char in "iaeuo":
-                        current_vowels += char
-                    if final_char or char not in "iaeuo":
-                        if current_vowels in vowel_map:
-                            if not (final_char and char == "e" and current_vowels == "e"):
-                                syllable = vowel_map[current_vowels]
-                                syllables.extend(vowel_map[current_vowels])
-                                
-                                if first_vowel:
-                                    multipliers.append(1.0)
-                                    for sound_index, sound in enumerate(syllable):
-                                        if sound_index > 0:
-                                            multipliers.append(0.4)
-                                    first_vowel = False
-                                else:
-                                    for sound_index, sound in enumerate(syllable):
-                                        multipliers.append(0.4)
-                        elif final_char and char == "y":
-                            syllables.extend(vowel_map[char])
-                            multipliers.append(0.4)
-                        current_vowels = ""
-                syllables.append("Silence")
-                multipliers.append(1.0)
-                syllables.append("Silence")
-                multipliers.append(1.0)
-                syllables.append("Silence")
-                multipliers.append(1.0)
+            current_vowels = ""            
+            for index, vowel in enumerate(word_to_approx_vowels(word, "en")):
+                if vowel in vowel_to_sound_map:
+                    for sound in vowel_to_sound_map[vowel]:
+                        multipliers.append(1.0)
+                        syllables.append(sound)
+               
+            syllables.append("Silence")
+            multipliers.append(1.0)
+            syllables.append("Silence")
+            multipliers.append(1.0)
+            syllables.append("Silence")
+            multipliers.append(1.0)
         self.content.trigger_audio_cues(syllables, multipliers)        
         self.last_message = message
                 

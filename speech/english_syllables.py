@@ -1,4 +1,4 @@
-from speech_types import WordInfo
+from .speech_types import WordInfo
 
 def determine_oo(info: WordInfo, index: int) -> list:
     r_pos = info.vowel_clusters[index].end_pos + 1

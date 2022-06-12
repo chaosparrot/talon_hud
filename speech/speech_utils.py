@@ -1,30 +1,8 @@
-from english_syllables import english_vowel_cluster_determine_map
-from speech_types import WordInfo, VowelCluster
+from .english_syllables import english_vowel_cluster_determine_map
+from .speech_types import WordInfo, VowelCluster
 
 def string_to_speakable_string(str: str) -> str:
     return re.sub(r"([!?-_\,\.])", " ", str.lower()).strip()
-    
-english_ipa_vowels = {
-    "e": "/ae/",  # wEnt, ExpEnsive
-    "æ": "/ae/",  # cAt
-    "ʌ": "/uh/",  # fUn, mOney
-    "ʊ": "/oo/",  # lOOk, bOOt, shOUld
-    "ɒ": "/oh/",  # rOb, tOrn
-    "ə": "/er/",  # evEn
-    "ɪ": "/ih/",  # sIt, kIt, Inn
-    "i:": "/iy/", # nEEd, lEAn
-    "ɜ:": "/eu/", # nUrse, sErvice, bIrd
-    "ɔ:": "/oh/", # tAlk, jAw
-    "u:": "/u/",  # qUEUE
-    "ɑ:": "/ah/", # fAst, cAr
-    "ɪə": "/iy/", # fEAr, bEEr
-    "eə": "/ae/", # hAIr, stAre
-    "eɪ": "/ay/", # spAce, stAIn, EIght
-    "ɔɪ": "/oy/", # jOY, fOIl
-    "aɪ": "/ai/", # mY, stYle, kInd, rIght
-    "əʊ": "/ow/", # nO, blOWn, grOWn, rObe
-    "aʊ": "/au/", # mOUth, tOWn, OUt, lOUd
-}
 
 english_letters_to_ipa_vowels = {
     "a": "eɪ",
