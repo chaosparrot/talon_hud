@@ -14,6 +14,9 @@ class BaseWidget(metaclass=ABCMeta):
     theme = None
     event_dispatch = None
     preferences = None
+    current_focus = None
+    focused = False
+    focus_callbacks = None
     
     mouse_enabled = False
     
@@ -154,6 +157,8 @@ class BaseWidget(metaclass=ABCMeta):
             if self.mouse_enabled:
                 self.canvas.blocks_mouse = True
                 self.canvas.register("mouse", self.on_mouse)
+                self.canvas.register("key", self.on_key)
+                self.canvas.register("focus", self.on_focus_change)
             self.canvas.register("draw", self.draw_cycle)
             self.animation_tick = self.animation_max_duration if self.show_animations else 0
             self.canvas.resume()
@@ -168,7 +173,8 @@ class BaseWidget(metaclass=ABCMeta):
         if self.enabled:
             if self.mouse_enabled:
                 self.canvas.unregister("mouse", self.on_mouse)
-        
+                self.canvas.unregister("key", self.on_key)
+                self.canvas.unregister("focus", self.on_focus_change)
             self.enabled = False
             self.animation_tick = -self.animation_max_duration if self.show_animations else 0
             self.canvas.resume()
@@ -177,6 +183,7 @@ class BaseWidget(metaclass=ABCMeta):
                 self.preferences.enabled = False
                 self.preferences.mark_changed = True
                 self.event_dispatch.request_persist_preferences()
+                self.on_blur()
                 
             self.cleared = False
             self.start_setup("cancel")
@@ -261,13 +268,39 @@ class BaseWidget(metaclass=ABCMeta):
             if len(self.drag_position) == 0 and event.event == "mousedown":
                 self.drag_position = [event.gpos.x - self.limit_x, event.gpos.y - self.limit_y]
             elif event.event == "mouseup" and len(self.drag_position) > 0:
-                self.start_setup("")
+                if self.setup_type == "position":
+                    self.start_setup("")
+                else:
+                    self.focus_widget()
                 self.drag_position = []
         if len(self.drag_position) > 0 and event.event == "mousemove":
+            if self.setup_type != "position":
+                
+                # Add a grace area to make sure not every click results in a drag
+                if abs( (event.gpos.x - self.limit_x ) - self.drag_position[0] ) > 10 or \
+                    abs( (event.gpos.y - self.limit_y ) - self.drag_position[1] ) > 10:
+                    self.start_setup("position")
+            else:
+                self.setup_move(event.gpos)
+                
+        if len(self.drag_position) == 0 and event.event == "mousedown":
             if self.setup_type != "position":
                 self.start_setup("position")
             else:
                 self.setup_move(event.gpos)
+                
+    def on_focus_change(self, focused):
+        if self.focus_callbacks:
+            if focused == False and "blur" in self.focus_callbacks:
+                self.focus_callbacks["blur"]()
+            elif focused == True and "focus" in self.focus_callbacks:
+                self.focus_callbacks["focus"]()
+            
+    def on_key(self, evt):
+        if self.focus_callbacks and "key" in self.focus_callbacks:
+            handled = self.focus_callbacks["key"](evt)
+            if not handled:
+                print( "TODO LET THROUGH" )
     
     def draw(self, canvas) -> bool:
         """Implement your canvas drawing logic here, returning False will stop the rendering, returning True will continue it"""
@@ -441,7 +474,7 @@ class BaseWidget(metaclass=ABCMeta):
             self.canvas.resume()
  
     def click_button(self, button_index):
-        if button_index > -1 and button_index < len(self.buttons):
+        if button_index > -1 and button_index < len(self.buttons): 
             self.buttons[button_index].callback(self)
 
     def generate_canvas(self, x, y, width, height):
@@ -449,3 +482,48 @@ class BaseWidget(metaclass=ABCMeta):
         #    "backend": "software"
         }
         return canvas.Canvas(x, y, width, height, **canvas_options)
+
+    def set_focus_events(self, on_focus, on_blur, on_key):
+        self.focus_callbacks = {
+            "focus": on_focus, 
+            "blur": on_blur,
+            "key": on_key
+        }
+
+    def focus_widget(self):
+        """Implement canvas focusing"""
+        if self.focus_callbacks and "focus" in self.focus_callbacks:
+            self.focus_callbacks["focus"](self)
+
+    def focus(self, item = None) -> str:
+        """Implement focus rendering"""
+        if not self.focused or item != self.current_focus:
+            self.focused = True
+            if self.enabled and self.canvas:
+                self.canvas.focused = True
+                self.canvas.resume()
+        
+        return self.current_focus
+
+    def focus_next(self) -> str:
+        """Implement selecting next focusable item"""
+        return None
+
+    def focus_previous(self) -> str:
+        """Implement selecting previous focusable item"""
+        return None
+
+    def focus_up(self) -> str:
+        """Implement moving out of a focused item"""
+        return None
+
+    def activate_focus(self):
+        """Implement focus activation"""
+        pass
+
+    def blur(self):
+        """Implement focus rendering / canvas unfocusing"""
+        self.focused = False
+        if self.enabled and self.canvas:
+            self.canvas.focused = False
+            self.canvas.resume()

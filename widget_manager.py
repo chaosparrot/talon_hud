@@ -18,6 +18,7 @@ from .widgets.screenoverlay import HeadUpScreenOverlay
 from .theme import HeadUpDisplayTheme
 from .event_dispatch import HeadUpEventDispatch
 from .configuration import hud_get_configuration
+from .focus_manager import HeadUpFocusManager
 
 user_preferences_file_dir = hud_get_configuration("user_preferences_folder")
 user_preferences_file_location = os.path.join(user_preferences_file_dir, "widget_settings.csv")
@@ -40,6 +41,7 @@ class HeadUpWidgetManager:
         self.default_screen_rect = ui.Rect(0, 0, 1920, 1080)
         self.default_screen_mm_size = [527.0, 296.0]
         
+        self.focus_manager = HeadUpFocusManager(self)        
         self.previous_talon_hud_environment = ""
         self.previous_screen_rects = []
         self.preferences = preferences
@@ -47,6 +49,7 @@ class HeadUpWidgetManager:
         self.event_dispatch = event_dispatch
         self.initial_load_preferences()
         self.load_widgets()
+        self.focus_manager.set_focus_events()
         
         # Reload the preferences according to the monitor sizes if the given file does not exist
         if not os.path.exists(self.preferences.get_screen_preferences_filepath(ui.screens())):

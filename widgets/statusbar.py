@@ -126,6 +126,8 @@ class HeadUpStatusBar(BaseWidget):
         paint = self.draw_setup_mode(canvas)
         self.icon_positions = []
         stroke_width = 1.5
+        focus_colour = self.theme.get_colour("focus_colour")
+        focus_width = 4
         circle_margin = 4
         element_height = self.height - ( stroke_width * 2 )
         icon_diameter = self.height - ( circle_margin * 2 )
@@ -135,7 +137,7 @@ class HeadUpStatusBar(BaseWidget):
         stroke_colours = (self.theme.get_colour("top_stroke_colour"), self.theme.get_colour("down_stroke_colour"))
         paint.shader = linear_gradient(self.x, self.y, self.x, self.y + element_height * 2, stroke_colours)
         self.draw_background(canvas, self.x, self.y, element_width, element_height + (stroke_width * 2), paint)
-        
+            
         # Calculate the blinking colour
         continue_drawing = False
         if ( self.blink_state > 0 ):
@@ -158,6 +160,13 @@ class HeadUpStatusBar(BaseWidget):
         background_shader = linear_gradient(self.x, self.y, self.x, self.y + element_height * 2, (mode_colour, accent_colour))
         paint.shader = background_shader
         self.draw_background(canvas, self.x + stroke_width, self.y + stroke_width, element_width - stroke_width * 2, element_height, paint)
+
+        if self.focused and self.current_focus == None:
+            paint.style = canvas.paint.Style.STROKE
+            paint.stroke_width = focus_width
+            paint.shader = linear_gradient(self.x, self.y, self.x, self.y + element_height * 2, (focus_colour, focus_colour))
+            self.draw_background(canvas, self.x + focus_width / 2, self.y + focus_width / 2, element_width - focus_width, element_height, paint)
+            paint.style = canvas.paint.Style.FILL
 
         icon_texts = []
 
