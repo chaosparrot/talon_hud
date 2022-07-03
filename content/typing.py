@@ -194,7 +194,42 @@ class HudAudioState:
 @dataclass
 class HudAccessibleNode:
     name: str
-    role: str = None
+    role: str
     value: str = None
     state: str = None
     nodes: list = None
+    path: str = ""
+
+    def set_path(self, path: str, number: int, parent = None):
+        path = path + ":" + str(number)
+        self.path = parent.path + "." + path if parent and parent.path else path
+        
+    def append(self, node):
+        if self.nodes is None:
+            self.nodes = []
+        node.set_path(node.path, len(self.nodes), self )
+        self.nodes.append(node)
+        
+    def equals(self, path_node):
+        elements = self.path.split(".")
+        for element in elements:
+            if element.startswith(path_node + ":"):
+                return True
+        return False
+
+    def find(self, path: str):
+        if path == self.path:
+            return self
+        else:
+            for node in self.nodes:
+                if path.startswith(node.path):
+                    found = node.find(path)
+                    if found is not None:
+                        return found
+            return None
+        
+    def clear(self):
+        if self.nodes is not None:
+            for node in self.nodes:
+                node.clear()
+            self.nodes = []

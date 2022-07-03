@@ -93,7 +93,9 @@ class HeadUpDisplay:
     allowed_content_operations = ["*"]
     allow_update_context = True
     current_flow = ""
-    
+
+    focus_grace_period = 0
+    start_idle_period = 0
     prev_mouse_pos = None
     mouse_poller = None
     current_talon_hud_environment = ""
@@ -124,8 +126,12 @@ class HeadUpDisplay:
 
             if actions.sound.active_microphone() == "None":
                 actions.user.hud_add_log("warning", "Microphone is set to \"None\"!\n\nNo voice commands will be registered.")
+        
         self.set_current_flow("manual")
         self.distribute_content()
+        # Make sure auto focusing can only start 2 seconds after the HUD has started up
+        # To make sure the content updating does not fling the focus for the user everywhere during booting
+        cron.after("2s", lambda self=self: self.set_auto_focus(self.preferences.prefs["auto_focus"]))
 
     def enable(self, persisted=False):
         if not self.enabled:
@@ -149,6 +155,7 @@ class HeadUpDisplay:
             self.event_dispatch.register("show_context_menu", self.move_context_menu)
             self.event_dispatch.register("synchronize_poller", self.synchronize_widget_poller)
             self.event_dispatch.register("audio_state_change", self.audio_state_changed)
+            self.event_dispatch.register("detect_autofocus", self.update_focus_grace_period)
 
             # Reload the preferences just in case a screen change happened in between the hidden state
             if persisted or self.current_flow in ["repair", "initialize"]:
@@ -188,6 +195,7 @@ class HeadUpDisplay:
             self.event_dispatch.unregister("deactivate_poller", self.deactivate_poller)
             self.event_dispatch.unregister("show_context_menu", self.move_context_menu)
             self.event_dispatch.unregister("synchronize_poller", self.synchronize_widget_poller)
+            self.event_dispatch.unregister("detect_autofocus", self.update_focus_grace_period)            
             
             self.disable_poller_job = cron.interval("30ms", self.disable_poller_check)
             self.display_state.unregister("broadcast_update", self.broadcast_update)
@@ -552,6 +560,13 @@ class HeadUpDisplay:
                         widget.clear_topic(event.topic)
                 
                 updated = widget_to_claim.content_handler(event)
+                
+                # Check if we need to autofocus the content
+                if event.show and time.time() < self.focus_grace_period:
+                    if widget_to_claim.accessible_tree:
+                        self.event_dispatch.focus_path(widget_to_claim.accessible_tree.path)
+                        if not self.auto_focus:
+                            self.focus_grace_period = 0
         else:
             for widget in self.widget_manager.widgets:
                 if event.topic_type == "variable" or (event.topic_type in widget.topic_types and \
@@ -624,15 +639,27 @@ class HeadUpDisplay:
     def move_context_menu(self, widget_id: str, pos: Point2d, buttons: list[HudButton]):
         connected_widget = None
         context_menu_widget = None
+                
         for widget in self.widget_manager.widgets:
             if widget.enabled and widget.id == widget_id:
                 connected_widget = widget
             elif widget.id == "context_menu":      
                 context_menu_widget = widget
         if connected_widget and context_menu_widget:
+            # Determine position based on available space - TODO Make sure context menu does not overlap
+            if pos is None:
+                pos_x = connected_widget.x + connected_widget.width / 2
+                pos_y = connected_widget.y + connected_widget.height if connected_widget.y < 500 else connected_widget.y - 10
+                pos = Point2d(pos_x, pos_y)
             context_menu_widget.connect_widget(connected_widget, pos.x, pos.y, buttons)
             self.update_context()
             
+            # Auto focus the first context item if we have auto focus enabled
+            if self.auto_focus and context_menu_widget.current_focus is None and connected_widget.accessible_tree:
+                for node in connected_widget.accessible_tree.nodes:
+                    if node.role == "context_menu" and len(node.nodes) > 0:
+                        self.event_dispatch.focus_path(node.nodes[0].path)
+                        
     # Connect the context menu using voice
     def connect_context_menu(self, widget_id):
         connected_widget = None
@@ -640,18 +667,11 @@ class HeadUpDisplay:
         for widget in self.widget_manager.widgets:
             if widget.enabled and widget.id == widget_id:
                 connected_widget = widget
-            elif widget.id == "context_menu":      
-                context_menu_widget = widget
         
         buttons = []
-        if connected_widget:
-            pos_x = connected_widget.x + connected_widget.width / 2
-            pos_y = connected_widget.y + connected_widget.height
+        if connected_widget and not isinstance(connected_widget, HeadUpContextMenu):
             buttons = connected_widget.buttons
-        
-            if context_menu_widget:
-                context_menu_widget.connect_widget(connected_widget, pos_x, pos_y, buttons)
-                self.update_context()
+            self.move_context_menu(connected_widget.id, None, buttons)
     
     # Hide the context menu
     # Generally you want to do this when you click outside of the menu itself
@@ -803,15 +823,47 @@ class HeadUpDisplay:
             self.display_state.unregister('broadcast_update', self.broadcast_update)
             self.display_state.unregister('trigger_audio', self.trigger_audio)            
         self.display_state = None
-        if self.enabled:
+        if self.enabled:  
             for widget in self.widget_manager.widgets:
                 show_animations = widget.show_animations
                 widget.show_animations = False
                 widget.disable()
                 widget.show_animations = show_animations
-            self.widget_manager.widgets = []
+            self.widget_manager.destroy()
         self.widget_manager = None
         self.audio_manager = None
+        
+    # ---------- KEYBOARD FOCUS METHODS ---------- #
+    def focus(self):
+        if self.enabled:
+            self.widget_manager.focus()
+
+    def blur(self):
+        if self.enabled:
+            self.widget_manager.blur()
+            
+    def toggle_focus(self):
+        if self.enabled:
+            if self.widget_manager.is_focused():
+                self.widget_manager.blur()
+            else:
+                self.widget_manager.focus()
+                
+    def focus_widget(self, widget_id: str, node_id: int = -1):
+        if self.enabled:
+            self.widget_manager.focus(widget_id, node_id)
+    
+    # Keep a grace period to automatically focus content that shows up in the next N seconds
+    def update_focus_grace_period(self):
+        if not self.auto_focus:
+            self.focus_grace_period = time.time() + 1
+
+    def set_auto_focus(self, auto_focus: bool, persisted = False):
+        self.auto_focus = auto_focus
+        # Set the grace period 
+        self.focus_grace_period = time.time() * 50000 if auto_focus else 0
+        if persisted:
+           self.preferences.persist_preferences({"auto_focus": auto_focus})
 
     # ---------- AUDIO RELATED METHODS ---------- #
     def trigger_audio(self, event: HudAudioEvent):
@@ -1032,3 +1084,28 @@ class Actions:
             
         volume_number = numerical_choice_index_map[talon_hud_volume]
         hud.audio_set_volume(volume_number, talon_hud_audio_group, talon_hud_audio)
+
+    def hud_widget_focus(widget_id: str, node_id: int = -1):
+        """Focus a specific widget available in the HUD"""
+        global hud
+        hud.focus_widget(widget_id, node_id)
+
+    def hud_focus():
+        """Focus the HUD for keyboard interaction"""
+        global hud
+        hud.focus()
+
+    def hud_blur():
+        """Blur the keyboard focus from the HUD to the previously focused application"""
+        global hud
+        hud.blur()
+
+    def hud_toggle_focus():
+        """Toggle the focus on or off the HUD"""
+        global hud
+        hud.toggle_focus()
+
+    def hud_set_auto_focus(auto_focus: Union[bool, int]):
+        """Set the widget focusing behavior to automatically focus on content publishing or not"""
+        global hud
+        hud.set_auto_focus(auto_focus, auto_focus == True or auto_focus > 0)

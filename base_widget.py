@@ -6,6 +6,7 @@ from .content.typing import HudAccessibleNode
 from .widget_preferences import HeadUpDisplayUserWidgetPreferences
 from .content.partial_content import HudPartialContent
 import copy
+import re
 
 class BaseWidget(metaclass=ABCMeta):
     id = None
@@ -15,10 +16,6 @@ class BaseWidget(metaclass=ABCMeta):
     theme = None
     event_dispatch = None
     preferences = None
-    current_focus = None
-    focused = False
-    focus_callbacks = None
-    
     mouse_enabled = False
     
     # Position dragging position offset - Used in manual dragging
@@ -33,13 +30,18 @@ class BaseWidget(metaclass=ABCMeta):
     topic_types = []
     current_topics = []
     content = None
-        
     animation_tick = 0
     animation_max_duration = 100
     
     setup_type = ""
     setup_vertical_direction = ""
     setup_horizontal_direction = ""
+    
+    # Focus / keyboard handling
+    current_focus = None
+    focused = False
+    accessible_tree = None
+    focus_canvas = None
     
     def __init__(self, id, preferences_dict, theme, event_dispatch, subscriptions = None, current_topics = None):
         self.id = id
@@ -90,13 +92,16 @@ class BaseWidget(metaclass=ABCMeta):
                     self.show_animations = self.preferences.show_animations
 
         if initialize:
-            self.load_theme_values()        
+            self.load_theme_values()
     
     def load_extra_preferences(self):
         """
         To be overridden by derived types to load widget-specific preferences
         """
         pass
+
+    def set_accessible_root(self, node: HudAccessibleNode):
+        self.accessible_tree = node
     
     # Clear the given topic from the current topics
     def clear_topic(self, topic: str):
@@ -132,6 +137,9 @@ class BaseWidget(metaclass=ABCMeta):
                 self.enable()
         
         self.refresh({"event": event})
+        if self.accessible_tree:
+            self.accessible_tree.clear()
+            self.accessible_tree = self.generate_accessible_nodes(parent=self.accessible_tree)
         
         updated = False
         if self.enabled and self.canvas:
@@ -149,6 +157,7 @@ class BaseWidget(metaclass=ABCMeta):
         if self.enabled:
             self.panel_content = panel_content
             self.canvas.resume()
+
         return self.enabled and panel_content.topic
     
     def enable(self, persisted=False):
@@ -158,7 +167,12 @@ class BaseWidget(metaclass=ABCMeta):
             if self.mouse_enabled:
                 self.canvas.blocks_mouse = True
                 self.canvas.register("mouse", self.on_mouse)
-                self.canvas.register("focus", self.on_focus_change)
+            else:
+                self.focus_canvas = canvas.Canvas(self.x, self.y, 200, self.font_size * 2)
+                self.focus_canvas.blocks_mouse = True
+                self.focus_canvas.register("draw", self.draw_focus_name)
+                if not self.focused:
+                    self.focus_canvas.hide()
             self.canvas.register("draw", self.draw_cycle)
             self.animation_tick = self.animation_max_duration if self.show_animations else 0
             self.canvas.resume()
@@ -173,8 +187,6 @@ class BaseWidget(metaclass=ABCMeta):
         if self.enabled:
             if self.mouse_enabled:
                 self.canvas.unregister("mouse", self.on_mouse)
-                self.canvas.unregister("key", self.on_key)
-                self.canvas.unregister("focus", self.on_focus_change)
             self.enabled = False
             self.animation_tick = -self.animation_max_duration if self.show_animations else 0
             self.canvas.resume()
@@ -183,8 +195,14 @@ class BaseWidget(metaclass=ABCMeta):
                 self.preferences.enabled = False
                 self.preferences.mark_changed = True
                 self.event_dispatch.request_persist_preferences()
-                self.on_blur()
-                
+                if self.focused:
+                    self.blur()
+            
+            if self.focus_canvas:
+                self.focus_canvas.unregister("draw", self.draw_focus_name)
+                self.focus_canvas.close()
+                self.focus_canvas = None                
+            
             self.cleared = False
             self.start_setup("cancel")
 
@@ -193,7 +211,8 @@ class BaseWidget(metaclass=ABCMeta):
         dict[self.id + "_" + preference] = value
         self.load(dict, False)
         if self.enabled:
-            self.canvas.resume()
+            self.canvas.resume()            
+            self.refresh_accessible_tree()
         
         if persisted:
             self.preferences.mark_changed = True
@@ -272,36 +291,28 @@ class BaseWidget(metaclass=ABCMeta):
                     self.start_setup("")
                 else:
                     self.current_focus = None
-                    self.canvas.focused = True
+                    if self.accessible_tree:
+                        self.event_dispatch.focus_path(self.accessible_tree.path)
                 self.drag_position = []
         if len(self.drag_position) > 0 and event.event == "mousemove":
             if self.setup_type != "position":
                 
                 # Add a grace area to make sure not every click results in a drag
-                if abs( (event.gpos.x - self.limit_x ) - self.drag_position[0] ) > 10 or \
-                    abs( (event.gpos.y - self.limit_y ) - self.drag_position[1] ) > 10:
+                if abs( (event.gpos.x - self.limit_x ) - self.drag_position[0] ) > 5 or \
+                    abs( (event.gpos.y - self.limit_y ) - self.drag_position[1] ) > 5:
                     self.start_setup("position")
             else:
                 self.setup_move(event.gpos)
                 
-        if len(self.drag_position) == 0 and event.event == "mousedown":
+        if len(self.drag_position) == 0 and event.event == "mousedown" and event.button != 1:
             if self.setup_type != "position":
                 self.start_setup("position")
             else:
                 self.setup_move(event.gpos)
-                
-    def on_focus_change(self, focused):
-        if self.focus_callbacks:
-            if focused == False and "blur" in self.focus_callbacks:
-                self.focus_callbacks["blur"]()
-            elif focused == True and "focus" in self.focus_callbacks:
-                self.focus_callbacks["focus"]()
-            
-    def on_key(self, evt):
-        if self.focus_callbacks and "key" in self.focus_callbacks:
-            handled = self.focus_callbacks["key"](evt)
-            if not handled:
-                print( "TODO LET THROUGH?" )
+    
+    def on_key(self, evt) -> bool:
+        """Implement your custom canvas key handling here"""
+        return False
     
     def draw(self, canvas) -> bool:
         """Implement your canvas drawing logic here, returning False will stop the rendering, returning True will continue it"""
@@ -422,7 +433,9 @@ class BaseWidget(metaclass=ABCMeta):
             self.x = self.x + horizontal_diff
             self.y = self.y + vertical_diff
             
-            self.canvas.move(x, y)            
+            self.canvas.move(x, y)
+            if self.focus_canvas:
+                self.focus_canvas.move(x, y)
             self.canvas.resume()
         elif (self.setup_type in ["dimension", "limit", "font_size"] ):
             x, y = pos
@@ -462,8 +475,9 @@ class BaseWidget(metaclass=ABCMeta):
                     self.limit_width = max(self.width, canvas_width)
                     self.limit_height = max(self.height, canvas_height)
                     
-                    rect = ui.Rect(canvas_x, canvas_y, self.limit_width, self.limit_height  )
-            
+                    rect = ui.Rect(canvas_x, canvas_y, self.limit_width, self.limit_height )
+                if self.focus_canvas:
+        	        self.focus_canvas.move(rect.x, rect.y)
                 self.canvas.rect = rect
             elif (self.setup_type == "font_size"):
                 total_distance = numpy.linalg.norm(numpy.array(total_direction))
@@ -472,6 +486,9 @@ class BaseWidget(metaclass=ABCMeta):
                 # Aiming for a rough max font size of about 72
                 scale_multiplier = 0.033
                 self.font_size = max(8, int(total_distance * scale_multiplier ))
+                if self.focus_canvas:
+                    rect = ui.Rect(self.x, self.y, 200, self.font_size * 2)
+                    self.focus_canvas.rect = rect
             self.canvas.resume()
  
     def click_button(self, button_index):
@@ -484,88 +501,95 @@ class BaseWidget(metaclass=ABCMeta):
         }
         return canvas.Canvas(x, y, width, height, **canvas_options)
 
-    def set_focus_events(self, on_focus, on_blur, on_key):
-        self.focus_callbacks = {
-            "focus": on_focus, 
-            "blur": on_blur,
-            "key": on_key
-        }
+    def draw_focus_name(self, canvas):
+        canvas.paint.style = canvas.paint.Style.FILL
+        canvas.paint.color = self.theme.get_colour("event_log_background", "F5F5F5")
+        rect = ui.Rect(canvas.x + 2, canvas.y + 2, canvas.width - 4, canvas.height - 4)
+        radius = self.font_size
+        rrect = skia.RoundRect.from_rect(rect, x=radius, y=radius)
+        canvas.draw_rrect(rrect)
+        
+        focus_colour = self.theme.get_colour("focus_colour")
+        canvas.paint.color = focus_colour
+        canvas.paint.style = canvas.paint.Style.STROKE
+        canvas.paint.stroke_width = 4
+        
+        canvas.draw_rrect(rrect)
+        canvas.paint.textsize = self.font_size
+        canvas.paint.style = canvas.paint.Style.FILL
+        canvas.draw_text(self.id, canvas.x + 10, canvas.y + self.font_size * 1.2 )
 
-    def focus(self, item = None) -> str:
+    def focus(self, path = None) -> HudAccessibleNode:
         """Implement focus rendering"""
         focus_change = not self.focused
-        if not self.focused or item != self.current_focus:
+        if path is None:
+            if self.current_focus is None:
+                path = self.accessible_tree.path
+            else:
+                path = self.current_focus.path
+
+        if self.enabled and ( not self.focused or self.current_focus is None or self.current_focus.path != path ):
+            self.current_focus = self.accessible_tree.find(path)
             self.focused = True
-            if self.enabled and self.canvas:  
-                # Only register the key events when we are focusing for the first time            
-                if focus_change:
-                    self.canvas.register("key", self.on_key)
-                self.canvas.focused = True
+            
+            if not self.mouse_enabled:
+                if self.focus_canvas:
+                    self.focus_canvas.freeze()
+                    self.focus_canvas.show()
+            if self.canvas:
                 self.canvas.resume()
-                
-            self.current_focus = item
-            print( "FOCUS " + self.id, self.current_focus )
         
         return self.current_focus
 
-    def focus_next(self) -> str:
-        """Implement selecting next focusable item"""
-        nodes = self.get_accessible_nodes()
-        select_next_item = False
-        for node in nodes:
-            if node.name == self.current_focus:
-                select_next_item = True
-            elif select_next_item == True:
-                return self.focus(node.name)
-        
-        # If the focus is not set yet, select the first item
-        if not select_next_item and len(nodes) > 0:
-            return self.focus(nodes[0].name)
-        
-        # Loop back to the main tab bar
-        else:
-            return self.focus(None)
-
-    def focus_previous(self) -> str:
-        """Implement selecting previous focusable item"""
-        nodes = self.get_accessible_nodes()
-        previous_item_name = None
-        if self.current_focus is not None:
-            for node in nodes:
-                if node.name == self.current_focus:
-                    return self.focus(previous_item_name)
-                else:
-                    previous_item_name = node.name
-            
-            # Loop back to the main tab bar if we have reached the bottom            
-            return self.focus(None)
-        
-        # If the focus is not set yet, select the last item
-        return self.focus(nodes[-1].name)
-
-    def focus_up(self) -> str:
-        """Implement moving out of a focused item"""
-        if self.current_focus is not None:
-            return self.focus(None)
-
-    def activate_focus(self):
+    def activate(self, focus_node = None) -> bool:
         """Implement focus activation"""
-        pass
+        if focus_node is None:
+            focus_node = self.current_focus
         
-    def generate_accessible_node(self, name, role = None, value = None, nodes = None):
+        if focus_node is not None and focus_node.role == "context_button":
+            for button in self.buttons:
+                if focus_node.equals(button.text):
+                    button.callback(self)
+                    self.refresh_accessible_tree(True)
+                    return True
+        
+        return False
+        
+    def generate_accessible_node(self, name: str, role, value = None, state = None, nodes = None, path = None):
         """Generate an accessible node ment for keyboard and screen reader usage"""
-        return HudAccessibleNode(name, role, value, nodes if nodes is not None else [])
+        node = HudAccessibleNode(name, role, value, state, nodes if nodes is not None else [], path)
+        return node
         
-    def get_accessible_nodes(self) -> list[HudAccessibleNode]:
-        """Get the accessible nodes available"""
-        return []
+    def generate_node_id(self, name: str, number: int):
+        re.sub("[^a-zA-Z0-9 \n\.]", '', my_str)
+        return self.id + "." + re.sub("[^a-zA-Z0-9\n\.]", '', name.lower()).replace(" ", "-") + ":" + str(number)
+
+    def refresh_accessible_tree(self, reset_focus = False):
+        """Refresh the contents of the accessible nodes - Possibly moving focus back up to the widget itself"""
+        if self.accessible_tree:
+            self.accessible_tree.clear()
+            self.accessible_tree = self.generate_accessible_nodes(parent=self.accessible_tree)
+            if reset_focus and self.focused:
+                self.event_dispatch.focus_path(self.accessible_tree.path)
+
+    def generate_accessible_nodes(self, parent: HudAccessibleNode) -> HudAccessibleNode:
+        """Generate the accessible nodes available"""
+        return self.generate_accessible_context(parent)
+
+    def generate_accessible_context(self, parent: HudAccessibleNode):
+        menu_node = self.generate_accessible_node("Context menu", "context_menu", nodes = [], path="menu")
+        parent.append(menu_node)
+        for button in self.buttons:
+            menu_node.append( self.generate_accessible_node(button.text, "context_button", path=button.text) )
+        menu_node.append( self.generate_accessible_node("Hide " + self.id, "context_button", path="closewidget") )
+
+        return parent
 
     def blur(self):
         """Implement focus rendering / canvas unfocusing"""
         self.focused = False
         if self.enabled and self.canvas:
-            self.canvas.focused = False
+            self.current_focus = None
+            if self.focus_canvas:
+                self.focus_canvas.hide()                
             self.canvas.resume()
-            
-            # Do not block any keyboard events anymore
-            self.canvas.unregister("key", self.on_key)

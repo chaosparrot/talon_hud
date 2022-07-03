@@ -2,7 +2,7 @@ from talon import skia, ui, cron, actions, clip
 from ..layout_widget import LayoutWidget
 from ..widget_preferences import HeadUpDisplayUserWidgetPreferences
 from ..utils import layout_rich_text, remove_tokens_from_rich_text, linear_gradient, hit_test_icon
-from ..content.typing import HudRichTextLine, HudPanelContent, HudButton, HudIcon
+from ..content.typing import HudRichTextLine, HudPanelContent, HudButton, HudIcon, HudAccessibleNode
 from talon.types.point import Point2d
 
 icon_radius = 10
@@ -65,7 +65,7 @@ class HeadUpTextPanel(LayoutWidget):
         self.buttons = list(panel_content.buttons)
         self.buttons.extend(self.default_buttons)
         return super().update_panel(panel_content)
-    
+
     def set_preference(self, preference, value, persisted=False):
         self.mark_layout_invalid = True
         super().set_preference(preference, value, persisted)
@@ -237,6 +237,17 @@ class HeadUpTextPanel(LayoutWidget):
         background_colour = self.theme.get_colour("text_box_background", "F5F5F5")
         paint.color = background_colour
         self.draw_background(canvas, paint, dimensions["rect"])
+
+        focus_width = 4
+        focus_colour = self.theme.get_colour("focus_colour")
+        if self.focused and ( self.current_focus is None or self.current_focus.role == "widget" ):
+            paint.style = canvas.paint.Style.STROKE
+            paint.stroke_width = focus_width + 1
+            paint.color = focus_colour
+            focus_rect = ui.Rect(dimensions["rect"].x + focus_width / 2 - 1, dimensions["rect"].y + focus_width / 2 - 1, dimensions["rect"].width - focus_width + 1, dimensions["rect"].height - focus_width + 1 ) 
+            self.draw_background(canvas, paint, focus_rect)
+            paint.style = canvas.paint.Style.FILL
+            paint.stroke_width = 1
         
         paint.color = self.theme.get_colour("text_colour")
         self.draw_content_text(canvas, paint, dimensions)
@@ -323,7 +334,16 @@ class HeadUpTextPanel(LayoutWidget):
                 else:
                     paint.style = paint.Style.STROKE
                     canvas.draw_rect(ui.Rect( 1 + icon_position.x - self.icon_radius / 2, icon_position.y - self.icon_radius / 2, 
-                        self.icon_radius - 2, self.icon_radius - 2))                
+                        self.icon_radius - 2, self.icon_radius - 2))
+                
+                if self.focused and self.current_focus is not None and self.current_focus.equals("minimize_toggle"):
+                    focus_width = 3
+                    focus_colour = self.theme.get_colour("focus_colour")
+                    paint.stroke_width = focus_width                  
+                    paint.style = canvas.paint.Style.STROKE
+                    paint.shader = linear_gradient(self.x, self.y, self.x, self.y + header_height, (focus_colour, focus_colour))
+                    canvas.draw_circle(icon_position.x, icon_position.y, self.icon_radius, paint)
+                    paint.style = canvas.paint.Style.FILL                    
             elif icon.id == "close":
                 close_colour = self.theme.get_colour("close_icon_hover_colour") if self.icon_hovered == index else self.theme.get_colour("close_icon_accent_colour")            
                 paint.shader = linear_gradient(self.x, self.y, self.x, self.y + header_height, (self.theme.get_colour("close_icon_colour"), close_colour))
@@ -363,7 +383,16 @@ class HeadUpTextPanel(LayoutWidget):
             image = self.theme.get_image(icon.image)
             if image:
                 canvas.draw_image(image, icon_position.x - image.width / 2, icon_position.y - image.height / 2)
-
+                
+            if self.focused and self.current_focus is not None and self.current_focus.equals(icon.id + "_page"):
+                focus_width = 3
+                focus_colour = self.theme.get_colour("focus_colour")
+                paint.style = canvas.paint.Style.STROKE
+                paint.stroke_width = focus_width
+                paint.color = focus_colour
+                paint.shader = linear_gradient(self.x, self.y, self.x, self.y + footer_height, (focus_colour, focus_colour))
+                canvas.draw_circle(icon_position.x, icon_position.y, self.icon_radius, paint)                
+                paint.style = canvas.paint.Style.FILL
 
     def draw_content_text(self, canvas, paint, dimensions):
         """Draws the content and returns the height of the drawn content"""
@@ -380,8 +409,50 @@ class HeadUpTextPanel(LayoutWidget):
         
         #line_height = ( content_height - header_height - self.padding[0] - self.padding[2] ) / line_count
         self.draw_rich_text(canvas, paint, rich_text, text_x, text_y, self.line_padding)
+        if self.focused and self.current_focus is not None and self.current_focus.equals("read_contents"):
+            focus_width = 3
+            focus_colour = self.theme.get_colour("focus_colour")
+            paint.style = canvas.paint.Style.STROKE
+            paint.stroke_width = focus_width
+            paint.color = focus_colour
+            canvas.draw_rect(ui.Rect(dimensions.x, dimensions.y + header_height + self.padding[0] + 4, dimensions.width, dimensions.height - header_height * 2 - self.padding[0] - self.padding[2]))
+            paint.style = canvas.paint.Style.FILL
 
     def draw_background(self, canvas, paint, rect):
         radius = 10
         rrect = skia.RoundRect.from_rect(rect, x=radius, y=radius)
         canvas.draw_rrect(rrect)
+
+    def generate_accessible_nodes(self, parent):
+        minimize_button_title = "Maximize " + self.id if self.minimized else "Minimize " + self.id
+        minimize_path = "minimize_toggle"
+        parent.append(self.generate_accessible_node(minimize_button_title, "button", path=minimize_path))
+        if not self.minimized:
+            parent.append(self.generate_accessible_node("Read " + self.id, "button", path="read_contents"))
+            
+            content_page = self.get_content_page()
+            if content_page.total > 1:
+                parent.append(self.generate_accessible_node("Previous visual page", "button", path="previous_page"))
+                parent.append(self.generate_accessible_node("Next visual page", "button", path="next_page"))
+        
+        parent = self.generate_accessible_context(parent)
+        return parent
+        
+    def activate(self, focus_node = None) -> bool:
+        """Implement focus activation"""
+        activated = super().activate(focus_node)
+        if activated == False:
+            if focus_node is None:
+                focus_node = self.current_focus
+            if focus_node is not None:
+                content_page = self.get_content_page()            
+                activated = True
+                if focus_node.equals("minimize_toggle"):
+                    self.set_preference("minimized", not self.minimized, True)
+                elif focus_node.equals("next_page") and self.page_index + 1 < content_page.total:
+                    self.set_page_index(self.page_index + 1)
+                elif focus_node.equals("previous_page") and self.page_index - 1 >= 0:
+                    self.set_page_index(self.page_index - 1)
+                else:
+                    activated = False
+        return activated

@@ -1,6 +1,6 @@
 from typing import Dict
 from talon.scripting import Dispatch
-
+from talon import ui
 
 # Class for general communication between the different layers of the HUD
 # NOTE - THIS USES A TALON API THAT IS SUBJECT TO CHANGE AND MIGHT BREAK IN FUTURE VERSIONS
@@ -23,3 +23,9 @@ class HeadUpEventDispatch(Dispatch):
         
     def audio_state_change(self, audio_state):
         self.dispatch("audio_state_change", audio_state)
+
+    def focus_path(self, path:str):
+        self.dispatch("hud_focused", path)
+        
+    def detect_autofocus(self):
+        self.dispatch("detect_autofocus")

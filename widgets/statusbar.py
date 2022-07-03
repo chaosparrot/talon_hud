@@ -6,6 +6,7 @@ from talon import skia, ui, Module, cron, actions
 import time
 import numpy
 
+# TODO FIX ISSUE WHERE ENABLING THE STATUS BAR WILL NOT RECOVER THE PROPER SUBSCRIPTIONS?
 class HeadUpStatusBar(BaseWidget):
 
     allowed_setup_options = ["position", "dimension", "font_size"]
@@ -137,6 +138,7 @@ class HeadUpStatusBar(BaseWidget):
         stroke_colours = (self.theme.get_colour("top_stroke_colour"), self.theme.get_colour("down_stroke_colour"))
         paint.shader = linear_gradient(self.x, self.y, self.x, self.y + element_height * 2, stroke_colours)
         self.draw_background(canvas, self.x, self.y, element_width, element_height + (stroke_width * 2), paint)
+        focus_shader = linear_gradient(self.x, self.y, self.x, self.y + element_height * 2, (focus_colour, focus_colour))
             
         # Calculate the blinking colour
         continue_drawing = False
@@ -161,7 +163,7 @@ class HeadUpStatusBar(BaseWidget):
         paint.shader = background_shader
         self.draw_background(canvas, self.x + stroke_width, self.y + stroke_width, element_width - stroke_width * 2, element_height, paint)
 
-        if self.focused and self.current_focus == None:
+        if self.focused and ( self.current_focus is None or self.current_focus.role == "widget" ):
             paint.style = canvas.paint.Style.STROKE
             paint.stroke_width = focus_width
             paint.shader = linear_gradient(self.x, self.y, self.x, self.y + element_height * 2, (focus_colour, focus_colour))
@@ -179,13 +181,18 @@ class HeadUpStatusBar(BaseWidget):
                     icon_texts.append(icon.text)
                 continue
 
-            if (not icon.callback or (mode == "sleep" and self.icon_hover_index != hover_index)):
+            if self.focused and self.current_focus is not None and self.current_focus.role == "button" and self.current_focus.equals(icon.topic):
+                paint.shader = focus_shader
+                paint.style = paint.Style.STROKE
+                paint.stroke_width = focus_width                
+            elif (not icon.callback or (mode == "sleep" and self.icon_hover_index != hover_index)):
                 paint.shader = background_shader
             else:
-                button_colour = self.theme.get_colour("button_hover_colour") if self.icon_hover_index == hover_index else self.theme.get_colour("button_colour")
+                button_colour = self.theme.get_colour("button_hover_colour") if self.icon_hover_index == hover_index else self.theme.get_colour("button_colour")                
                 paint.shader = linear_gradient(self.x, self.y, self.x, self.y + element_height, (self.theme.get_colour("button_colour"), button_colour))
             
             self.draw_icon(canvas, self.x + stroke_width + circle_margin + icon_offset, self.y + circle_margin, icon_diameter, paint, icon)
+            paint.style = paint.Style.FILL
             icon_offset += icon_diameter + circle_margin
             hover_index += 1
 
@@ -290,13 +297,24 @@ class HeadUpStatusBar(BaseWidget):
             self.intro_animation_end_colour[2] - self.intro_animation_start_colour[2]
         ]
 
-    def get_accessible_nodes(self):
-        nodes = []
+    def generate_accessible_nodes(self, parent):
         if not self.minimized:
             for icon in self.icons:
-                nodes.append( self.generate_accessible_node(icon.accessible_text, "button" if icon.callback else "image") )
+                parent.append( self.generate_accessible_node(icon.accessible_text, "button" if icon.callback else "image", path = icon.topic))
         
-        for button in self.buttons:
-            nodes.append( self.generate_accessible_node(button.text, "button") )
+        parent = self.generate_accessible_context(parent)
+        return parent
         
-        return nodes
+    def activate(self, focus_node = None) -> bool:
+        """Implement focus activation"""
+        activated = super().activate(focus_node)
+        if activated == False:
+            if focus_node is None:
+                focus_node = self.current_focus
+
+            if focus_node is not None and focus_node.role == "button":
+                for icon in self.icons:
+                    if focus_node.equals(icon.topic):
+                        icon.callback(self, icon)
+                        activated = True
+        return activated

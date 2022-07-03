@@ -105,6 +105,12 @@ class HeadUpScreenOverlay(BaseWidget):
                 self.preferences.enabled = True
                 self.preferences.mark_changed = True
                 self.event_dispatch.request_persist_preferences()
+                
+            self.focus_canvas = canvas.Canvas(self.x, self.y, 200, self.font_size * 2)
+            self.focus_canvas.blocks_mouse = True
+            self.focus_canvas.register("draw", self.draw_focus_name)
+            if not self.focused:
+                self.focus_canvas.hide()
             
             self.cleared = False
             self.soft_enable()
@@ -122,6 +128,11 @@ class HeadUpScreenOverlay(BaseWidget):
                 self.preferences.enabled = False
                 self.preferences.mark_changed = True
                 self.event_dispatch.request_persist_preferences()
+            
+            if self.focus_canvas:
+                self.focus_canvas.unregister("draw", self.draw_focus_name)
+                self.focus_canvas.close()
+                self.focus_canvas = None
             
             self.start_setup("cancel")
             self.clear()
@@ -587,3 +598,13 @@ class HeadUpScreenOverlay(BaseWidget):
             self.animation_tick = self.animation_max_duration if self.show_animations else 0
             for canvas_reference in self.canvases:
                 canvas_reference["canvas"].freeze()
+
+    def generate_accessible_nodes(self, parent):
+        parent = self.generate_accessible_context(parent)
+        return parent
+        
+    def blur(self):
+        """Implement focus rendering / canvas unfocusing"""
+        self.focused = False
+        if self.enabled and self.focus_canvas:
+            self.focus_canvas.hide()

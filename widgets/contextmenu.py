@@ -105,6 +105,7 @@ class HeadUpContextMenu(LayoutWidget):
     def disconnect_widget(self):
         self.connected_widget = None
         self.disable()
+        self.current_focus = None
             
     def draw(self, canvas) -> bool:
         if not self.mark_position_invalid:
@@ -199,10 +200,15 @@ class HeadUpContextMenu(LayoutWidget):
         
         return False
     
+    def redraw_focus(self):
+        if self.enabled and self.canvas:
+            self.canvas.resume()        
+    
     def draw_content_buttons(self, canvas, paint, dimensions):
         """Draws the content buttons"""
         paint.textsize = self.font_size
         content_dimensions = dimensions["rect"]
+        focus_colour = self.theme.get_colour("focus_colour")        
        
         base_button_x = content_dimensions.x + self.padding[3]
         icon_button_x = base_button_x + self.image_size + self.padding[3]
@@ -211,6 +217,7 @@ class HeadUpContextMenu(LayoutWidget):
         for index, button_layout in enumerate(dimensions["button_layouts"]):
             paint.color = self.theme.get_colour("button_hover_background", "AAAAAA") if self.button_hovered == index \
                 else self.theme.get_colour("button_background", "CCCCCC")
+            paint.style = paint.Style.FILL
             button_height = self.padding[0] + button_layout["text_height"] + self.padding[2]
             
             button_icon = button_layout["button"].image
@@ -219,6 +226,15 @@ class HeadUpContextMenu(LayoutWidget):
             rect = ui.Rect(base_button_x, button_y, content_dimensions.width - self.padding[3] - self.padding[1], button_height)
             self.buttons[index].rect = rect
             canvas.draw_rrect( skia.RoundRect.from_rect(rect, x=10, y=10) )
+            
+            # Draw a focus ring around the button
+            if self.current_focus and ( self.current_focus.equals(button_layout["button"].text) or \
+                self.current_focus.equals("closewidget") and button_layout["button"].text == "Close panel"):
+                paint.style = paint.Style.STROKE
+                paint.stroke_width = 4
+                paint.color = focus_colour
+                canvas.draw_rrect( skia.RoundRect.from_rect(rect, x=10, y=10) )
+                paint.style = paint.Style.FILL
             
             button_text_y = button_y + self.padding[0] / 2
             

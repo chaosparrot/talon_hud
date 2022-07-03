@@ -42,6 +42,16 @@ tag: user.talon_hud_available
 ^head up audio (disable|mute) {user.talon_hud_audio}$: user.hud_audio_disable(talon_hud_audio)
 ^head up audio {user.talon_hud_audio} volume {user.talon_hud_volume_number} [percent]$: user.hud_audio_set_volume(talon_hud_volume_number, talon_hud_audio)
 
+# Head up focus commands
+^(head up focus | focus head up):
+    user.hud_focus()
+^head up blur:
+    user.hud_blur()
+^head up [enable] auto focus:
+    user.hud_set_auto_focus(1)
+^head up disable auto focus:
+    user.hud_set_auto_focus(0)
+
 # Head up development commands - Sets watchers on certain configurations, like themes, so development is quicker
 ^head up development start$: 
     user.hud_watch_directories()

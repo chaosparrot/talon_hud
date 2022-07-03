@@ -749,8 +749,8 @@ def determine_a(info: WordInfo, index: int) -> list:
             elif index == len(info.vowel_clusters) - 1 and info.word[pushing_pos] in "ns":
                 return ["ə"]
             # chAracter, Arab, compArable
-            elif index == 0 and ( info.word[trailing_pos + 1] in "a" or \
-                ( pushing_pos >= 0 and info.word[pushing_pos] == "p" ) ):
+            elif index == 0 and ( trailing_pos + 1 < info.word_len and info.word[trailing_pos + 1] in "a" ) or \
+                ( pushing_pos >= 0 and info.word[pushing_pos] == "p" ):
                 return ["æ"]
             # wAr, Are
             else:

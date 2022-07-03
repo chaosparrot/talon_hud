@@ -36,12 +36,13 @@ class HeadUpWidgetManager:
     event_dispatch: HeadUpEventDispatch
     preferences: HeadUpDisplayUserPreferences
     widgets: list[BaseWidget]
+    focus_manager: HeadUpFocusManager
     
     def __init__(self, preferences: HeadUpDisplayUserPreferences, theme: HeadUpDisplayTheme, event_dispatch: HeadUpEventDispatch):
         self.default_screen_rect = ui.Rect(0, 0, 1920, 1080)
         self.default_screen_mm_size = [527.0, 296.0]
         
-        self.focus_manager = HeadUpFocusManager(self)        
+        self.focus_manager = HeadUpFocusManager(self, event_dispatch)        
         self.previous_talon_hud_environment = ""
         self.previous_screen_rects = []
         self.preferences = preferences
@@ -49,7 +50,6 @@ class HeadUpWidgetManager:
         self.event_dispatch = event_dispatch
         self.initial_load_preferences()
         self.load_widgets()
-        self.focus_manager.set_focus_events()
         
         # Reload the preferences according to the monitor sizes if the given file does not exist
         if not os.path.exists(self.preferences.get_screen_preferences_filepath(ui.screens())):
@@ -70,10 +70,27 @@ class HeadUpWidgetManager:
         # With subscribed content, topics etc for specific widgets
         # For now, we will just use the default widgets taken from the display widgets array
         self.widgets = self.get_default_widgets()
+        self.focus_manager.init_widgets()
         
         self.previous_screen_rects = []
         for screen in ui.screens():
             self.previous_screen_rects.append(ui.Rect(screen.x, screen.y, screen.width, screen.height))
+    
+    def destroy(self):
+        self.widgets = []
+        self.focus_manager.destroy()
+        self.focus_manager = None
+    
+    def is_focused(self):
+        return self.focus_manager and self.focus_manager.focused
+        
+    def focus(self, widget_id: str = None, node_id: int = -1):
+        if self.focus_manager:
+            self.focus_manager.focus_path(None)
+
+    def blur(self):
+        if self.focus_manager:
+            self.focus_manager.blur()
     
     def initial_load_preferences(self):
         user_preferences_screen_file_path = self.preferences.get_screen_preferences_filepath(ui.screens())
@@ -269,7 +286,7 @@ class HeadUpWidgetManager:
         
         return [
             self.load_widget("status_bar", "status_bar", ["*"], default_status_topics ),
-            self.load_widget("event_log", "event_log", ["command", "error", "warning", "event", "success"]),
+            self.load_widget("event_log", "event_log", ["command", "error", "warning", "event", "success", "narrate"]),
             self.load_widget("Text panel", "text_panel", ["*"]),
             # Extra text boxes can be defined to be assigned to different topics
             # self.load_widget("Text box two", "text_panel", ["scope"], ["scope"]),

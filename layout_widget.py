@@ -79,9 +79,11 @@ class LayoutWidget(BaseWidget):
     def set_page_index(self, page_index: int):
         self.page_index = max(0, min(page_index, len(self.layout) - 1))
         if self.canvas:
-            self.start_setup("")        
+            self.start_setup("")
             self.mark_layout_invalid = True
             self.canvas.resume()
+            
+            self.refresh_accessible_tree()
             
     def get_content_page(self) -> HudContentPage:
         current = self.page_index + 1
@@ -136,6 +138,8 @@ class LayoutWidget(BaseWidget):
             self.mark_layout_invalid = True
             if topic_changed:
                 self.page_index = 0
+
+            self.refresh_accessible_tree(topic_changed)
 
             if not self.canvas:
                 self.generate_canvases()
@@ -221,6 +225,19 @@ class LayoutWidget(BaseWidget):
             #paint.color = paint_colour
             canvas.draw_text(text.text, x + text.x, y )
 
+    def on_key(self, evt) -> bool:
+        """Implement your custom canvas key handling here"""
+        if evt.event == "keydown":
+            current_page_index = self.page_index        
+            if evt.key in ["pgdown", "pagedown"]:
+                self.set_page_index(self.page_index + 1)
+                return current_page_index != self.page_index
+            elif evt.key in ["pgup", "pageup"]:
+                self.set_page_index(self.page_index - 1)
+                return current_page_index != self.page_index
+        
+        return False
+
     def get_random_colour(self):    
         red = randint(180, 255)
         green = randint(180, 255)
@@ -230,4 +247,3 @@ class LayoutWidget(BaseWidget):
         green_hex = "0" + format(green, "x") if green <= 15 else format(green, "x")
         blue_hex = "0" + format(blue, "x") if blue <= 15 else format(blue, "x")
         return red_hex + green_hex + blue_hex
-        
