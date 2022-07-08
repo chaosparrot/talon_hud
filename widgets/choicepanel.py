@@ -1,4 +1,4 @@
-from talon import skia, ui, cron, clip
+from talon import skia, ui, cron, clip, actions
 from ..layout_widget import LayoutWidget
 from ..widgets.textpanel import HeadUpTextPanel
 from ..widget_preferences import HeadUpDisplayUserWidgetPreferences
@@ -359,8 +359,11 @@ class HeadUpChoicePanel(HeadUpTextPanel):
                     item_index = int(self.current_focus.path.split(":")[-1])
                     next_index = item_index + 1 if evt.key == "down" else item_index - 1
                     for node in self.accessible_tree.nodes:
-                        if node.role in ["combobox", "radiogroup"] and len(node.nodes) > 0 and next_index >= 0 and next_index < len(node.nodes):
-                            self.event_dispatch.focus_path(node.nodes[next_index].path)
+                        if node.role in ["combobox", "radiogroup"] and len(node.nodes) > 0:
+                            if next_index >= 0 and next_index < len(node.nodes):
+                                self.event_dispatch.focus_path(node.nodes[next_index].path)
+                            else:
+                                actions.user.hud_trigger_audio_cue("Group end")
                             return True
         
         return activated

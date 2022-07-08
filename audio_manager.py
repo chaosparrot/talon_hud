@@ -292,6 +292,13 @@ audio_manager = HeadUpAudioManager()
 def register_audio_manager():
     global audio_manager
     actions.user.hud_internal_register("HeadUpAudioManager", audio_manager)
+    
+    # Add interface sounds
+    actions.user.hud_add_audio_group("Interface", "Sounds for interface interactions in the HUD", False)
+    actions.user.hud_add_audio_cue("Interface", "Tick", "Cue whenever a valid key is received", "tick", True)
+    actions.user.hud_add_audio_cue("Interface", "Group end", "Triggers when you reach the end of an item", "group_end", True)
+    actions.user.hud_add_audio_cue("Interface", "Notice", "Triggers when an informal message is shown", "notice", True)
+    actions.user.hud_add_audio_cue("Interface", "Error", "Triggers when an error message is shown", "error", True)
 
 app.register("ready", register_audio_manager)
 

@@ -116,6 +116,11 @@ class HeadUpDisplayContent(Dispatch):
         self.topic_types["log_messages"][topic].append(log_message)
         self.topic_types["log_messages"][topic][-max_log_length:]
         
+        if topic in ["event", "success"]:
+            self.trigger_audio_cues(["Notice"])
+        elif topic in ["warning", "error"]:
+            self.trigger_audio_cues(["Error"])
+        
         if self.queued_log_splits:
             self.revise_log(True)
         else:

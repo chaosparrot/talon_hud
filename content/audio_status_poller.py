@@ -11,7 +11,7 @@ class AudioStatusPoller(Poller):
 
     audio_enabled = True
     current_mode = ""
-    current_mic = "None"
+    current_mic = False
 
     def enable(self):
     	if not self.enabled:

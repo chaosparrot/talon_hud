@@ -105,7 +105,6 @@ class HeadUpFocusManager:
                     if widget.enabled and widget.accessible_tree:
                         path = widget.accessible_tree.path
                         break
-            
         
         # Make sure we do not get recursive focusing of the same path
         if self.focused_path != path or not self.focused:
@@ -119,6 +118,8 @@ class HeadUpFocusManager:
         widget_id = self.focused_widget_id if path is None else path.split(".")[0].split(':')[0]
         currently_in_context = self.focused_widget_item is not None and self.focused_widget_item.role in ["context_button", "context_menu"]
         self.focus(widget_id, path)
+        if self.widget is not None:
+            actions.user.hud_trigger_audio_cue("Tick")        
         after_in_context = self.focused_widget_item is not None and self.focused_widget_item.role in ["context_button", "context_menu"]
 
         message = string_to_speakable_string(self.widget.id if self.widget else "") if not self.focused_widget_item else string_to_speakable_string(self.focused_widget_item.name)
@@ -150,7 +151,6 @@ class HeadUpFocusManager:
                 self.event_dispatch.hide_context_menu()
                 self.only_context_opened = False
             else:
-                print( "ARGH!" )
                 self.event_dispatch.show_context_menu(self.widget.id, None, self.widget.buttons)                        
 
     def focus(self, widget_id: str = None, path: str = None):    
@@ -274,7 +274,6 @@ class HeadUpFocusManager:
                 self.event_dispatch.hide_context_menu()
 
             if not keep_path:
-                print( "NOT KEEP PATH!" )
                 self.focused_path = None
                 self.focused_widget_item = None
 
@@ -328,7 +327,7 @@ class HeadUpFocusManager:
                     if previous_widget.accessible_tree and previous_widget.accessible_tree.path:
                         self.focus_path(previous_widget.accessible_tree.path)
                 else:
-                    print( "NO PREVIOUS WIDGET - SOUND ERROR" )
+                    actions.user.hud_trigger_audio_cue("Group end")
         # Focus next widget if available
         elif key_string == "right" and ( self.focused_widget_item is None or self.focused_widget_item.role == "widget" ):
             if evt.event == "keydown":
@@ -346,7 +345,7 @@ class HeadUpFocusManager:
                     if next_widget.accessible_tree and next_widget.accessible_tree.path:
                         self.focus_path(next_widget.accessible_tree.path)
                 else:
-                    print( "NO NEXT WIDGET - SOUND ERROR" )
+                    actions.user.hud_trigger_audio_cue("Group end")
         elif ( key_string == "space" and self.focused_widget_item is not None ) or \
             ( key_string == "return" and self.focused_widget_item is not None and self.focused_widget_item.role in ["button", "context_button"]):
             if evt.event == "keydown":
@@ -359,7 +358,7 @@ class HeadUpFocusManager:
                         self.event_dispatch.hide_context_menu()
                         self.blur()
                     else:
-                        print( "NO ACTION - SOUND ERROR" )
+                        actions.user.hud_trigger_audio_cue("Group end")
                     
                 # Close context menu after activating button
                 elif activated and self.focused_widget_item.role == "context_button":
@@ -383,7 +382,7 @@ class HeadUpFocusManager:
                 
                 if context_menu:
                     if next_index < 0 or next_index >= len(context_menu.nodes):
-                        print( "NO ACTION - SOUND ERROR" )
+                        actions.user.hud_trigger_audio_cue("Group end")
                     else:
                         self.focus_path(context_menu.nodes[next_index].path)
         else:
