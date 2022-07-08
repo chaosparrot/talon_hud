@@ -93,6 +93,7 @@ class HeadUpDisplay:
     allowed_content_operations = ["*"]
     allow_update_context = True
     current_flow = ""
+    auto_focus = False
 
     focus_grace_period = 0
     start_idle_period = 0
@@ -129,9 +130,9 @@ class HeadUpDisplay:
         
         self.set_current_flow("manual")
         self.distribute_content()
-        # Make sure auto focusing can only start 2 seconds after the HUD has started up
+        # Make sure auto focusing can only start a second after the HUD has started up
         # To make sure the content updating does not fling the focus for the user everywhere during booting
-        cron.after("2s", lambda self=self: self.set_auto_focus(self.preferences.prefs["auto_focus"]))
+        cron.after("1s", lambda self=self: self.set_auto_focus(self.preferences.prefs["auto_focus"]))
 
     def enable(self, persisted=False):
         if not self.enabled:
@@ -651,14 +652,16 @@ class HeadUpDisplay:
                 pos_x = connected_widget.x + connected_widget.width / 2
                 pos_y = connected_widget.y + connected_widget.height if connected_widget.y < 500 else connected_widget.y - 10
                 pos = Point2d(pos_x, pos_y)
+                
             context_menu_widget.connect_widget(connected_widget, pos.x, pos.y, buttons)
             self.update_context()
             
-            # Auto focus the first context item if we have auto focus enabled
+            # Auto focus the context menu if we have auto focus enabled
             if self.auto_focus and context_menu_widget.current_focus is None and connected_widget.accessible_tree:
                 for node in connected_widget.accessible_tree.nodes:
                     if node.role == "context_menu" and len(node.nodes) > 0:
-                        self.event_dispatch.focus_path(node.nodes[0].path)
+                        context_menu_widget.current_focus = node
+                        self.event_dispatch.focus_path(node.path)
                         
     # Connect the context menu using voice
     def connect_context_menu(self, widget_id):
@@ -678,7 +681,7 @@ class HeadUpDisplay:
     def hide_context_menu(self, _ = None):
         context_menu_widget = None    
         for widget in self.widget_manager.widgets:
-            if widget.id == "context_menu" and widget.enabled:      
+            if widget.id == "context_menu" and widget.enabled:
                 context_menu_widget = widget
                 break
         

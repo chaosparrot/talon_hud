@@ -212,8 +212,9 @@ class HudAccessibleNode:
         
     def equals(self, path_node):
         elements = self.path.split(".")
-        for element in elements:
-            if element.startswith(path_node + ":"):
+
+        if len(elements) > 0:
+            if elements[-1].startswith(path_node + ":"):
                 return True
         return False
 

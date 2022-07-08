@@ -1,5 +1,5 @@
 from typing import Dict
-from talon import ui, actions, app, canvas
+from talon import ui, actions, app, canvas, cron
 from .utils import string_to_speakable_string
 from .content.typing import HudAccessibleNode
 
@@ -13,7 +13,6 @@ class HeadUpFocusManager:
     # Some widgets have arrow key navigation enabled ( for next / prevous page, or selecting items )
     # Alt-tab moves the focus out of the HUD entirely
     # ESC moves the focus to the widget list, pressing it again moves the focus out of the HUD again
-    # If a key is not handled, it should leak through to the focused window
     focused = False
     focused_path = None    
     focused_widget_id = None
@@ -25,7 +24,10 @@ class HeadUpFocusManager:
     focus_canvas = None
     
     accessible_root = None
-    focused_nodes = None
+    
+    # Whether or not the context menu is opened first
+    # Because in that case a dismissal needs to return focus to the previous application
+    only_context_opened = False
     
     container_roles = ["context_menu", "menu", "radiogroup", "combobox"]
     
@@ -71,7 +73,7 @@ class HeadUpFocusManager:
         print( "FOCUS CHANGE ", focused )
         
         if not focused:
-            if self.focused_widget_item is not None and self.focused_widget_item.role == "context_button":
+            if self.focused_widget_item is not None and self.focused_widget_item.role in ["context_button", "context_menu"]:
                 self.event_dispatch.hide_context_menu()
 
             self.focus_widget_id = None
@@ -79,19 +81,31 @@ class HeadUpFocusManager:
             if self.widget:
                 self.widget.blur()
                 self.widget = None
+                
+            if self.only_context_opened:
+                self.blur()
 
     # Focus paths are built with dot and colon separators
     # Where the dots represent the level of a node, and the number behind the colon represents the numeral position in the list
     # widget_id:0.node:0.child_node:1
     def focus_path(self, path: str = None):
         if path is None:
+            fallback = not self.focused_path
             if self.focused_path:
                 path = self.focused_path
-            else:
+                widget_id = self.focused_widget_id if path is None else path.split(".")[0].split(':')[0]
+                for widget in self.widget_manager.widgets:
+                    if widget.id and not widget.enabled:
+                        fallback = True
+                        break
+            
+            # Fallback to first widget if the path no longer exist or doesn't exist
+            if fallback:
                 for widget in self.widget_manager.widgets:
                     if widget.enabled and widget.accessible_tree:
                         path = widget.accessible_tree.path
                         break
+            
         
         # Make sure we do not get recursive focusing of the same path
         if self.focused_path != path or not self.focused:
@@ -103,25 +117,26 @@ class HeadUpFocusManager:
         print( "FOCUS PATH! ", path, self.focused )
         
         widget_id = self.focused_widget_id if path is None else path.split(".")[0].split(':')[0]
-        currently_in_context = self.focused_widget_item is not None and self.focused_widget_item.role == "context_button"
+        currently_in_context = self.focused_widget_item is not None and self.focused_widget_item.role in ["context_button", "context_menu"]
         self.focus(widget_id, path)
-        after_in_context = self.focused_widget_item is not None and self.focused_widget_item.role == "context_button"
+        after_in_context = self.focused_widget_item is not None and self.focused_widget_item.role in ["context_button", "context_menu"]
 
         message = string_to_speakable_string(self.widget.id if self.widget else "") if not self.focused_widget_item else string_to_speakable_string(self.focused_widget_item.name)
-        if not self.focused:
+        if not self.focused:        
             message = "Head up display " + string_to_speakable_string(self.widget.id if self.widget else "")
             if self.focused_widget_item and self.focused_widget_item.role != "widget":
                 message += " " + string_to_speakable_string(self.focused_widget_item.name)
-           
+            
             self.focus_canvas.freeze()
             self.focus_canvas.show()
             self.set_last_focused_app(ui.active_app())
             self.focused = True
             self.focus_canvas.focused = True
+            self.only_context_opened = self.focused_widget_item is not None and self.focused_widget_item.role == "context_menu"
             print( "CHANGING FOCUS TO TRUE" )
             
         actions.user.hud_add_log("narrate", message)
-        
+
         if after_in_context:
             for possible_context_widget in self.widget_manager.widgets:
                 if possible_context_widget.id == "context_menu":
@@ -133,7 +148,9 @@ class HeadUpFocusManager:
         if currently_in_context != after_in_context:
             if not after_in_context:
                 self.event_dispatch.hide_context_menu()
+                self.only_context_opened = False
             else:
+                print( "ARGH!" )
                 self.event_dispatch.show_context_menu(self.widget.id, None, self.widget.buttons)                        
 
     def focus(self, widget_id: str = None, path: str = None):    
@@ -160,7 +177,7 @@ class HeadUpFocusManager:
         if item is None:
             item = self.focused_widget_item
         if item is not None and item.path is not None:
-            if item.role == "widget":
+            if item.role == "widget" or ( item.role in ["context_menu", "context_button"] and self.only_context_opened ):
                 self.blur(False)
                 return
         
@@ -183,12 +200,13 @@ class HeadUpFocusManager:
         if self.focused_widget_item is not None:
             item = None
             focused_item = self.focused_widget_item
+            initial_path = path
             if path is None:
                 path = self.focused_widget_item.path
             else:
                 focused_item = self.accessible_root.find(path)
             
-            if focused_item.role == "widget":
+            if focused_item.role == "widget" or ( focused_item.role == "context_menu" and initial_path is None ):
                 item = focused_item.nodes[0 if direction == "next" else -1]
             else:
                 # TODO FIGURE OUT RADIO ITEMS
@@ -247,17 +265,18 @@ class HeadUpFocusManager:
     def blur(self, keep_path = True):
         if self.focused:
             self.focused = False
-            
-            if not keep_path:
-                print( "NOT KEEP PATH!" )
-                self.focused_path = None
-                self.focused_widget_item = None
+            self.only_context_opened = False
             
             if self.widget:
                 self.widget.blur()
             
-            if self.focused_widget_item and self.focused_widget_item.role == "context_button":
+            if self.focused_widget_item and self.focused_widget_item.role in ["context_button", "context_menu"]:
                 self.event_dispatch.hide_context_menu()
+
+            if not keep_path:
+                print( "NOT KEEP PATH!" )
+                self.focused_path = None
+                self.focused_widget_item = None
 
             if self.focus_canvas:
                 self.focus_canvas.focused = False
@@ -344,12 +363,37 @@ class HeadUpFocusManager:
                     
                 # Close context menu after activating button
                 elif activated and self.focused_widget_item.role == "context_button":
-                    self.event_dispatch.hide_context_menu()
-                    self.focused_widget_id = None
-                    if self.widget.enabled:
-                        self.widget.focus(None)
+                        self.event_dispatch.hide_context_menu()
+                        self.focused_widget_id = None                    
+                        if self.widget.enabled:
+                            self.widget.focus(None)
+                        if self.only_context_opened:
+                            self.blur()
+                        
+        elif self.focused_widget_item is not None and self.focused_widget_item.role in ["context_button", "context_menu"] and key_string in ["up", "down"]:
+            if evt.event == "keydown":
+                next_index = 0
+                context_menu = self.focused_widget_item
+                if self.focused_widget_item.role == "context_button":
+                    item_index = int(self.focused_widget_item.path.split(":")[-1])
+                    next_index = item_index + 1 if evt.key == "down" else item_index - 1
+                    context_menu = self.accessible_root.find(".".join(self.focused_widget_item.path.split(".")[:-1]))
+                else:
+                    next_index = 0 if evt.key == "down" else len(self.focused_widget_item.nodes ) - 1
+                
+                if context_menu:
+                    if next_index < 0 or next_index >= len(context_menu.nodes):
+                        print( "NO ACTION - SOUND ERROR" )
+                    else:
+                        self.focus_path(context_menu.nodes[next_index].path)
         else:
             handled = self.widget.on_key(evt) if self.widget else False
+            
+        # If the widget is suddenly no longer enabled after activation - Give the focus switching about 100 ms to switch to a new focus if a topic is published
+        # Otherwise just blur the focus
+        if handled and self.widget and not self.widget.enabled:
+            current_path = self.focused_widget_item.path
+            cron.after("100ms", lambda self=self, current_path=current_path: self.blur() if self.focused_widget_item is not None and self.focused_widget_item.path == current_path else "")
 
         return handled
         

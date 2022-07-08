@@ -339,7 +339,7 @@ class HeadUpChoicePanel(HeadUpTextPanel):
         """Implement your custom canvas key handling here"""
         activated = super().on_key(evt)
         if not activated and evt.event == "keydown":
-            if evt.key in ["return", "enter"] and self.panel_content and self.panel_content.choices.multiple:
+            if evt.key in ["return", "enter"] and self.panel_content:
                 if self.current_focus and self.current_focus.role in ["radio", "checkbox"]:
                     choice_index = int(self.current_focus.path.split(":")[-1])
                     self.select_choice(choice_index)
@@ -351,7 +351,7 @@ class HeadUpChoicePanel(HeadUpTextPanel):
             # Focus the radio and checkbox items using the up and down arrow keys
             elif evt.key in ["up", "down"] and len(evt.mods) == 0:
                 if self.current_focus is None or self.current_focus.role not in ["radio", "checkbox"]:
-                    for node in self.accessible_tree.nodes:
+                    for node in self.accessible_tree.nodes:	
                         if node.role in ["combobox", "radiogroup"] and len(node.nodes) > 0:
                             self.event_dispatch.focus_path(node.nodes[0 if evt.key == "down" else -1].path)
                             return True

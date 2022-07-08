@@ -37,6 +37,7 @@ class HeadUpContextMenu(LayoutWidget):
     }
     panel_content = None
     animation_max_duration = 0
+    current_focus = None
         
     def on_mouse(self, event):
         pos = event.gpos
@@ -101,7 +102,7 @@ class HeadUpContextMenu(LayoutWidget):
          
         if self.enabled == False:
             self.enable()
-            
+
     def disconnect_widget(self):
         self.connected_widget = None
         self.disable()
@@ -208,7 +209,7 @@ class HeadUpContextMenu(LayoutWidget):
         """Draws the content buttons"""
         paint.textsize = self.font_size
         content_dimensions = dimensions["rect"]
-        focus_colour = self.theme.get_colour("focus_colour")        
+        focus_colour = self.theme.get_colour("focus_colour")
        
         base_button_x = content_dimensions.x + self.padding[3]
         icon_button_x = base_button_x + self.image_size + self.padding[3]
@@ -254,10 +255,16 @@ class HeadUpContextMenu(LayoutWidget):
             button_y += button_height + self.padding[0]
 
     def draw_background(self, canvas, paint, rect):
-        radius = 10
+        focused = self.current_focus is not None and self.current_focus.equals("menu")
+        radius = 10					
         rrect = skia.RoundRect.from_rect(rect, x=radius, y=radius)
         canvas.draw_rrect(rrect)
         paint.style = paint.Style.STROKE
-        paint.color = self.theme.get_colour("context_menu_border", "000000")
-        canvas.draw_rrect(rrect)
+        paint.color = self.theme.get_colour("focus_colour") if focused else self.theme.get_colour("context_menu_border", "000000")
+        paint.stroke_width = 4 if focused else 1
+        
+        if focused:
+            canvas.draw_rrect(skia.RoundRect.from_rect(ui.Rect(rect.x + 2, rect.y + 2, rect.width, rect.height), x=radius, y=radius))        
+        else:
+            canvas.draw_rrect(rrect)
         paint.style = paint.Style.FILL
