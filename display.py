@@ -336,12 +336,15 @@ class HeadUpDisplay:
                     widget.show_animations = show_animations
                 else:
                     widget.set_theme(self.theme)
+
+            if self.widget_manager.html_generator:
+                self.widget_manager.html_generator.set_theme(self.theme)
                     
             if self.audio_manager:
                 self.audio_manager.set_theme(self.theme)
                     
             if should_reset_watch:
-                self.watch_directories()
+                self.watch_directories() 
             
             self.preferences.persist_preferences({"theme_name": theme_name})
         

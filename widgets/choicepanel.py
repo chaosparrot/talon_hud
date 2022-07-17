@@ -242,7 +242,7 @@ class HeadUpChoicePanel(HeadUpTextPanel):
             self.choices[choice_layout["choice_index"]].rect = rect
             canvas.draw_rrect( skia.RoundRect.from_rect(rect, x=10, y=10) )
             
-            if self.focused and index == focused_index:
+            if self.focused and choice_layout["choice_index"] == focused_index:
                 focus_width = 3
                 focus_colour = self.theme.get_colour("focus_colour")
                 paint.style = canvas.paint.Style.STROKE
@@ -288,7 +288,16 @@ class HeadUpChoicePanel(HeadUpTextPanel):
             paint.color = self.theme.get_colour("button_hover_background", "AAAAAA") if self.confirm_hovered else self.theme.get_colour("button_background", "CCCCCC")
             button_rect = ui.Rect(base_button_x, self.confirm_button.rect.y, layout["rect"].width, self.confirm_button.rect.height)
             canvas.draw_rrect( skia.RoundRect.from_rect(button_rect, x=10, y=10) )
-            
+
+            if self.current_focus and self.current_focus.equals("confirm"):
+                focus_width = 3
+                focus_colour = self.theme.get_colour("focus_colour")
+                paint.style = canvas.paint.Style.STROKE
+                paint.stroke_width = focus_width
+                paint.color = focus_colour
+                canvas.draw_rrect( skia.RoundRect.from_rect(button_rect, x=10, y=10) )
+                paint.style = canvas.paint.Style.FILL            
+
             confirm_icon = self.confirm_button.image
             if confirm_icon:
                 image = self.theme.get_image(confirm_icon)
@@ -362,6 +371,11 @@ class HeadUpChoicePanel(HeadUpTextPanel):
                         if node.role in ["combobox", "radiogroup"] and len(node.nodes) > 0:
                             if next_index >= 0 and next_index < len(node.nodes):
                                 self.event_dispatch.focus_path(node.nodes[next_index].path)
+                                
+                                # Move to another page if the choice is not visible right now
+                                if not next_index in self.visible_indecis:
+                                    next_page = self.page_index + 1 if evt.key == "down" else self.page_index - 1
+                                    self.set_page_index( next_page )                                
                             else:
                                 actions.user.hud_trigger_audio_cue("Group end")
                             return True

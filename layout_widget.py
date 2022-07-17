@@ -184,8 +184,7 @@ class LayoutWidget(BaseWidget):
         self.mouse_capture_canvas.rect = rect
         self.mouse_capture_canvas.freeze()
         self.mark_layout_invalid = False
-        
-        
+
     def draw_rich_text(self, canvas, paint, rich_text, x, y, line_padding, single_line=False):
         # Draw text line by line
         text_colour = paint.color
@@ -231,9 +230,13 @@ class LayoutWidget(BaseWidget):
             current_page_index = self.page_index        
             if evt.key in ["pgdown", "pagedown"]:
                 self.set_page_index(self.page_index + 1)
+                if current_page_index == self.page_index:
+                    actions.user.hud_trigger_audio_cue("Group end")
                 return current_page_index != self.page_index
             elif evt.key in ["pgup", "pageup"]:
                 self.set_page_index(self.page_index - 1)
+                if current_page_index == self.page_index:
+                    actions.user.hud_trigger_audio_cue("Group end")
                 return current_page_index != self.page_index
         
         return False

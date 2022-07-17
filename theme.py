@@ -12,6 +12,7 @@ class HeadUpDisplayTheme:
     name = ''
     image_dict = None
     audio_dict = None
+    template_dict = None    
     values = None
     colours = None
     theme_dir = ''
@@ -19,6 +20,7 @@ class HeadUpDisplayTheme:
     def __init__(self, theme_name, theme_dir=None):
         self.image_dict = {}
         self.audio_dict = {}
+        self.template_dict = {}        
         self.values = {}
         self.colours = {}
     
@@ -63,6 +65,17 @@ class HeadUpDisplayTheme:
                     filename_len = len(filename)
                     self.image_dict[filename[:filename_len - 4]] = skia.Image.from_file(abspath)
             
+        # Load in the templates available in the theme directory
+        template_dir = os.path.join(theme_dir, "templates")
+        if os.path.exists(template_dir) and os.path.isdir(template_dir):
+            template_files = os.listdir(template_dir)
+            for index, filename in enumerate(template_files):
+                abspath = os.path.join(template_dir, filename)
+                if (filename.endswith(".html")):
+                    filename_len = len(filename)
+                    with open(abspath) as template:
+                        self.template_dict[filename[:filename_len - 5]] = template.read()
+
         # Load in the audio available in the theme directory
         audio_dir = os.path.join(theme_dir, "audio")
         if os.path.exists(audio_dir) and os.path.isdir(audio_dir):
@@ -124,6 +137,20 @@ class HeadUpDisplayTheme:
                 return self.audio_dict[filename]
         else:
             return default
+
+    def get_template(self, template_name):
+        if template_name in self.template_dict:
+            return self.template_dict[template_name]
+
+        # Load the template from the file system
+        else:
+            # Load in templates from other directories
+            if "/" in template_name or "\\" in template_name:
+                if os.path.isfile(template_name):
+                    with open(template_name) as file:
+                        self.template_dict[template_name] = file.read()
+                    return self.template_dict[template_name]
+            return None
 
     def resize_image(self, image, width, height):
         aspect_ratio = image.width / image.height

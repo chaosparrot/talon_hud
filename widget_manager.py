@@ -19,6 +19,7 @@ from .theme import HeadUpDisplayTheme
 from .event_dispatch import HeadUpEventDispatch
 from .configuration import hud_get_configuration
 from .focus_manager import HeadUpFocusManager
+from .html_generator import HeadUpHtmlGenerator
 
 user_preferences_file_dir = hud_get_configuration("user_preferences_folder")
 user_preferences_file_location = os.path.join(user_preferences_file_dir, "widget_settings.csv")
@@ -42,7 +43,8 @@ class HeadUpWidgetManager:
         self.default_screen_rect = ui.Rect(0, 0, 1920, 1080)
         self.default_screen_mm_size = [527.0, 296.0]
         
-        self.focus_manager = HeadUpFocusManager(self, event_dispatch)        
+        self.focus_manager = HeadUpFocusManager(self, event_dispatch)
+        self.html_generator = HeadUpHtmlGenerator(theme, self.focus_manager)
         self.previous_talon_hud_environment = ""
         self.previous_screen_rects = []
         self.preferences = preferences
