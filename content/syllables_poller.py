@@ -26,12 +26,15 @@ class SyllablesPoller(Poller):
             self.syllables_enabled = False
             if self.content:
                 self.content._content.unregister("audio_state_change", self.audio_update)
-                self.content._content.unregister("broadcast_update", self.on_broadcast_update)                
+                self.content._content.unregister("broadcast_update", self.on_broadcast_update)
                 
 
     def on_broadcast_update(self, event):
         if event.topic_type == "log_messages" and event.topic == "phrase":
-            self.run_syllables(event.content.message)
+            if self.syllables_enabled:
+                self.run_syllables(event.content.message)
+        elif event.topic_type == "variable" and event.topic == "mode":
+            self.syllables_enabled = event.content == "command"
                 
     def run_syllables(self, message: str):
     

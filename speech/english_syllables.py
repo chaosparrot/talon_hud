@@ -667,7 +667,7 @@ def determine_o(info: WordInfo, index: int) -> list:
     if trailing_pos < info.word_len:
         if info.word[trailing_pos] == "r":
            # wOrk, processOr, authOr, directOr, majOr, wOrld, wOrse
-            if trailing_pos + 1 > info.word_len or ( info.word != "or" and info.word[trailing_pos + 1] in "ks" ):
+            if trailing_pos + 1 >= info.word_len or ( info.word != "or" and info.word[trailing_pos + 1] in "ks" ):
                 return ["ɜ:"]
                 
             # Or, fOrward, Organic, infOrm, accOrdingly, impOrtant, Ordinary, enOrmous, priOrity, platfOrm, mOrtgage

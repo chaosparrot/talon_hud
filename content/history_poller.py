@@ -20,7 +20,8 @@ class HistoryPoller(Poller):
     def on_phrase(self, j):
         word_list = j["phrase"]
         command = " ".join(word.split("\\")[0] for word in word_list)
-        self.content.add_log("command", command)
+        if not "user.gaming" in scope.get("mode") and not "user.talking" in scope.get("mode"):
+            self.content.add_log("command", command)
         
         # Debugging data
         time_ms = 0.0

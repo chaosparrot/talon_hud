@@ -1,4 +1,4 @@
-from talon import canvas, ui
+from talon import canvas, ui, actions
 from .base_widget import BaseWidget
 from .utils import layout_rich_text
 from .content.typing import HudContentPage, HudPanelContent
