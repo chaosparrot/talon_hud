@@ -146,6 +146,10 @@ class Actions:
                     return active_mode.replace("user.", "")
 
         active_tags = scope.get("tag")
+        if "user.auto_lang" in active_tags:
+            lang = actions.code.language()
+            if lang:
+                return lang
         if (active_tags is not None):
             for index, active_tag in enumerate(active_tags):
                 if (active_tag.replace("user.", "") in languages.keys()):
