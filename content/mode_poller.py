@@ -97,7 +97,7 @@ class Actions:
 
     def hud_get_status_modes() -> list[str]:
         """Get an ordered list of all the available modes that can be displayed in the status bar and other widget states"""
-        return ["command", "dictation", "sleep"]
+        return ["dictation", "command", "sleep"]
 
     def hud_determine_mode() -> str:
         """Determine the current mode used for the status bar icons and the widget states"""
