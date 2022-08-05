@@ -124,6 +124,21 @@ class Actions:
             return lang if lang else ""
 ```
 
+### Customizing syllable cues
+
+Because syllable cues can be quite intrusive, it makes sense to turn them off for some work flows. For instance when the sleep mode is turned on and you do not expect the commands to do anything, or during dictation mode when you are reviewing your words constantly anyway.  
+To achieve this, you can change the setting `user.talon_hud_syllable_cues` to 0 to turn it off, or to 1 to turn it on.
+
+By default, it is turned off for sleep and dictation mode, as can be seen in hud_syllable_cue_settings.talon
+
+```talon
+mode: sleep
+mode: dictation
+-
+settings():
+    user.talon_hud_syllable_cues = 0
+```
+
 ## Creating text content
 
 Publishing to a single text panel is easy and can be done either through a .talon file, or in a python file

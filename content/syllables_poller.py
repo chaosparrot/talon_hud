@@ -1,8 +1,11 @@
-from talon import actions, cron, app, Module
+from talon import actions, cron, app, Module, settings
 from .poller import Poller
 from .typing import HudAudioState
 from ..speech.speech_utils import word_to_approx_vowels
 import time
+
+mod = Module()
+mod.setting("talon_hud_syllable_cues", type=int, default=1, desc="Turn on syllable cues for specific contexts, default 1 for on")
 
 # Generates sounds mimicking syllables according to the commands said
 class SyllablesPoller(Poller):
@@ -31,13 +34,11 @@ class SyllablesPoller(Poller):
 
     def on_broadcast_update(self, event):
         if event.topic_type == "log_messages" and event.topic == "phrase":
+            self.syllables_enabled = settings.get("user.talon_hud_syllable_cues") >= 1
             if self.syllables_enabled:
                 self.run_syllables(event.content.message)
-        elif event.topic_type == "variable" and event.topic == "mode":
-            self.syllables_enabled = event.content == "command"
                 
     def run_syllables(self, message: str):
-    
         vowel_to_sound_map = {
             "e": ["Pitch mid high"],  # wEnt, ExpEnsive
             "æ": ["Pitch mid high"],  # cAt
@@ -108,11 +109,11 @@ def on_ready():
     global syllables_poller
     
     actions.user.hud_add_audio_group("Syllables", "Mimicks the syllables of a voice command said", False)
-    actions.user.hud_add_audio_cue("Syllables", "Pitch high", "Eye, oy in oyster", "4", True)
-    actions.user.hud_add_audio_cue("Syllables", "Pitch mid high", "Ai in air, e in lend", "3", True)
-    actions.user.hud_add_audio_cue("Syllables", "Pitch mid", "A in start, o in otter, ea in meat, i in switch", "2", True)
-    actions.user.hud_add_audio_cue("Syllables", "Pitch low mid", "A in metal, er in mermaid", "1", True)
-    actions.user.hud_add_audio_cue("Syllables", "Pitch low", "Oo in moon, o in stone, u in tube", "0", True)
+    actions.user.hud_add_audio_cue("Syllables", "Pitch high", "'Five' and 'near'", "4", True)
+    actions.user.hud_add_audio_cue("Syllables", "Pitch mid high", "For example 'went', 'cat', 'hair', 'space' and 'joy'", "3", True)
+    actions.user.hud_add_audio_cue("Syllables", "Pitch mid", "For example 'rob', 'sit', 'car', 'jaw', 'robe' and 'gown'", "2", True)
+    actions.user.hud_add_audio_cue("Syllables", "Pitch low mid", "For example 'bird', 'burn', 'fun' and the last syllable in 'open'", "1", True)
+    actions.user.hud_add_audio_cue("Syllables", "Pitch low", "For example 'could', 'boot' and 'queue'", "0", True)
     actions.user.hud_add_audio_cue("Syllables", "Silence", "", "silence", True)
 
     actions.user.hud_add_poller("syllables", syllables_poller, True)
@@ -120,7 +121,6 @@ def on_ready():
 
 app.register("ready", on_ready)
 
-mod = Module()
 @mod.action_class
 class Actions:
     

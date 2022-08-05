@@ -1,6 +1,6 @@
 # Appearance and theming
 
-The HUD's appearance is almost fully changeable without having to dive into nitty gritty code. Depending on the widget, a number of values can be tweaked like colours, border thickness and paddings, and so on. The images are also neatly kept inside of a folder for you to change as you wish. 
+The HUD's appearance is almost fully changeable without having to dive into nitty gritty code. Depending on the widget, a number of values can be tweaked like colours, border thickness and paddings, and so on. The images and audio files are also neatly kept inside of a folder for you to change as you wish. 
 All of these things are bundled in a 'theme'. The light theme is the one you see when you start up. You can find the themes inside of the themes folder.
 
 By default, there are two available themes - Light and dark, for a light and dark mode. These you can switch using `head up theme dark` and `head up theme light`.
@@ -18,6 +18,11 @@ Inside the themes.csv file inside themes/light you will find a list of values th
 You will notice that inside of the light theme folder, there are no images to be found. That is because all the themes take the images out from a single base theme inside of _base_theme. You can change the images around here and they will be used for all the available themes. As long as you use the right file names, the images should update nicely.
 
 If you wish to change the images around for the light theme only, you can copy the images folder inside of the _base_theme folder over to the light folder, and change the images around. The images are only reloaded whenever you change a theme, or whenever you change a file when the HUD is in the development mode.
+
+## Customizing audio
+
+All the available audio cues are put inside of a theme as well. As such, you can override audio cues with your own by simply overriding the files inside the audio folder of a theme.
+Do note however that currently the only allowed filetype is 16-bit signed .WAV files, so make sure you are exporting the right file type when you create a new file.
 
 ## Creating your own theme
 
