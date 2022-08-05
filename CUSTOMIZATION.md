@@ -4,7 +4,7 @@ The content inside of the HUD is meant to be mostly customizable and creatable b
 Creating text content is straight forward and can be done in .talon files for the simple use cases, and in python for the more advanced usecases.  
 There is also other content like status bar icons, logs and screen regions, that have special requirements.
 
-For more advanced cases, there is also "sticky" content, which is content that can stick around in between restarts. An example of this is the mode or microphone icon on the status bar, but things like the scope debugging are sticky content as well. On the bottom of the page is an explanation on how to make your own sticky content.
+For more advanced cases, there is also [sticky content](#sticky-and-changing-content), which is content that can stick around in between restarts. An example of this is the mode or microphone icon on the status bar, but things like the scope debugging are sticky content as well. On the bottom of the page is an explanation on how to make your own sticky content.
 
 ## Content customization
 
@@ -261,6 +261,173 @@ In walkthroughs, every new line starts a new walkthrough step.
 
 This is still being fleshed out, but in the mean time, you can take a look at the [previous content documentation](docs/deprecated_docs/CONTENT_README.md)
 
-## Sticky content
+## Sticky and changing content
 
-TODO - Give a thorough explanation of the poller and topic system
+Publishing or tweaking content is fine, but you can make content that changes dynamically as well, or that starts up after a restart.
+For this, we need to bring in a couple of concepts: Topics and pollers.
+
+A diagram is shown below of the general system when a poller is added to the HUD and content gets sent to the widget automatically when Talon has fully started.
+
+```mermaid
+sequenceDiagram
+Poller->>Head up Display: Announces topic availability
+Note right of Poller: action.user.hud_add_poller
+Note left of Head up Display: Sets the content variable
+Head up Display->>Widget: Check if topic connected to widget is enabled
+Widget-->>Head up Display: Widget is enabled
+Head up Display->>Poller: Poller is activated
+Note left of Head up Display: poller.enable()
+loop Content generation
+    Poller-->>Poller: Checks for changes to the content
+    Poller-->>Widget: Generates content on topic
+    Widget-->>Widget: Updates view
+end
+Note left of Widget: action.user.hud_disable_id
+Widget->>Head up Display: Widget is hidden
+Note left of Head up Display: poller.disable()
+Head up Display->>Poller: Poller is disabled
+```
+
+### Topics
+
+The HUD has a content broadcast system. This roughly means that you as the broadcaster do not directly decide which widget is chosen for the content that you display on the HUD. The HUD needs to assign a widget to the content given to it, and this assigning process is done using topics and topic types.
+
+For instance, there are multiple text widgets in the HUD, the text panel and the documentation panel. The reason content shows up in the documentation panel rather than the text panel is because of the topic assigned to the content. The "documentation" topic specifically shows up on the documentation panel, whereas other topics show up on the text panel instead.  
+In the future, I am planning to make it possible that users can create new instances of widgets like text panels on the fly using voice commands, and can choose to apply topics to that widget. This way multiple types of dynamic content can be shown on the screen exactly as the user wants it. Currently this can be done by editing the default widgets in the widget_manager.py file.
+
+Topic types are the categories of topics that widgets can consume. For instance, "status_icons" is used for icons on the status bar.
+Currently these are the content types available with their widgets:
+- status_icons : Icons showing up on the status bar
+- status_options : Right click options showing up when right clicking the status bar
+- ability_icons : Icons showing up on the ability bar
+- log_messages : Messages showing up on the event log
+- text : Textual content
+- choice : Single or multiple choice content that the user must decide on
+- walkthrough_step : Content displaying on the walkthrough widget
+- cursor_regions : Regions of the screen used to decide which icon should be displayed next to the mouse cursor
+- screen_regions : Regions of the screen used to decide where to render what type of non-clickable content
+- variables : Content that gets broadcast to every widget, used for instance to update whether or not sleep mode is turned on.
+
+Using the topic type and topic system, it is possible to make multiple status bars, or multiple event logs, and have the content directed to the widget where the user wants it.  
+Topics are linked to widgets and persisted as the user wants it, this makes it possible to turn on specific content after a restart, which brings us to "Pollers".
+
+### Pollers
+
+Pollers are simple classes that you can register into the HUD system which gives you a bunch of hooks to play with.  
+Once the HUD decides that a poller should be enabled, it will call the enable method to ask the Poller to start generating content. If the HUD decides that the polled content no longer has a target widget, it will call the disable method on the poller to allow you to stop generating the dynamic content. This system allows for the minimal amount of content generation going on at the same time.
+
+Because pollers are registered using topics, the enabling and disabling process can happen during multiple events.
+- When Talon restarts, the HUD enables all pollers of all shown widgets' topics.
+- When poller content is broadcast, but no widget accepts the topic, the poller is disabled.
+- When a widget is hidden, the HUD disables the pollers connected to that widgets topics.
+- When a widget is shown, the HUD enables all the pollers connected to that widgets topics.
+- When new content is broadcast with 'claim' turned on, it will connect to the widget and disable other pollers connected to that topic type.
+- When a Talon HUD environment changes, all new topics are enabled and all old topics that aren't available in the new environment are disabled.
+- When the poller python file is updated, the old poller is disabled and the new poller is enabled.
+
+On top of that, when a poller becomes active because a user has requested it's content, the assigned widget can be made active as well. This happens for instance when you open the scope debugging with 'toolkit scope'.
+
+The combination of the pollers and topics as a system allow the following functionality:
+- Users can decide where the content is displayed
+- Users can set up the content once, and it will stick around after restarts
+- Users enjoy no needless events being listened and responded to when the content is not displayed
+- Scripters do not need to think of all of the possibilities listed above, as it is done for them.
+
+Because pollers can be activated during all kinds of dynamic flows however, you should rely on the methods found in the HudContentBuilder ( content/content_builder.py ) that is set on the content variable on the poller.
+It is also recommended to not to change the context ( like adding/removing tags, changing talon lists etc ) to make sure that a user cannot accidentally create a context loop.
+
+*Note: You can set pollers to be always active as well. However, this is discouraged for most content. 
+Only if content or information should be gathered when the HUD isn't active should this be used done.
+An example of this is in content/mode_poller.py, where the current mode needs to be known even if some of the widgets are disabled.*
+
+We will make an example poller below to put these idea's into practice, so you can think of ways to make your own.
+
+### Example poller
+
+Let's say we want to create a visual counter on the HUD status bar that counts how long the HUD is visible.
+For this, we will need to create a python file, and a talon file for a voice command to activate the counting.
+
+The talon file looks like this:
+
+```talon
+-
+start counting: user.start_counting()
+pause counting: user.pause_counting()
+stop counting: user.stop_counting()
+```
+
+It simply allows for the starting and pausing of the counting process, and the alltogether stopping. Below is an example with comments on how the python poller looks like
+
+```py
+from talon import actions, cron, app, Module
+
+# Starts counting whenever it is enabled
+class CountingPoller:
+    enabled = False
+    content = None
+    counting_job = None
+    current_count = 0
+    topic = "counting"
+
+    def enable(self):
+        if not self.enabled:
+            self.enabled = True
+            self.publish_count() # Immediately publish the current count to the HUD
+            self.counting_job = cron.interval("1s", self.count_up) # Increase the count every second
+    
+    def disable(self):
+        if self.enabled:
+            self.enabled = False
+            # Clean up all the counting related crons/ registered events
+            cron.cancel(self.counting_job)
+
+    def count_up(self):
+        self.current_count += 1
+        self.publish_count()
+
+    def publish_count(self):
+        topic = self.topic # The topic to publish
+        topic_type = "status_icons" # The type of topic to publish
+        icon = None # The status bar icon, in this case, we do not want any
+        text = str(self.current_count) # The text to display in the status bar
+        accessible_text = text + " is the current count" # Accessible text that can in the future be used for screen readers
+        status_icon = self.content.create_status_icon(topic, icon, text, accessible_text )
+        self.content.publish_event("status_icons", self.topic, "replace", status_icon)
+
+    # Disable the counting on the status bar completely
+    # As the topic is removed from the widget, the poller won't restart when the widget is enabled again
+    def disable_counting(self):
+        self.disable()
+        self.current_count = 0
+        
+        # Remove the topic and the content from the status bar
+        self.content.publish_event("status_icons", self.topic, "remove")
+
+# Create a single poller that we can use in action definitions below
+counting_poller = CountingPoller()
+
+# Register the poller to the HUD whenever the file is reloaded
+def append_poller():
+    actions.user.hud_add_poller(counting_poller.topic, counting_poller)
+app.register("ready", append_poller)
+
+# Add actions to bind in a .talon file
+mod = Module()
+@mod.action_class
+class Action:
+
+    def start_counting():
+        """Starts counting on the Talon HUD status bar"""
+        global counting_poller
+        actions.user.hud_activate_poller(counting_poller.topic)
+
+    def pause_counting():
+        """Pauses the counting on the Talon HUD status bar"""
+        global counting_poller
+        actions.user.hud_deactivate_poller(counting_poller.topic)
+        
+    def stop_counting():
+        """Removes the counting from the Talon HUD status bar"""
+        global counting_poller
+        counting_poller.disable_counting()
+```
