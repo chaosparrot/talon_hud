@@ -138,7 +138,6 @@ class HeadUpDisplay:
         if not self.enabled:
             self.enabled = True
             self.display_state.register("broadcast_update", self.broadcast_update)
-            self.display_state.register("trigger_audio", self.trigger_audio)
 
             # Only reset the talon HUD environment after a user action
             # And only set the visible tag
@@ -200,7 +199,6 @@ class HeadUpDisplay:
             
             self.disable_poller_job = cron.interval("30ms", self.disable_poller_check)
             self.display_state.unregister("broadcast_update", self.broadcast_update)
-            self.display_state.unregister("trigger_audio", self.trigger_audio)
             ui.unregister("screen_change", self.reload_preferences)
             settings.unregister("user.talon_hud_environment", self.hud_environment_change)            
             self.determine_active_setup_mouse()
@@ -397,11 +395,9 @@ class HeadUpDisplay:
         if type == "HeadUpDisplayContent":
             if self.enabled:
                 self.display_state.unregister("broadcast_update", self.broadcast_update)
-                self.display_state.unregister("trigger_audio", self.trigger_audio)
             self.display_state = data
             if self.enabled:
                 self.display_state.register("broadcast_update", self.broadcast_update)
-                self.display_state.register("trigger_audio", self.trigger_audio)
                 
             # Reconnect the content object to the pollers
             for topic in self.pollers:
@@ -426,6 +422,8 @@ class HeadUpDisplay:
             if groups:
                 self.audio_manager.groups = groups
             self.audio_manager.start(self.preferences, self.theme, self.event_dispatch)
+            if self.audio_manager.enabled:
+                self.display_state.register("trigger_audio", self.trigger_audio)
 
     def distribute_content(self):
         """Distributes the content from the content types to the different widgets"""
@@ -454,11 +452,17 @@ class HeadUpDisplay:
             self.pollers[topic].enable()
         # Automatically enable the poller if it was active on restart        
         else:
+            enabled = False
             for widget in self.widget_manager.widgets:
                 if topic in widget.current_topics and widget.enabled and \
                     (not hasattr(self.pollers[topic], "enabled") or not self.pollers[topic].enabled):
                     self.pollers[topic].enable()
+                    enabled = True
                     break
+            
+            # Check for audio pollers as well based on the group name
+            if not enabled and self.audio_manager and self.audio_manager.is_group_enabled(topic):
+                self.pollers[topic].enable()
         
     def remove_poller(self, topic: str):
         if topic in self.pollers:
@@ -485,6 +489,12 @@ class HeadUpDisplay:
             for widget in self.widget_manager.widgets:
                 if widget.current_topics and widget.enabled:
                     attached_topics.extend(widget.current_topics)
+        
+        # Check audio enabled pollers as well
+        if self.audio_manager and self.audio_manager.enabled:
+            for group_id in self.audio_manager.groups:
+                if self.audio_manager.groups[group_id].enabled:
+                    attached_topics.append(group_id)
 
         # First - Disable all pollers from making content updates to prevent race conditions with content events from occurring
         if disable_pollers:
@@ -886,17 +896,27 @@ class HeadUpDisplay:
     def audio_enable(self, group_id = None, id = None, trigger_automatically = True):
         if self.audio_manager:
             if not group_id and not id:
-                self.audio_manager.enable(True)
+                if not self.audio_manager.enabled:
+                    self.audio_manager.enable(True)
+                    self.display_state.register("trigger_audio", self.trigger_audio)
             else:
                 self.audio_manager.enable_audio(group_id, id, trigger_automatically)
+
+            if not id:
+                self.synchronize_pollers()
         
     def audio_disable(self, group_id = None, id = None):
         if self.audio_manager:
             if not group_id and not id:
-                self.audio_manager.disable(True)
+                if self.audio_manager.enabled:
+                    self.audio_manager.disable(True)
+                    self.display_state.unregister("trigger_audio", self.trigger_audio)
             else:
                 self.audio_manager.disable_audio(group_id, id)
-        
+            
+            if not id:
+                self.synchronize_pollers()            
+
     def audio_set_volume(self, volume, group_id = None, id = None):
         if self.audio_manager:
             self.audio_manager.set_volume(volume, True, group_id, id)

@@ -4,61 +4,88 @@ from .typing import HudAudioState
 import time
 
 # Generates sounds based on the current modes, mic status and audio status
-class AudioStatusPoller(Poller):
-    enabled = False
-    content = None
-    status_check_job = None
-
-    audio_enabled = True
+class AudioStatusPoller:
     current_mode = ""
     current_mic = False
+    status_check_job = None
+    callbacks = {}
 
-    def enable(self):
-    	if not self.enabled:
-            self.enabled = True
-            self.status_check_job = cron.interval('300ms', self.status_check)
-            if self.content:
-                self.content._content.register("audio_state_change", self.audio_update)
+    def register(self, name, callback):
+        current_callback_amount = len(self.callbacks.values())
+        self.callbacks[name] = callback
+        if (current_callback_amount == 0):
+            self.status_check_job = cron.interval("300ms", self.status_check)
 
-    def disable(self):
-    	if self.enabled:
-            self.enabled = False
+        # When both pollers are registered, automatically do a status check 
+        # For fast feedback during audio enabling
+        else:
+            self.status_check()
+
+    def unregister(self, name):
+        if name in self.callbacks:
+            del self.callbacks[name]
+        
+        self.previous_mode = None
+        current_callback_amount = len(self.callbacks.values())
+        if (current_callback_amount == 0):
             cron.cancel(self.status_check_job)
-            if self.content:
-                self.content._content.unregister("audio_state_change", self.audio_update)
-                
-    def audio_update(self, audio_state):
-        if self.audio_enabled != audio_state.enabled:
-            if audio_state.enabled:
-                self.status_check(True)
-                self.status_check_job = cron.interval('300ms', self.status_check)
-            # Disable status check if the audio is muted anyway
-            else:
-                cron.cancel(self.status_check_job)
-    
+            self.status_check_job = None
+
     def status_check(self, forced = False):
         active_mic = actions.sound.active_microphone()
-        mic_changed = active_mic != self.current_mic
+        mic_changed = active_mic != self.current_mic or forced
         if mic_changed:
             self.current_mic = active_mic
-            if active_mic == "None" or forced:
-                self.content.trigger_audio_cue("No mic")
-            else:
-                self.content.trigger_audio_cue("Switch mic")        
+
+            callbacks = list(self.callbacks.values())[:]
+            for callback in callbacks:
+                callback(active_mic, None)
         
         if active_mic != "None":
-            current_mode = actions.user.hud_determine_mode()
+            current_mode = actions.user.hud_determine_mode()            
             if current_mode.startswith("user."):
                 current_mode = current_mode[5:]
             if current_mode != self.current_mode or mic_changed or forced:
                 self.current_mode = current_mode
-                self.content.trigger_audio_cue(current_mode.capitalize() + " mode")
+                callbacks = list(self.callbacks.values())[:]
+                for callback in callbacks:
+                    callback(None, current_mode)
 
+class PartialAudioStatusPoller(Poller):
+    enabled = False
+    content = None
+    
+    def __init__(self, type: str, poller: AudioStatusPoller):
+        self.type = type
+        self.poller = poller
+    
+    def enable(self):
+    	if not self.enabled:
+            self.enabled = True
+            if self.type == "Microphone status":
+                self.poller.register(self.type, self.update_microphone)
+            else:
+                self.poller.register(self.type, self.update_modes)
+
+    def disable(self):
+    	if self.enabled:
+            self.enabled = False
+            self.poller.unregister(self.type)
+
+    def update_microphone(self, active_mic: str, mode: str):
+        if active_mic != None:
+            if active_mic == "None":
+                self.content.trigger_audio_cue("No mic")
+            else:
+                self.content.trigger_audio_cue("Switch mic")
+
+    def update_modes(self, active_mic: str, mode: str):
+        if mode != None:
+            self.content.trigger_audio_cue(mode.capitalize() + " mode")
+    
     def destroy(self):
        self.disable(self)
-       self.audio_enabled = True
-       self.current_mode = ""
-       self.current_mic = "None"
+       self.poller = None
 
 audio_status_poller = AudioStatusPoller()
 
@@ -69,19 +96,18 @@ def trigger_audio_status():
 def on_ready():
     global audio_status_poller
     
-    actions.user.hud_add_audio_group("Modes", "Sounds that get triggered when a mode becomes active", True)
+    actions.user.hud_add_audio_group("Modes status", "Sounds that get triggered when a mode becomes active", True)
     status_modes = actions.user.hud_get_status_modes()
     for status_mode in status_modes:
         if status_mode.startswith("user."):
             status_mode = status_mode[5:]
-        actions.user.hud_add_audio_cue("Modes", status_mode.capitalize() + " mode", "", status_mode + "_mode", True)
+        actions.user.hud_add_audio_cue("Modes status", status_mode.capitalize() + " mode", "", status_mode + "_mode", True)
 
-    actions.user.hud_add_audio_group("Microphone", "Status changes for microphones", True)
-    actions.user.hud_add_audio_cue("Microphone", "No mic", "", "mic_none", True)
-    actions.user.hud_add_audio_cue("Microphone", "Switch mic", "", "mic_on", False)
-
-    actions.user.hud_add_poller("audio_status", audio_status_poller, True)
-    actions.user.hud_activate_poller("audio_status")
+    actions.user.hud_add_audio_group("Microphone status", "Status changes for microphones", True)
+    actions.user.hud_add_audio_cue("Microphone status", "No mic", "", "mic_none", True)
+    actions.user.hud_add_audio_cue("Microphone status", "Switch mic", "", "mic_on", False)
+    actions.user.hud_add_poller("modes_status", PartialAudioStatusPoller("Modes status", audio_status_poller))
+    actions.user.hud_add_poller("microphone_status", PartialAudioStatusPoller("Microphone status", audio_status_poller))
 
 app.register("ready", on_ready)
 

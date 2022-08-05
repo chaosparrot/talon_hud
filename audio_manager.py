@@ -140,7 +140,6 @@ class HeadUpAudioManager:
             self.enabled = True
             if persisted:
                 self.audio_settings_change()
-            self.trigger_cue("enabled")
 
     def disable(self, persisted=False):
         clear_audio()
@@ -261,6 +260,10 @@ class HeadUpAudioManager:
         if self.preferences:
             self.load_group_preferences(group)
         self.groups[group.id] = group
+
+    def is_group_enabled(self, group_name):
+        group_id = group_name.lower().replace(" ", "_")
+        return self.enabled and group_id in self.groups and self.groups[group_id].enabled
 
     def get_cue_path(self, cue: HudAudioCue):
         return self.theme.get_audio_path(cue.file, os.path.join(default_audio_path, cue.file + ".wav"))

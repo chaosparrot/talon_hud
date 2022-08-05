@@ -116,8 +116,7 @@ def on_ready():
     actions.user.hud_add_audio_cue("Syllables", "Pitch low", "For example 'could', 'boot' and 'queue'", "0", True)
     actions.user.hud_add_audio_cue("Syllables", "Silence", "", "silence", True)
 
-    actions.user.hud_add_poller("syllables", syllables_poller, True)
-    actions.user.hud_activate_poller("syllables")
+    actions.user.hud_add_poller("syllables", syllables_poller)
 
 app.register("ready", on_ready)
 

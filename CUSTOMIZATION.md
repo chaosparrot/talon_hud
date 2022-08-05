@@ -340,6 +340,11 @@ Because pollers are registered using topics, the enabling and disabling process 
 - When a Talon HUD environment changes, all new topics are enabled and all old topics that aren't available in the new environment are disabled.
 - When the poller python file is updated, the old poller is disabled and the new poller is enabled.
 
+Pollers can also be connected using audio groups, in that case they follow the enabling and disabling flow of the audio state
+- When the audio is enabled, it enables the poller with the audio group as its name
+- When an audio group is enabled, it enables the poller with the audio group as its name
+- When the audio or group is disabled, it disables the poller with the audio group as its name
+
 On top of that, when a poller becomes active because a user has requested it's content, the assigned widget can be made active as well. This happens for instance when you open the scope debugging with 'toolkit scope'.
 
 The combination of the pollers and topics as a system allow the following functionality:

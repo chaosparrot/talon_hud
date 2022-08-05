@@ -216,7 +216,7 @@ class HeadUpStatusBar(BaseWidget):
             close_colour = self.theme.get_colour("close_icon_hover_colour") if self.icon_hover_index == len(self.icons) else self.theme.get_colour("close_icon_accent_colour")
             paint.shader = linear_gradient(self.x, self.y, self.x, self.y + element_height, (self.theme.get_colour("close_icon_colour"), close_colour))
             close_icon_diameter = icon_diameter / 2
-            close_status_icon = HudStatusIcon("close", None, None, "Close Head up display", lambda widget, icon: actions.user.disable_hud())
+            close_status_icon = HudStatusIcon("close", None, None, "Close Head up display", lambda widget, icon: actions.user.hud_disable())
             self.draw_icon(canvas, self.x + element_width - close_icon_diameter - close_icon_diameter / 2 - stroke_width, height_center - close_icon_diameter / 2, close_icon_diameter, paint, close_status_icon)
 
         # Reset the blink colour when the blink is finished
