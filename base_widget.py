@@ -449,3 +449,11 @@ class BaseWidget(metaclass=ABCMeta):
         #    "backend": "software"
         }
         return canvas.Canvas(x, y, width, height, **canvas_options)
+        
+    def set_visibility(self, visible = True):
+        if self.enabled:
+            if self.canvas:
+                if visible:
+                    self.canvas.show()
+                else:
+                    self.canvas.hide()

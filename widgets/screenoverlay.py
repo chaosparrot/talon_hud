@@ -17,6 +17,7 @@ class HeadUpScreenOverlay(BaseWidget):
     mouse_poller = None
     prev_mouse_pos = None
     smooth_mode = True
+    canvas_visibility = True
 
     preferences = HeadUpDisplayUserWidgetPreferences(type="screen_overlay", x=0, y=0, width=300, height=30, font_size=12, enabled=True, alignment="center", expand_direction="down", sleep_enabled=False)
     
@@ -59,6 +60,7 @@ class HeadUpScreenOverlay(BaseWidget):
             self.cleared = False
             self.soft_enable()
             self.create_canvases()
+            self.set_visibility(True)            
     
     def disable(self, persisted=False):
         if self.enabled:
@@ -156,6 +158,8 @@ class HeadUpScreenOverlay(BaseWidget):
                 canvas_reference["callback"] = lambda canvas, self=self, region=region: self.draw_region(canvas, region)
                 canvas_reference["region"] = region
                 canvas_reference["canvas"].register("draw", canvas_reference["callback"])
+                if not self.canvas_visibility:
+                    canvas_reference["canvas"].hide()                
                 canvas_reference["canvas"].freeze()
                 self.canvases.append(canvas_reference)
             
@@ -239,7 +243,8 @@ class HeadUpScreenOverlay(BaseWidget):
         if self.active_regions != active_regions:
             self.active_regions = active_regions
             for canvas_reference in self.canvases:
-                canvas_reference["canvas"].freeze()
+                if self.canvas_visibility:
+                    canvas_reference["canvas"].freeze()
             
     def draw_region(self, canvas, region, setup_region = False) -> bool:
         paint = self.draw_setup_mode(canvas)
@@ -362,7 +367,6 @@ class HeadUpScreenOverlay(BaseWidget):
             
             canvas.draw_text(text.text, x + text.x, y )
 
-
     def start_setup(self, setup_type, mouse_position = None):
         """Starts a setup mode that is used for moving, resizing and other various changes that the user might setup"""    
         if (mouse_position is not None):
@@ -433,7 +437,7 @@ class HeadUpScreenOverlay(BaseWidget):
             
             if not self.canvas:
                 self.canvas = self.generate_canvas(self.x, self.y, self.limit_width, self.limit_height)
-                self.canvas.register("draw", self.setup_draw_cycle)            
+                self.canvas.register("draw", self.setup_draw_cycle)
             self.canvas.move(self.x, self.y)
             self.canvas.resume()
             super().start_setup(setup_type, mouse_position)
@@ -449,7 +453,6 @@ class HeadUpScreenOverlay(BaseWidget):
                 canvas_rect = self.align_region_canvas_rect(canvas_reference["region"])
                 canvas_reference["canvas"].rect = canvas_rect            
                 canvas_reference["canvas"].freeze()
-            
 
     def setup_draw_cycle(self, canvas):
         """Drawing cycle that mimics a screen region set up"""
@@ -469,7 +472,7 @@ class HeadUpScreenOverlay(BaseWidget):
         if self.enabled:
             for canvas_reference in self.canvases:
                 canvas_rect = self.align_region_canvas_rect(canvas_reference["region"])
-                canvas_reference["canvas"].move(canvas_rect.x, canvas_rect.y)            
+                canvas_reference["canvas"].move(canvas_rect.x, canvas_rect.y)
                 canvas_reference["canvas"].freeze()
         
         if persisted:
@@ -487,3 +490,16 @@ class HeadUpScreenOverlay(BaseWidget):
             for canvas_reference in self.canvases:
                 canvas_reference["canvas"].freeze()
             
+    def set_visibility(self, visible = True):
+        if self.enabled:
+            self.canvas_visibility = visible
+            if visible:
+                if self.canvas:
+                    self.canvas.show()
+                for canvas_reference in self.canvases:
+                    canvas_reference["canvas"].show()
+            else:
+                if self.canvas:
+                    self.canvas.hide()
+                for canvas_reference in self.canvases:
+                    canvas_reference["canvas"].hide()

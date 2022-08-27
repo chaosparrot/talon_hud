@@ -356,6 +356,10 @@ class HeadUpDisplay:
             
         self.watching_directories = False
 
+    def set_widget_visibility(self, visible: bool = False):
+        for widget in self.widget_manager.widgets:
+            widget.set_visibility(visible)
+
     def start_setup_id(self, id, setup_type, mouse_pos = None):
         for widget in self.widget_manager.widgets:
             if widget.enabled and ( id == "*" or widget.id == id ) and widget.setup_type != setup_type:
@@ -931,3 +935,9 @@ class Actions:
         """Stop watching for changes in the theme directories"""
         global hud
         hud.unwatch_directories()
+
+    def hud_set_visibility(visible: Union[bool, int] = True):
+        """Set all the widgets' visibility without disabling them - Useful for toggling the HUD on and off in screenshots"""
+        global hud
+        hud.set_widget_visibility(visible != 0 and visible != False)
+        time.sleep(0.05)
