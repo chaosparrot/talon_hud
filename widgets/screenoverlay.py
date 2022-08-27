@@ -414,11 +414,11 @@ class HeadUpScreenOverlay(BaseWidget):
             if region.title:
                 text_colour = region.text_colour if active else self.theme.get_colour("screen_overlay_text_colour", "00000044")
                 if not text_colour:
-                    text_colour = self.theme.get_colour("screen_overlay_text_colour", "00000044") if not active else self.theme.get_colour("screen_overlay_active_text_colour", "000000FF")                    
+                    text_colour = self.theme.get_colour("screen_overlay_text_colour", "00000044") if not active else self.theme.get_colour("screen_overlay_active_text_colour", "000000FF")
                 
                 # Draw the background colour of the text
                 text_colour_ints = hex_to_ints(text_colour)
-                text_background_colour = "000000" if is_light_colour(text_colour_ints[0], text_colour_ints[1], text_colour_ints[2]) else "FFFFFF"
+                text_background_colour = "000000" if is_light_colour(text_colour_ints[0], text_colour_ints[1], text_colour_ints[2]) else "555555"
                 if len(text_colour_ints) > 3:
                     opacity_hex = format(text_colour_ints[3], "x")
                     opacity_hex = opacity_hex if len(opacity_hex) > 1 else "0" + opacity_hex
@@ -524,7 +524,7 @@ class HeadUpScreenOverlay(BaseWidget):
             if (self.setup_type != ""):
                 self.load({}, False)
                 
-                self.setup_type = ""                
+                self.setup_type = ""
                 if self.canvas:
                     self.canvas.unregister("draw", self.setup_draw_cycle)
                     self.canvas = None

@@ -561,8 +561,7 @@ class BaseWidget(metaclass=ABCMeta):
         return node
         
     def generate_node_id(self, name: str, number: int):
-        re.sub("[^a-zA-Z0-9 \n\.]", '', my_str)
-        return self.id + "." + re.sub("[^a-zA-Z0-9\n\.]", '', name.lower()).replace(" ", "-") + ":" + str(number)
+        return self.id + "." + re.sub(r"[^a-zA-Z0-9\n\.]", '', name.lower()).replace(" ", "-") + ":" + str(number)
 
     def refresh_accessible_tree(self, reset_focus = False):
         """Refresh the contents of the accessible nodes - Possibly moving focus back up to the widget itself"""

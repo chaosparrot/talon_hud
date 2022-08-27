@@ -306,11 +306,137 @@ The cursor tracker displays an icon next to the cursor, which translates coarsel
 Similarly, the screen overlay widget allows you to mark specific regions with an icon, colour and text. 
 While on their own, they do not offer ready to use content like the status bar does, there are ways to create content for them which can enhance the usage of eyetrackers in combination with, for example, noises.  
 
-### Dwell toolbar
+### Activatable virtual keys
 
+The virtual keyboard and the dwell toolbar offer a way to interact with regions on the screen without it requiring a click. The activation trigger can be a voice command, a noise or any other user input like a footswitch or a keyboard key.
+Both of these go about activating the actions connected to regions in their own unique way. The virtual keyboard requires an activation trigger to activate, whereas the dwell toolbar requires you to look at the region, and then stores the result to be used by an activation trigger later.
+
+You can make a key for both of these tools using the action `user.hud_create_virtual_key`. This action takes these arguments:
+- action: The action to activate. This can either be a function or a string, where the string will be converted to a key press
+- text: Optional, The text to display when hovered over the region
+- icon: Optional, the image to display when hovered over the region. In the case of a dwell toolbar, the icon that is kept next to your mouse cursor.
+- colour: Optional, the colour of the region. In the case of a dwell toolbar, the colour that is kept next to your mouse cursor.
+- text_colour: Optional, the text colour of the displayed title.
+- x: Optional, the X coordinate of the topleft position of the key.
+- y: Optional, the Y coordinate of the topleft position of the key.
+- width: Optional, the width of the key.
+- height: Optional, the height of the key.
+
+If no colours are given, they will be assigned according to a colour blind template.
+
+Once you have a bunch of virtual keys, you can assign them to either a virtual keyboard or a dwell toolbar.
+
+They both use layouts to spread the available triggers out across a grid layout, the available layout options are listed below. 
+- The full grid covers the entire screen.
+- The open grid goes around the center of the screen, covering all the sides but keeping the center free from regions.
+
+You can also choose an aligment which determines the order of the placement.
+
+Below is an example of each grid layout, where we have 12 virtual keys, and where the dots represent no screen regions.
+
+```
+No regions     Full grid default
+. . . .        1 2 3 4  
+. . . .        5 6 7 8  
+. . . .        9 A B C  
+
+Left aligned   Open grid
+1 4 7 A        1 2 3 4
+2 5 8 B        5 B C 7
+3 6 9 C        6 9 A 8
+```
+
+By default the virtual keyboard covers the entire screen using the full grid layout, while the dwell toolbar uses a left aligned grid. 
+They dynamically grow depending on the amount of virtual keys available, but they can be set according to your desired horizontal and vertical amount.
 
 ### Virtual keyboard
 
+To register a virtual keyboard, you can use the `user.hud_register_virtual_keyboard` action, which takes the following arguments:
+- name: The name of the virtual keyboard
+- keys: A list of the virtual keys
+- layout_style: The grid layout of the keys: 'full', 'aligned' or 'open', explained above. 'full' by default
+- alignment: The alignment, either left, right, top or bottom. left by default
+- horizontal_key_amount: Amount of horizontal key regions, 3 by default
+- vertical_key_amount: Amount of vertical key regions, 3 by default
+
+You can then visualise the virtual keyboard by using the `user.hud_set_virtual_keyboard` action. Which takes the following arguments.
+- name: The name of the virtual keyboard to visualise - If the name wasn't found, the virtual keyboard will be made invisible. Default empty
+- monitor: The monitor number to show the virtual keyboard on, default 0 for primary monitor
+
+If you wish to activate a virtual key, use the `user.hud_activate_virtual_key` which activates the virtual key the mouse is currently over.
+
+An example is shown below where we have a virtual keyboard which can type 1 through 9. We activate it by saying `show virtual keys`, then saying `key this` to type the number. We can hide the keyboard by saying `hide virtual keys`.
+
+```talon
+-
+show virtual keys: user.hud_set_virtual_keyboard('example_keyboard')
+hide virtual keys: user.hud_set_virtual_keyboard()
+key this: user.hud_activate_virtual_key()
+```
+
+```python
+from talon import actions, app
+
+def register_keyboard():
+    keys = [
+	    actions.user.hud_create_virtual_key('1', 'One'),
+	    actions.user.hud_create_virtual_key('2', 'Two'),
+	    actions.user.hud_create_virtual_key('3', 'Three'),
+	    actions.user.hud_create_virtual_key('4', 'Four'),
+	    actions.user.hud_create_virtual_key('5', 'Five'),
+	    actions.user.hud_create_virtual_key('6', 'Six'),
+	    actions.user.hud_create_virtual_key('7', 'Seven'),
+	    actions.user.hud_create_virtual_key('8', 'Eight'),
+	    actions.user.hud_create_virtual_key('9', 'Nine')
+	]
+	actions.user.hud_register_virtual_keyboard('example_keyboard', keys)
+
+app.register('ready', register_keyboard)
+```
+
+### Dwell toolbar
+
+To register a dwell toolbar, you can use the `user.hud_register_dwell_toolbar` action, which takes the following arguments:
+- name: The name of the dwell toolbar
+- keys: A list of the virtual keys
+- dwell_ms: The amount of milliseconds until a dwell key gets saved and moves around with your cursor tracker. By default this is set to 750ms.
+- layout_style: The grid layout of the keys: 'full', 'aligned' or 'open', explained above. 'aligned' by default
+- alignment: The alignment, either left, right, top or bottom. left by default
+- horizontal_key_amount: Amount of horizontal key regions, 3 by default
+- vertical_key_amount: Amount of vertical key regions, 5 by default
+
+You can then visualise the dwell toolbar by using the `user.hud_set_dwell_toolbar` action. Which takes the following arguments.
+- name: The name of the dwell toolbar to visualise - If the name wasn't found, the dwell toolbar will be made invisible and the active dwell icon will be cleared. Default empty
+- monitor: The monitor number to show the virtual keyboard on, default 0 for primary monitor
+
+Once you have a dwell toolbar visible, we can hover over each region and have the assigned action saved over to our cursor. Once the colour is moved over, you know that the action has been assigned. 
+When this is done, you can activate the saved dwell action using `user.hud_activate_dwell_key`. If you wish to clear the current dwell action, use `user.hud_deactivate_dwell_key`.
+
+A set of example files is shown below, where the you can type A, B, C, D and E with the dwell action. We activate the dwell toolbar by saying `show dwell toolbar`, and activate a dwell using `dwell this`. We can hide it again with `hide dwell toolbar`. We can clear the dwell action with `clear dwell`.
+
+```talon
+-
+show dwell toolbar: user.hud_set_dwell_toolbar('example_toolbar')
+hide dwell toolbar: user.hud_set_dwell_toolbar()
+dwell this: user.hud_activate_dwell_key()
+clear dwell: user.hud_deactivate_dwell_key()
+```
+
+```python
+from talon import actions, app
+
+def register_dwell_toolbar():
+    keys = [
+	    actions.user.hud_create_virtual_key('shift-a', 'A'),
+	    actions.user.hud_create_virtual_key('shift-b', 'B'),
+	    actions.user.hud_create_virtual_key('shift-c', 'C'),
+	    actions.user.hud_create_virtual_key('shift-d', 'D'),
+	    actions.user.hud_create_virtual_key('shift-e', 'E')
+	]
+	actions.user.hud_register_dwell_toolbar('example_toolbar', keys)
+
+app.register('ready', register_dwell_toolbar)
+```
 
 ### Particle visualisation
 

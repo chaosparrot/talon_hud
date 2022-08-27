@@ -99,7 +99,7 @@ class HeadUpWidgetManager:
         if not os.path.exists(user_preferences_file_location):
             self.preferences.persist_preferences(self.preferences.default_prefs, True)
         self.preferences.load_preferences(user_preferences_screen_file_path)
-    
+
     def reload_preferences(self, force_reload=False, current_hud_environment="") -> str:        
         # Check if the screen dimensions have changed
         current_screen_rects = []
