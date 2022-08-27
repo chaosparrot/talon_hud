@@ -219,6 +219,9 @@ Some widgets can have alternative names too, which are the titles shown on top o
 You can hide specific widgets by saying `head up hide <widget name>`. Some content, like text that gets published, might still make that widget show up again, but you can also manually show the widget by saying `head up show <widget name>`.  
 You can also use the widget shorthand, which is `<widget name> hide` and `<widget name> show`. 
 
+In case you want to make all widgets invisible temporarily, for instance if you want to take a screenshot, you can use the 'user.hud_set_visibility' action inside of your talon files.  
+'user.hud_set_visibility(0)' hides all the widgets, and 'user.hud_set_visibility(1)' shows them all again.
+
 ### Repositioning widgets
 
 Changing widgets' position can be done either by dragging them around the screen, or by saying `head up drag <widget name>`, confirming the position with `head up drop` or canceling it with `head up cancel`.  

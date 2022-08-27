@@ -250,3 +250,16 @@ class LayoutWidget(BaseWidget):
         green_hex = "0" + format(green, "x") if green <= 15 else format(green, "x")
         blue_hex = "0" + format(blue, "x") if blue <= 15 else format(blue, "x")
         return red_hex + green_hex + blue_hex
+        
+    def set_visibility(self, visible = True):
+        if self.enabled:
+            if visible:
+                if self.canvas:
+                    self.canvas.show()
+                if self.mouse_capture_canvas:
+                    self.mouse_capture_canvas.show()
+            else:
+                if self.canvas:
+                    self.canvas.hide()
+                if self.mouse_capture_canvas:
+                    self.mouse_capture_canvas.hide()
