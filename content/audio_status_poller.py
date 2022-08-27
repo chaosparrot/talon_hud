@@ -99,9 +99,10 @@ def on_ready():
     actions.user.hud_add_audio_group("Modes status", "Sounds that get triggered when a mode becomes active", True)
     status_modes = actions.user.hud_get_status_modes()
     for status_mode in status_modes:
+        status_mode_file = status_mode
         if status_mode.startswith("user."):
             status_mode = status_mode[5:]
-        actions.user.hud_add_audio_cue("Modes status", status_mode.capitalize() + " mode", "", status_mode + "_mode", True)
+        actions.user.hud_add_audio_cue("Modes status", status_mode.capitalize() + " mode", "", status_mode_file + "_mode", True)
 
     actions.user.hud_add_audio_group("Microphone status", "Status changes for microphones", True)
     actions.user.hud_add_audio_cue("Microphone status", "No mic", "", "mic_none", True)

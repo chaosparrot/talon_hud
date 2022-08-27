@@ -14,6 +14,7 @@ You can customize three things about the mode tracking
 1. The icons connected to the modes. These are stored in the themes folder as <modename>_icon.png and can be changed there.
 2. The mode that should be displayed on the status bar.
 3. The toggle functionality of the mode tracking button.
+4. The available modes to detect, by overriding the **user.hud_get_status_modes** action.
 
 Below is an example of the last two being customized, where only the command and sleep icon are displayed, instead of having the dictation icon displayed as well.
 
@@ -49,6 +50,9 @@ class Actions:
         elif current_mode == "sleep":
              actions.speech.enable()
 ```
+
+By overriding the **hud_get_status_modes** and adding more modes than just the dictation, command and sleep mode, you can add more theming possibilities as well. An example can be found in the content/mode_poller.py file.
+For instance, if you had a gaming mode, and you have **user.gaming** added to the **hud_get_status_modes** result, you can have an audio cue be played ( user.gaming_mode.wav ) and have an icon loaded in ( user.gaming_icon.png ) onto your status bar as well.
 
 ### Customizing language tracking
 
@@ -272,9 +276,210 @@ The markdown file format is automatically detected when a file with .md is loade
 
 In walkthroughs, every new line starts a new walkthrough step.
 
-## Non-text content
+## Log messages
+
+If you want to add a log message after something happens, for example copying content, you can use the action `user.hud_add_log`. 
+For example, `user.hud_add_log('warning', '<*Note:/> This is a warning message!')` will add an orange message with "**Note:** This is a warning message!" as the text.
+
+The first argument is the type of log message, and the second is the message you want to display. 
+There are five types of log message stylings:
+- command: This is the regular non-styled message
+- event: Blue background
+- warning: Orange background
+- error: Red background
+- success: Green background
+
+The message can contain bold and italic markers like explained in the [Creating text content](#creating-text-content) section, but no colours.
+
+## Status icons
+
+- Status bar icons
+- Ability icons
+
 
 This is still being fleshed out, but in the mean time, you can take a look at the [previous content documentation](docs/deprecated_docs/CONTENT_README.md)
+
+## Eyetracker content
+
+There are a set of widgets that are designed specifically to work well with eyetracker usage. The cursor tracker and the screen overlay. 
+The cursor tracker displays an icon next to the cursor, which translates coarsely to where you are looking when you are using an eyetracker.
+Similarly, the screen overlay widget allows you to mark specific regions with an icon, colour and text. 
+While on their own, they do not offer ready to use content like the status bar does, there are ways to create content for them which can enhance the usage of eyetrackers in combination with, for example, noises.  
+
+### Dwell toolbar
+
+
+### Virtual keyboard
+
+
+### Particle visualisation
+
+You can make a temporary particle appear for a brief moment to indicate that an action has occurred.  
+For this, you can use either of the following actions: `user.hud_publish_mouse_particle` or `user.hud_publish_particle`
+
+Both of these take at least four arguments:
+- type: This is the type of particle animation that should be used. Currently only 'float_up' is available
+- colour: The colour of the particle
+- image: An optional image path
+- diameter: The size of the particle in pixels
+
+The `user.hud_publish_mouse_particle` action will place the particle where the current mouse position is, whereas with `user.hud_publish_particle` you will have to add the X and Y positions as the fifth and sixth argument.
+
+For example, this .talon file example will show a red particle near your mouse cursor when you say `red particle`, and a blue particle at the top left part of the screen when you say `blue particle`.
+
+```talon
+-
+red particle: user.hud_publish_mouse_particle('float_up', 'FF0000')
+blue particle: user.hud_publish_particle('float_up', '0000FF', '', 10, 100, 100)
+```
+
+### Screen regions
+
+The basic building blocks of this eyetracker focused content is the screen region, both the cursor tracker and the screen overlay use this basic building block. 
+
+Screen regions can be created with the `user.hud_create_screen_region` action, and can be published with the `user.hud_publish_screen_regions` action.
+
+The `user.hud_create_screen_region` takes in 11 possible arguments:
+- topic: The topic of the screen region, used in for instance clearing away a specific topic
+- colour: The colour of the region visualisation
+- icon: Optional, The image of the region visualisation
+- title: Optional, The text displayed on the region visualisation (Screen overlay only)
+- hover_visibility: Optional, Determines the visibility based on hover (Screen overlay only)  
+  0 makes the region visible regardless of the cursor position
+  1 makes only makes the region visible if the cursor is inside of the region
+  -1 makes the region visible, but if the cursor is directly over the visualisation, the visualisation disappears ( for reading behind content for instance )
+- x: The X coordinate of the regions topleft position
+- y: The Y coordinate of the regions topleft position
+- width: The width in pixels of the region
+- height: The height in pixels of the region
+- relative_x: How many X pixels the regions visualisation should deviate from the normal position, default 0 (Screen overlay only)
+- relative_y: How many Y pixels the regions visualisation should deviate from the normal position, default 0 (Screen overlay only)
+
+The `user.hud_publish_screen_regions` takes three arguments:
+- type: The type of region we are publishing, either 'cursor' or 'screen'
+- regions: A list of created screen regions that should be displayed
+- clear: Optional, if set to 1 it will clear away the previous regions from the same topic, otherwise it will just add to the existing ones
+
+If you need to clear away specific screen regions, you can use the `user.hud_clear_screen_regions` action, which takes these arguments:
+- type: The type of region we are clearing, either 'cursor' or 'screen'
+- topic: Optional, if given only this topic will be cleared, otherwise all regions will be cleared of the given type
+
+Below is an example talon and python file which show various different screen region options. 
+After that, there is an explanation of the rules of each specific screen region content.
+
+Try and say the talon commands below and see what they do.
+
+```talon
+-
+yellow cursor: user.add_yellow_cursor()
+red cursor: user.add_red_cursor()
+split cursor: user.add_split_cursor_regions()
+show example regions: user.add_example_screen_regions()
+clear regions: user.clear_screen_regions()
+```
+
+```python
+from talon import Module, actions
+mod = Module()
+
+@mod.action_class
+class Actions:
+
+    def add_yellow_cursor():
+        """Add a yellow icon to the cursor tracker"""
+        yellow_cursor = [actions.user.hud_create_screen_region('cursor_example', 'FFF000')]
+        actions.user.hud_publish_screen_regions('cursor', yellow_cursor, 1)
+
+    def add_red_cursor():
+        """Add a red icon to the cursor tracker"""
+        red_cursor = [actions.user.hud_create_screen_region('cursor_example', 'FF0000')]
+        actions.user.hud_publish_screen_regions('cursor', red_cursor, 1)
+
+    def add_split_cursor_regions():
+        """Shows a red icon when looking at the top of the screen, and a yellow icon otherwise"""
+        split_cursors = [
+            actions.user.hud_create_screen_region('cursor_example', 'FF0000', '', '', 0, 0, 0, 1920, 100),
+            actions.user.hud_create_screen_region('cursor_example', 'FFF000')
+        ]
+        actions.user.hud_publish_screen_regions('cursor', split_cursors, 1)
+        
+    def clear_screen_regions():
+        """Clear all cursor and screen regions"""
+        actions.user.hud_clear_screen_regions('cursor', 'cursor_example')
+        actions.user.hud_clear_screen_regions('screen', 'screen_example')
+
+    def add_example_screen_regions():
+        """Adds an example view of screen regions"""
+        regions = [
+            actions.user.hud_create_screen_region('screen_example', 'FF0000', '', 'Always visible', 0, 0, 0, 200, 200),
+            actions.user.hud_create_screen_region('screen_example', '00FF00', '', 'Hover only', 1, 0, 200, 200, 200),
+            actions.user.hud_create_screen_region('screen_example', '0000FF', '', 'Hover off', -1, 0, 400, 200, 200)
+        ]
+        regions[0].text_colour = 'FFFFFF'
+        regions[0].vertical_centered = False        
+        regions[2].text_colour = 'FFFFFF'
+        actions.user.hud_publish_screen_regions('screen', regions, 1)
+```
+
+The simplest of the screen regions is the cursor tracker regions, which use the type 'cursor' in the `user.hud_publish_screen_regions` action.
+Cursor regions are regions of the screen, or all of the screen, where the icon next to your cursor will become visible. You could, for instance, have the cursor icon appear when it is getting close to the top left part of the screen and not show up for all other regions.
+
+The cursor tracker currently only supports one active icon at the same time, and it determines this icon based on how specific the area it is in. If there is a cursor region that envelops the screen, and a region where the area is smaller like for instance the top left part of the screen, it chooses the smallest area that it is currently in to show that specific icon. You can test this out by saying `split cursor` in the examples above and moving the mouse to the top of the screen, and then moving the mouse down.
+
+The other screen regions do not move with the cursor position but stay in a fixed position on the screen. They can, however, become more or less visible depending on what the 'hover_visibility' argument was set.  
+The visualisation of this happens in the center of the given region, but can be controlled by the user to be aligned to the left, right. You can also make the regions vertical alignment not centered, by changing the 'vertically_centered' property as shown in 'add_example_screen_regions' above.
+
+Regions can also be given a different text colour ( which by default is black with a white bezel ) like shown in the 'add_example_screen_regions' above.
+
+Saying `show example regions` in the example above will show a red topleft region which is always visible, a green left region which is only fully visible if the cursor is over it, and a blue region below that which is visible if the cursor is in the region, but hides when the cursor is hovered over the visualisaiton.
+
+## Right click options
+
+TODO
+
+## Audio content
+
+Adding audio cues to certain events can be handy, to keep track of things without having to look at a part of the screen. And you might think of something of your own that could use an audio cue, maybe something like a programming language being detected.
+To do that, we need to add a register a couple of things to make sure the user can tweak the audio as they see fit: an audio group and an audio cue.
+
+You can do both of these with the actions **user.hud_add_audio_group** and **user.hud_add_audio_cue**. In the below example, we will register a few audio cues with existing files that we can activate with a voice command.
+
+```talon
+-
+sound the beeps: user.sound_the_beeps()
+```
+
+```python
+from talon import app, Module, actions
+import random
+
+def register_cues():
+    # Registers the audio group
+    # This is the group that the user can use to either enable beeps or change their volume all at once
+    actions.user.hud_add_audio_group("Beeps", "A series of beeps to randomly use", True)
+	
+    # These are the individual audio cues inside of the Beeps group
+    # These can be managed individually as well by the user
+    actions.user.hud_add_audio_cue("Beeps", "Beep one", "", "1", True)
+    actions.user.hud_add_audio_cue("Beeps", "Beep two", "", "2", True)
+    actions.user.hud_add_audio_cue("Beeps", "Beep three", "", "3", True)
+    actions.user.hud_add_audio_cue("Beeps", "Beep four", "", "4", True)	
+
+app.register("ready", register_cues)
+
+mod = Module()
+@mod.action_class
+class Actions:
+
+    def sound_the_beeps():
+        """Sound a series of six differently pitched beeps randomly"""
+        four_beeps = ["one", "one", "two", "three", "four", "four"]
+        random.shuffle(four_beeps)
+        for beep in four_beeps:
+            actions.user.hud_trigger_audio_cue("Beep " + beep)
+```
+
+If you want to add your own audio files, keep in mind they have to be in 16 bit signed .WAV format inside of a theme's audio folder for it to register properly. You can view the created audio groups inside the `toolkit audio` panel. You will see the given descriptions, current volumes and enabled states there as well.  
 
 ## Sticky and changing content
 

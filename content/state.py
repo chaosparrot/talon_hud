@@ -315,8 +315,12 @@ class Actions:
         """Create an option entry to show in the options in the status bar"""
         return HudStatusOption(icon_topic, default_option, activated_option)
         
-    def hud_create_screen_region(topic: str, colour: str = None, icon: str = None, title: str = None, hover_visibility: Union[bool, int] = False, x: int = 0, y: int = 0, width: int = 0, height: int = 0, relative_x: int = 0, relative_y: int = 0):
+    def hud_create_screen_region(topic: str, colour: str = None, icon: str = '', title: str = '', hover_visibility: Union[bool, int] = False, x: int = 0, y: int = 0, width: int = 0, height: int = 0, relative_x: int = 0, relative_y: int = 0):
         """Create a HUD screen region, where by default it is active all over the available space and it is visible only on a hover"""
+        if icon == '':
+            icon = None
+        if title == '':
+            title = None
         rect = ui.Rect(x, y, width, height) if width * height > 0 else None
         point = Point2d(x + relative_x, y + relative_y)
         return HudScreenRegion(topic, title, icon, colour, rect, point, hover_visibility)
@@ -353,14 +357,16 @@ class Actions:
             choices.append(HudChoice(image, choice_data["text"], choice_data, "selected" in choice_data and choice_data["selected"], ui.Rect(0,0,0,0)))
         return HudChoices(choices, callback, multiple)
 
-    def hud_publish_mouse_particle(type:str, colour:str = None, image:str = None, diameter:int = 10):
+    def hud_publish_mouse_particle(type:str, colour:str = None, image:str = '', diameter:int = 10):
         """Create a particle to be shown on the screen overlay where the current mouse cursor is"""
         pos = ctrl.mouse_pos()
         actions.user.hud_publish_particle(type, colour, image, diameter, pos[0], pos[1])
 
-    def hud_publish_particle(type:str, colour:str = None, image:str = None, diameter:int = 10, pos_x:int = 0, pos_y:int = 0):
+    def hud_publish_particle(type:str, colour:str = None, image:str = '', diameter:int = 10, pos_x:int = 0, pos_y:int = 0):
         """Publish a particle to be shown in the screen overlay"""
         global hud_content
+        if image == '':
+            image = None        
         hud_content.publish_event("particles", "particle", HudParticle(type, colour, image, diameter, pos_x, pos_y), "append")
         
     def hud_publish_choices(choices: HudChoices, title: str = "", content:str = ""):

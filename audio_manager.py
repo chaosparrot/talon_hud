@@ -314,13 +314,13 @@ class Actions:
         global audio_manager
         return HudAudioState(audio_manager.enabled, audio_manager.global_cue_volume,\
             list(audio_manager.groups.values()), list(audio_manager.cues.values()))
-        
+
     def hud_add_audio_group(title: str, description: str, enabled: Union[bool, int] = True):
         """Add an audio group"""
         global audio_manager
         group_id = title.lower().replace(" ", "_")
         audio_manager.register_group(HudAudioGroup(group_id, title, description, 75, enabled > 0))
-        
+
     def hud_add_audio_cue(group: str, title: str, description: str, file: str, enabled: Union[bool, int] = True):
         """Add an audio cue"""
         global audio_manager

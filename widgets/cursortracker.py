@@ -19,7 +19,6 @@ class HeadUpCursorTracker(BaseWidget):
     smooth_mode = True
 
     preferences = HeadUpDisplayUserWidgetPreferences(type="cursor_tracker", x=15, y=15, width=15, height=15, enabled=True, sleep_enabled=False)
-
     
     # New content topic types
     topic_types = ["cursor_regions"]

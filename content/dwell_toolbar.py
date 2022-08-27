@@ -10,7 +10,6 @@ class DwellToolbarPoller:
     content = None
     toolbars = {}
     toolbar_items = []
-    activate_dwell_job = None
     select_dwell_job = None
     toolbar_index = -1
     selected_index = -1
@@ -84,12 +83,8 @@ class DwellToolbarPoller:
         toolbar_item = self.toolbar_items[index]
         if self.selected_index != index:
             self.selected_index = index
-            cron.cancel(self.activate_dwell_job)
             cursor_region = self.content.create_screen_region("toolbar_icon", toolbar_item["colour"], toolbar_item["icon"], toolbar_item["text"], 0)
             self.content.publish_event("cursor_regions", "toolbar_icon", "replace", cursor_region)
-
-            if toolbar_item["activation_dwell_ms"] > 0:
-                self.activate_dwell_job = cron.after( str(toolbar_item["activation_dwell_ms"]) + "ms", self.activate_cursor)
 
     def activate_cursor(self):
         toolbar_item = self.toolbar_items[self.selected_index] if self.selected_index > -1 and self.selected_index < len(self.toolbar_items) else None
@@ -112,7 +107,6 @@ class DwellToolbarPoller:
             self.content.publish_event("cursor_regions", "toolbar_icon", "remove")
             self.selected_index = -1
             cron.cancel(self.select_dwell_job)
-            cron.cancel(self.activate_dwell_job)
 
 dwell_toolbar_poller = DwellToolbarPoller()
 def register_dwell_toolbar_poller():
@@ -141,7 +135,7 @@ class Actions:
             null_activation = lambda: print("No toolbar item selected - Using default activation")
         dwell_toolbar_poller.add_toolbar(id, toolbar_items, null_activation)
         
-    def hud_create_toolbar_item(x:int = 100, y:int = 100, width:int = 150, height:int = 150, icon: str = None, colour: str = None, text: str = None, activation_function: Callable = None, selection_dwell_ms:int = -1, activation_dwell_ms:int = -1, keep_alive:int = 0):
+    def hud_create_toolbar_item(x:int = 100, y:int = 100, width:int = 150, height:int = 150, icon: str = None, colour: str = None, text: str = None, activation_function: Callable = None, selection_dwell_ms:int = -1, keep_alive:int = 0):
         """Create an item for the dwell toolbar that will be used inside of a single toolbar"""
         if activation_function is None:
             activation_function = lambda: print("Activating toolbar item at x" + str(x))
@@ -154,7 +148,6 @@ class Actions:
             "colour": "FFFFFF" if colour is None else colour,
             "text": text,
             "selection_dwell_ms": selection_dwell_ms,
-            "activation_dwell_ms": activation_dwell_ms,
             "activation_function": activation_function,
             "keep_alive": keep_alive != 0
         }
