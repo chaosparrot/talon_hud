@@ -45,6 +45,98 @@ def in_region(pos, x, y, width, height):
     return pos[0] >= x and pos[0] <= x + width and \
         pos[1] >= y and pos[1] <= y + height
 
+def layout_virtual_key(virtual_key, index, layout_style, alignment, grid_width, grid_height, horizontal_amount, vertical_amount):
+    # Dynamic layout
+    if virtual_key["width"] == -1 or virtual_key["height"] == -1:
+        x = 0
+        y = 0
+        
+        # The full layout uses the complete screen real estate
+        if layout_style == "full":
+            if alignment == "left":
+                x = math.floor(index / vertical_amount) * grid_width
+                y = ( index % vertical_amount ) * grid_height
+            elif alignment == "right":
+                x = grid_width * (horizontal_amount - 1) - math.floor(index / vertical_amount) * grid_width
+                y = ( index % vertical_amount ) * grid_height
+            elif alignment == "top":
+                x = ( index % horizontal_amount ) * grid_width
+                y = math.floor(index / vertical_amount) * grid_height
+            elif alignment == "bottom":
+                x = ( index % horizontal_amount ) * grid_width
+                y = grid_height * (vertical_amount - 1) - math.floor(index / vertical_amount) * grid_height
+        
+        # The open layout tries to wrap around the screen
+        # Tested this with 3x3, 4x4, 5x5 and 6x5 grids - Can probably be made prettier but works in all alignments as is
+        elif layout_style == "open":
+            if alignment in ["left", "right"]:
+                # Wrap the vertical side of the screen
+                if index < vertical_amount:
+                    y = ( index % vertical_amount ) * grid_height
+                    if alignment == "right":
+                        x = grid_width * (horizontal_amount - 1)
+                # Use the top of the screen
+                elif index >= vertical_amount and index < vertical_amount + horizontal_amount - 1:
+                    y = 0
+                    x = ((index + 1 - vertical_amount ) % horizontal_amount) * grid_width
+                    # Flip the direction and add the total grid offset
+                    if alignment == "right":
+                        x = -x + (grid_width * (horizontal_amount - 1))
+                
+                # Use the opposite vertical side of the screen
+                elif index >= vertical_amount + horizontal_amount - 1 and index < vertical_amount + (horizontal_amount * 2 ) - 3:
+                    x = grid_width * (horizontal_amount - 1) if alignment == "left" else 0
+                    y = (( index - (vertical_amount + horizontal_amount - 1) + 1) % vertical_amount ) * grid_height
+                    
+                # Use the bottom of the screen
+                elif index >= vertical_amount + (horizontal_amount * 2 ) - 3 and index < vertical_amount * 2 + (horizontal_amount - 2) * 2:
+                    y = grid_height * (vertical_amount - 1)
+                    x = ((index + 1 - (vertical_amount + (horizontal_amount * 2 ) - 3) ) % horizontal_amount) * grid_width
+                    # Flip the direction and add the total grid offset
+                    if alignment == "right":
+                        x = -x + (grid_width * (horizontal_amount - 1))
+                
+                # Start using the center in the same rotation
+                else:
+                    new_index = index - ( vertical_amount * 2 + (horizontal_amount - 2) * 2 )
+                    rect = self.layout_virtual_key(virtual_key, new_index, layout_style, alignment, grid_width, grid_height, horizontal_amount - 2, vertical_amount - 2)
+                    x = rect.x + grid_width
+                    y = rect.y + grid_height
+            elif alignment in ["top", "bottom"]:
+                # First horizontal line
+                if index < horizontal_amount:
+                    x = ( index % horizontal_amount ) * grid_width
+                    y = 0 if alignment == "top" else ( vertical_amount - 1 ) * grid_height
+                # Left vertical line
+                elif index >= horizontal_amount and index < vertical_amount + horizontal_amount - 1:
+                    x = 0
+                    y = ((index + 1 - horizontal_amount ) % vertical_amount) * grid_height
+                    # Flip the direction and add the total grid offset
+                    if alignment == "bottom":
+                        y = -y + (grid_height * (vertical_amount - 1))
+                # Right vertical line
+                elif index >= vertical_amount + horizontal_amount - 1 and index < vertical_amount + ( horizontal_amount - 1 ) * 2:
+                    x = (horizontal_amount - 1 ) * grid_width
+                    y = ((index + 1 - (vertical_amount + horizontal_amount - 1) ) % vertical_amount) * grid_height
+                    # Flip the direction and add the total grid offset
+                    if alignment == "bottom":
+                        y = -y + (grid_height * (vertical_amount - 1))
+                # Opposite horizontal line
+                elif index >= vertical_amount + (horizontal_amount - 1) * 2 and index < vertical_amount * 2 + ( horizontal_amount ) * 2 - 4:
+                    y = 0 if alignment == "bottom" else ( vertical_amount - 1 ) * grid_height
+                    x = ((index + 1 - (vertical_amount + ( horizontal_amount - 1 ) * 2)) % horizontal_amount) * grid_width
+                # Start using the center in the same rotation
+                else:
+                    new_index = index - ( vertical_amount * 2 + (horizontal_amount - 2) * 2 )
+                    rect = layout_virtual_key(virtual_key, new_index, layout_style, alignment, grid_width, grid_height, horizontal_amount - 2, vertical_amount - 2)
+                    x = rect.x + grid_width
+                    y = rect.y + grid_height
+        return ui.Rect(x, y, grid_width, grid_height)
+    # Static position
+    else:
+        return ui.Rect(virtual_key["x"], virtual_key["y"], virtual_key["width"], virtual_key["height"])
+
+
 class DwellToolbarPoller:
     enabled = False
     content = None
@@ -60,7 +152,7 @@ class DwellToolbarPoller:
     current_toolbar = None
     null_activation_function = None
 
-    def add_toolbar(self, id, virtual_keys, dwell_ms: int = 750, layout_style: str = 'aligned', alignment: str = 'left', horizontal_key_amount: int = 3, vertical_key_amount: int = 5):
+    def add_toolbar(self, id, virtual_keys, dwell_ms: int = 750, layout_style: str = 'open', alignment: str = 'left', horizontal_key_amount: int = 3, vertical_key_amount: int = 5):
         key_amount = len(virtual_keys)
         while key_amount > horizontal_key_amount * vertical_key_amount:
            horizontal_key_amount += 1
@@ -126,7 +218,7 @@ class DwellToolbarPoller:
             
             # Layout all the virtual keys
             for virtual_key in self.toolbars[self.current_toolbar]["virtual_keys"]:
-                virtual_key["rect"] = self.layout_virtual_key(virtual_key, layout_index, layout_style, alignment, grid_width, grid_height, horizontal_amount, vertical_amount)
+                virtual_key["rect"] = layout_virtual_key(virtual_key, layout_index, layout_style, alignment, grid_width, grid_height, horizontal_amount, vertical_amount)
                 virtual_key["rect"].x += screens[self.monitor_index].rect.x
                 virtual_key["rect"].y += screens[self.monitor_index].rect.y                
                 if virtual_key["width"] == -1 or virtual_key["height"] == -1:
@@ -160,97 +252,6 @@ class DwellToolbarPoller:
                 toolbar_items.append(virtual_key)                
             self.content.publish_event("screen_regions", "dwell_toolbar", "replace", screen_regions)
             self.toolbar_items = toolbar_items            
-    
-    def layout_virtual_key(self, virtual_key, index, layout_style, alignment, grid_width, grid_height, horizontal_amount, vertical_amount):
-        # Dynamic layout
-        if virtual_key["width"] == -1 or virtual_key["height"] == -1:
-            x = 0
-            y = 0
-            
-            # The full layout uses the complete screen real estate
-            if layout_style == "full":
-                if alignment == "left":
-                    x = math.floor(index / vertical_amount) * grid_width
-                    y = ( index % vertical_amount ) * grid_height
-                elif alignment == "right":
-                    x = grid_width * (horizontal_amount - 1) - math.floor(index / vertical_amount) * grid_width
-                    y = ( index % vertical_amount ) * grid_height
-                elif alignment == "top":
-                    x = ( index % horizontal_amount ) * grid_width
-                    y = math.floor(index / vertical_amount) * grid_height
-                elif alignment == "bottom":
-                    x = ( index % horizontal_amount ) * grid_width
-                    y = grid_height * (vertical_amount - 1) - math.floor(index / vertical_amount) * grid_height
-            
-            # The open layout tries to wrap around the screen
-            # Tested this with 3x3, 4x4, 5x5 and 6x5 grids - Can probably be made prettier but works in all alignments as is
-            elif layout_style == "open":
-                if alignment in ["left", "right"]:
-                    # Wrap the vertical side of the screen
-                    if index < vertical_amount:
-                        y = ( index % vertical_amount ) * grid_height
-                        if alignment == "right":
-                            x = grid_width * (horizontal_amount - 1)
-                    # Use the top of the screen
-                    elif index >= vertical_amount and index < vertical_amount + horizontal_amount - 1:
-                        y = 0
-                        x = ((index + 1 - vertical_amount ) % horizontal_amount) * grid_width
-                        # Flip the direction and add the total grid offset
-                        if alignment == "right":
-                            x = -x + (grid_width * (horizontal_amount - 1))
-                    
-                    # Use the opposite vertical side of the screen
-                    elif index >= vertical_amount + horizontal_amount - 1 and index < vertical_amount + (horizontal_amount * 2 ) - 3:
-                        x = grid_width * (horizontal_amount - 1) if alignment == "left" else 0
-                        y = (( index - (vertical_amount + horizontal_amount - 1) + 1) % vertical_amount ) * grid_height
-                        
-                    # Use the bottom of the screen
-                    elif index >= vertical_amount + (horizontal_amount * 2 ) - 3 and index < vertical_amount * 2 + (horizontal_amount - 2) * 2:
-                        y = grid_height * (vertical_amount - 1)
-                        x = ((index + 1 - (vertical_amount + (horizontal_amount * 2 ) - 3) ) % horizontal_amount) * grid_width
-                        # Flip the direction and add the total grid offset
-                        if alignment == "right":
-                            x = -x + (grid_width * (horizontal_amount - 1))
-                    
-                    # Start using the center in the same rotation
-                    else:
-                        new_index = index - ( vertical_amount * 2 + (horizontal_amount - 2) * 2 )
-                        rect = self.layout_virtual_key(virtual_key, new_index, layout_style, alignment, grid_width, grid_height, horizontal_amount - 2, vertical_amount - 2)
-                        x = rect.x + grid_width
-                        y = rect.y + grid_height
-                elif alignment in ["top", "bottom"]:
-                    # First horizontal line
-                    if index < horizontal_amount:
-                        x = ( index % horizontal_amount ) * grid_width
-                        y = 0 if alignment == "top" else ( vertical_amount - 1 ) * grid_height
-                    # Left vertical line
-                    elif index >= horizontal_amount and index < vertical_amount + horizontal_amount - 1:
-                        x = 0
-                        y = ((index + 1 - horizontal_amount ) % vertical_amount) * grid_height
-                        # Flip the direction and add the total grid offset
-                        if alignment == "bottom":
-                            y = -y + (grid_height * (vertical_amount - 1))
-                    # Right vertical line
-                    elif index >= vertical_amount + horizontal_amount - 1 and index < vertical_amount + ( horizontal_amount - 1 ) * 2:
-                        x = (horizontal_amount - 1 ) * grid_width
-                        y = ((index + 1 - (vertical_amount + horizontal_amount - 1) ) % vertical_amount) * grid_height
-                        # Flip the direction and add the total grid offset
-                        if alignment == "bottom":
-                            y = -y + (grid_height * (vertical_amount - 1))
-                    # Opposite horizontal line
-                    elif index >= vertical_amount + (horizontal_amount - 1) * 2 and index < vertical_amount * 2 + ( horizontal_amount ) * 2 - 4:
-                        y = 0 if alignment == "bottom" else ( vertical_amount - 1 ) * grid_height
-                        x = ((index + 1 - (vertical_amount + ( horizontal_amount - 1 ) * 2)) % horizontal_amount) * grid_width
-                    # Start using the center in the same rotation
-                    else:
-                        new_index = index - ( vertical_amount * 2 + (horizontal_amount - 2) * 2 )
-                        rect = self.layout_virtual_key(virtual_key, new_index, layout_style, alignment, grid_width, grid_height, horizontal_amount - 2, vertical_amount - 2)
-                        x = rect.x + grid_width
-                        y = rect.y + grid_height
-            return ui.Rect(x, y, grid_width, grid_height)
-        # Static position
-        else:
-            return ui.Rect(virtual_key["x"], virtual_key["y"], virtual_key["width"], virtual_key["height"])
 
     def detect_select_toolbar_item(self):
         pos = ctrl.mouse_pos()
@@ -302,7 +303,6 @@ class Actions:
 
     def hud_create_virtual_key(action: Union[str, Callable], text: str = '', icon: str = '', colour: str = '', text_colour: str = '', x: int = 0, y: int = 0, width: int = -1, height: int = -1 ) -> dict:
         """Create a virtual key to be used in a dwell toolbar or a virtual keyboard"""
-        
         # Make sure something is visible if no text is given
         if text == '' and icon == '':
            text = '  '
@@ -310,7 +310,7 @@ class Actions:
         # If the action is a string, we default to it being a keypress
         callback = action
         if isinstance(action, str):
-            callback = lambda action: actions.key(action)
+            callback = lambda action=action: actions.key(action)
 
         return {
             "callback": callback,
@@ -332,7 +332,7 @@ class Actions:
     def hud_set_dwell_toolbar(name: str = None, monitor: int = 0):
         """Show the dwell toolbar screen regions"""
         global dwell_toolbar_poller
-        if name is None:
+        if name is None or name == '':
             actions.user.hud_deactivate_poller("dwell_toolbar")
         else:
             actions.user.hud_activate_poller("dwell_toolbar")

@@ -389,7 +389,7 @@ def register_keyboard():
 	    actions.user.hud_create_virtual_key('8', 'Eight'),
 	    actions.user.hud_create_virtual_key('9', 'Nine')
 	]
-	actions.user.hud_register_virtual_keyboard('example_keyboard', keys)
+    actions.user.hud_register_virtual_keyboard('example_keyboard', keys)
 
 app.register('ready', register_keyboard)
 ```
@@ -433,7 +433,7 @@ def register_dwell_toolbar():
 	    actions.user.hud_create_virtual_key('shift-d', 'D'),
 	    actions.user.hud_create_virtual_key('shift-e', 'E')
 	]
-	actions.user.hud_register_dwell_toolbar('example_toolbar', keys)
+    actions.user.hud_register_dwell_toolbar('example_toolbar', keys)
 
 app.register('ready', register_dwell_toolbar)
 ```
