@@ -1020,8 +1020,8 @@ class Actions:
         global hud
         hud.set_auto_focus(auto_focus, auto_focus == True or auto_focus > 0)
 
-    def hud_set_visibility(visible: Union[bool, int] = True):
+    def hud_set_visibility(visible: Union[bool, int] = True, pause_seconds: float = 0.05):
         """Set all the widgets' visibility without disabling them - Useful for toggling the HUD on and off in screenshots"""
         global hud
         hud.set_widget_visibility(visible != 0 and visible != False)
-        time.sleep(0.05)
+        time.sleep(pause_seconds)
