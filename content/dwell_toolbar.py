@@ -152,7 +152,7 @@ class DwellToolbarPoller:
     current_toolbar = None
     null_activation_function = None
 
-    def add_toolbar(self, id, virtual_keys, dwell_ms: int = 750, layout_style: str = 'open', alignment: str = 'left', horizontal_key_amount: int = 3, vertical_key_amount: int = 5):
+    def add_toolbar(self, id, virtual_keys, dwell_ms: int = 750, layout_style: str = 'open', alignment: str = 'left', horizontal_key_amount: int = 3, vertical_key_amount: int = 5, visible: bool = True):
         key_amount = len(virtual_keys)
         while key_amount > horizontal_key_amount * vertical_key_amount:
            horizontal_key_amount += 1
@@ -164,7 +164,8 @@ class DwellToolbarPoller:
             "layout_style": layout_style,
             "alignment": alignment,
             "horizontal_key_amount": horizontal_key_amount,
-            "vertical_key_amount": vertical_key_amount
+            "vertical_key_amount": vertical_key_amount,
+            "visible": visible
         }
         
         if self.enabled and id == self.current_toolbar:
@@ -185,9 +186,11 @@ class DwellToolbarPoller:
             cron.cancel(self.select_dwell_job)
             ui.unregister("screen_change", self.update_toolbar)
 
-    def set_toolbar(self, toolbar_name:str = None, monitor: int = 0):
+    def set_toolbar(self, toolbar_name:str = None, monitor: int = 0, visible: bool = True):
         if toolbar_name is not None and self.enabled:
             self.current_toolbar = toolbar_name
+            if self.current_toolbar is not None and self.current_toolbar in self.toolbars:
+                self.toolbars[self.current_toolbar]["visible"] = visible
             self.monitor_index = monitor
             self.update_toolbar()
 
@@ -238,20 +241,21 @@ class DwellToolbarPoller:
                 virtual_key["text_colour"] = text_colour
                 
                 # Create the screen region content
-                screen_region = self.content.create_screen_region("dwell_toolbar", background_colour, \
-                    virtual_key["icon"], virtual_key["text"], self.toolbars[self.current_toolbar]["hover_visibility"], \
-                    virtual_key["rect"].x, virtual_key["rect"].y, virtual_key["rect"].width, virtual_key["rect"].height, virtual_key["relative_x"] if "relative_x" in virtual_key else 0, \
-                    virtual_key["relative_y"] if "relative_y" in virtual_key else 0)
-                if text_colour:
-                    screen_region.text_colour = text_colour
+                if self.toolbars[self.current_toolbar]["visible"]:
+                    screen_region = self.content.create_screen_region("dwell_toolbar", background_colour, \
+                        virtual_key["icon"], virtual_key["text"], self.toolbars[self.current_toolbar]["hover_visibility"], \
+                        virtual_key["rect"].x, virtual_key["rect"].y, virtual_key["rect"].width, virtual_key["rect"].height, virtual_key["relative_x"] if "relative_x" in virtual_key else 0, \
+                        virtual_key["relative_y"] if "relative_y" in virtual_key else 0)
+                    if text_colour:
+                        screen_region.text_colour = text_colour
                 
-                screen_regions.append(screen_region)
+                    screen_regions.append(screen_region)
                 
                 # Add the virtual key to the active toolbar items
-
-                toolbar_items.append(virtual_key)                
+                toolbar_items.append(virtual_key)
+            
             self.content.publish_event("screen_regions", "dwell_toolbar", "replace", screen_regions)
-            self.toolbar_items = toolbar_items            
+            self.toolbar_items = toolbar_items
 
     def detect_select_toolbar_item(self):
         pos = ctrl.mouse_pos()
@@ -290,6 +294,11 @@ class DwellToolbarPoller:
     def clear_cursor(self):
         self.content.publish_event("cursor_regions", "toolbar_icon", "remove")
         self.selected_index = -1
+        
+    def set_visibility(self, visible: bool):
+        if self.current_toolbar is not None and self.current_toolbar in self.toolbars:
+            self.toolbars[self.current_toolbar]["visible"] = visible
+            self.update_toolbar()
 
 dwell_toolbar_poller = DwellToolbarPoller()
 def register_dwell_toolbar_poller():
@@ -329,14 +338,19 @@ class Actions:
         global dwell_toolbar_poller
         dwell_toolbar_poller.add_toolbar(name, virtual_keys, dwell_ms, layout_style, alignment, horizontal_key_amount, vertical_key_amount)
 
-    def hud_set_dwell_toolbar(name: str = None, monitor: int = 0):
+    def hud_set_dwell_toolbar(name: str = None, monitor: int = 0, visible: Union[bool, int] = True):
         """Show the dwell toolbar screen regions"""
         global dwell_toolbar_poller
         if name is None or name == '':
             actions.user.hud_deactivate_poller("dwell_toolbar")
         else:
             actions.user.hud_activate_poller("dwell_toolbar")
-            dwell_toolbar_poller.set_toolbar(name, monitor)        
+            dwell_toolbar_poller.set_toolbar(name, monitor, visible)
+
+    def hud_set_dwell_toolbar_visibility(visible: Union[bool, int] = True):
+        """Set the visibility of the current dwell toolbar"""
+        global dwell_toolbar_poller
+        dwell_toolbar_poller.set_visibility(visible)
 
     def hud_activate_dwell_key():
         """Activate a toolbar item manually"""

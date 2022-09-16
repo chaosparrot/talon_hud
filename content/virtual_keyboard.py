@@ -1,5 +1,5 @@
 from talon import app, actions, Module, ctrl, cron, ui
-from typing import Callable
+from typing import Callable, Union
 from .dwell_toolbar import in_region, default_colour_scheme, layout_virtual_key
 
 class VirtualKeyboardPoller:
@@ -10,7 +10,7 @@ class VirtualKeyboardPoller:
     current_keyboard = None
     monitor_index = 0
 
-    def add_keyboard(self, id, virtual_keys, layout_style: str = 'full', alignment: str = 'top', horizontal_key_amount: int = 3, vertical_key_amount: int = 3):
+    def add_keyboard(self, id, virtual_keys, layout_style: str = 'full', alignment: str = 'top', horizontal_key_amount: int = 3, vertical_key_amount: int = 3, visible: bool = True):
         key_amount = len(virtual_keys)
         while key_amount > horizontal_key_amount * vertical_key_amount:
             if horizontal_key_amount <= vertical_key_amount:
@@ -24,7 +24,8 @@ class VirtualKeyboardPoller:
             "layout_style": layout_style,
             "alignment": alignment,
             "horizontal_key_amount": horizontal_key_amount,
-            "vertical_key_amount": vertical_key_amount
+            "vertical_key_amount": vertical_key_amount,
+            "visible": visible,
         }
         
         if self.enabled and id == self.current_keyboard:
@@ -43,10 +44,12 @@ class VirtualKeyboardPoller:
             self.selected_index = -1
             ui.unregister("screen_change", self.update_keyboard)
 
-    def set_keyboard(self, name:str = None, monitor: int = 0):
+    def set_keyboard(self, name:str = None, monitor: int = 0, visible: bool = True):
         if name is not None and self.enabled:        
             self.current_keyboard = name
-            self.monitor_index = monitor            
+            self.monitor_index = monitor
+            if self.current_keyboard is not None and self.current_keyboard in self.keyboards:
+                self.keyboards[self.current_keyboard]["visible"] = visible
             self.update_keyboard()
 
     def update_keyboard(self):
@@ -91,16 +94,18 @@ class VirtualKeyboardPoller:
                 virtual_key["text_colour"] = text_colour
                 
                 # Create the screen region content
-                screen_region = self.content.create_screen_region("virtual_keyboard", background_colour, \
-                    virtual_key["icon"], virtual_key["text"], self.keyboards[self.current_keyboard]["hover_visibility"], \
-                    virtual_key["rect"].x, virtual_key["rect"].y, virtual_key["rect"].width, virtual_key["rect"].height, virtual_key["relative_x"] if "relative_x" in virtual_key else 0, \
-                    virtual_key["relative_y"] if "relative_y" in virtual_key else 0)
-                if text_colour:
-                    screen_region.text_colour = text_colour
-                screen_regions.append(screen_region)
+                if self.keyboards[self.current_keyboard]["visible"]:
+                    screen_region = self.content.create_screen_region("virtual_keyboard", background_colour, \
+                        virtual_key["icon"], virtual_key["text"], self.keyboards[self.current_keyboard]["hover_visibility"], \
+                        virtual_key["rect"].x, virtual_key["rect"].y, virtual_key["rect"].width, virtual_key["rect"].height, virtual_key["relative_x"] if "relative_x" in virtual_key else 0, \
+                        virtual_key["relative_y"] if "relative_y" in virtual_key else 0)
+                    if text_colour:
+                        screen_region.text_colour = text_colour
+                    screen_regions.append(screen_region)
                 
                 # Add the virtual key to the active keyboard items
-                keyboard_items.append(virtual_key)                
+                keyboard_items.append(virtual_key)
+            
             self.content.publish_event("screen_regions", "virtual_keyboard", "replace", screen_regions)
             self.keyboard_items = keyboard_items            
 
@@ -127,14 +132,14 @@ mod = Module()
 @mod.action_class
 class Actions:
 
-    def hud_set_virtual_keyboard(name: str = None, monitor: int = 0):
+    def hud_set_virtual_keyboard(name: str = None, monitor: int = 0, visible: Union[bool, int] = True):
         """Show the virtual keyboard screen regions"""
         global virtual_keyboard_poller
         if name is None or name == '':
             actions.user.hud_deactivate_poller("virtual_keyboard")
         else:
             actions.user.hud_activate_poller("virtual_keyboard")
-            virtual_keyboard_poller.set_keyboard(name)
+            virtual_keyboard_poller.set_keyboard(name, monitor, visible)
     
     def hud_register_virtual_keyboard(name: str, virtual_keys: list, layout_style: str = 'full', alignment: str = 'top', horizontal_key_amount: int = 3, vertical_key_amount: int = 3):
         """Register a virtual keyboard that can be activated manually"""

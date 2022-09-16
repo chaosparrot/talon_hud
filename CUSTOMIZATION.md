@@ -128,21 +128,6 @@ class Actions:
             return lang if lang else ""
 ```
 
-### Customizing syllable cues
-
-Because syllable cues can be quite intrusive, it makes sense to turn them off for some work flows. For instance when the sleep mode is turned on and you do not expect the commands to do anything, or during dictation mode when you are reviewing your words constantly anyway.  
-To achieve this, you can change the setting `user.talon_hud_syllable_cues` to 0 to turn it off, or to 1 to turn it on.
-
-By default, it is turned off for sleep and dictation mode, as can be seen in hud_syllable_cue_settings.talon
-
-```talon
-mode: sleep
-mode: dictation
--
-settings():
-    user.talon_hud_syllable_cues = 0
-```
-
 ## Creating text content
 
 Publishing to a single text panel is easy and can be done either through a .talon file, or in a python file
@@ -358,15 +343,21 @@ To register a virtual keyboard, you can use the `user.hud_register_virtual_keybo
 You can then visualise the virtual keyboard by using the `user.hud_set_virtual_keyboard` action. Which takes the following arguments.
 - name: The name of the virtual keyboard to visualise - If the name wasn't found, the virtual keyboard will be made invisible. Default empty
 - monitor: The monitor number to show the virtual keyboard on, default 0 for primary monitor
+- visible: Whether or not the virtual keys are visible at all, True by default
+
+If you still want the dwell toolbar to be active, but want the regions to be invisible, you can use the `user.hud_set_virtual_keyboard_visibility` action. 
+For instance, using `hud_set_virtual_keyboard_visibility(0)` in a .talon file will make the current toolbar invisible.
 
 If you wish to activate a virtual key, use the `user.hud_activate_virtual_key` which activates the virtual key the mouse is currently over.
 
-An example is shown below where we have a virtual keyboard which can type 1 through 9. We activate it by saying `show virtual keys`, then saying `key this` to type the number. We can hide the keyboard by saying `hide virtual keys`.
+An example is shown below where we have a virtual keyboard which can type 1 through 9. We activate it by saying `virtual keys set`, then saying `key this` to type the number. We can hide the keyboard by saying `virtual keys remove`. If we want the keys to be active, but invisible, we can say `virtual keys hide`, and `virtual keys show` to show them again.
 
 ```talon
 -
-show virtual keys: user.hud_set_virtual_keyboard('example_keyboard')
-hide virtual keys: user.hud_set_virtual_keyboard()
+virtual keys set: user.hud_set_virtual_keyboard('example_keyboard')
+virtual keys remove: user.hud_set_virtual_keyboard()
+virtual keys show: user.hud_set_virtual_keyboard_visibility(1)
+virtual keys hide: user.hud_set_virtual_keyboard_visibility(0)
 key this: user.hud_activate_virtual_key()
 ```
 
@@ -403,19 +394,25 @@ To register a dwell toolbar, you can use the `user.hud_register_dwell_toolbar` a
 
 You can then visualise the dwell toolbar by using the `user.hud_set_dwell_toolbar` action. Which takes the following arguments.
 - name: The name of the dwell toolbar to visualise - If the name wasn't found, the dwell toolbar will be made invisible and the active dwell icon will be cleared. Default empty
-- monitor: The monitor number to show the virtual keyboard on, default 0 for primary monitor
+- monitor: The monitor number to show the dwell toolbar on, default 0 for primary monitor
+- visible: Whether or not the virtual keys are visible at all, True by default
+
+If you still want the dwell toolbar to be active, but want the regions to be invisible, you can use the `user.hud_set_dwell_toolbar_visibility` action. 
+For instance, using `hud_set_dwell_toolbar_visibility(0)` in a .talon file will make the current toolbar invisible.
 
 Once you have a dwell toolbar visible, we can hover over each region and have the assigned action saved over to our cursor. Once the colour is moved over, you know that the action has been assigned. 
 When this is done, you can activate the saved dwell action using `user.hud_activate_dwell_key`. If you wish to clear the current dwell action, use `user.hud_deactivate_dwell_key`.
 
-A set of example files is shown below, where the you can type A, B, C, D and E with the dwell action. We activate the dwell toolbar by saying `show dwell toolbar`, and activate a dwell using `dwell this`. We can hide it again with `hide dwell toolbar`. We can clear the dwell action with `clear dwell`.
+A set of example files is shown below, where the you can type A, B, C, D and E with the dwell action. We activate the dwell toolbar by saying `dwell toolbar set`, and activate a dwell using `dwell this`. We can remove it again with `dwell toolbar remove`. We can clear the dwell action with `clear dwell`. If we want to make the dwell toolbar active, but invisible, we can say `dwell toolbar hide`, and inversely to show it again, `dwell toolbar show`.
 
 ```talon
 -
-show dwell toolbar: user.hud_set_dwell_toolbar('example_toolbar')
-hide dwell toolbar: user.hud_set_dwell_toolbar()
+dwell toolbar set: user.hud_set_dwell_toolbar('example_toolbar')
+dwell toolbar remove: user.hud_set_dwell_toolbar()
+dwell toolbar show: user.hud_set_dwell_toolbar_visibility(1)
+dwell toolbar hide: user.hud_set_dwell_toolbar_visibility(0)
 dwell this: user.hud_activate_dwell_key()
-clear dwell: user.hud_deactivate_dwell_key()
+dwell clear: user.hud_deactivate_dwell_key()
 ```
 
 ```python
