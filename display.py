@@ -14,7 +14,7 @@ from .layout_widget import LayoutWidget
 from .widgets.textpanel import HeadUpTextPanel
 from .widgets.choicepanel import HeadUpChoicePanel
 from .widgets.contextmenu import HeadUpContextMenu
-from .content.typing import HudPanelContent, HudButton, HudContentEvent, HudContentPage, HudAudioEvent, HudAudioGroup, HudAudioCue
+from .content.typing import HudPanelContent, HudButton, HudContentEvent, HudContentPage
 from .content.poller import Poller
 from .utils import string_to_speakable_string
 
@@ -52,8 +52,6 @@ mod.list("talon_hud_themes", desc="Available themes for the Talon HUD")
 mod.list("talon_hud_numerical_choices", desc="Available choices shown on screen numbered")
 mod.list("talon_hud_quick_choices", desc="List of widgets with their quick options")
 mod.list("talon_hud_widget_enabled_voice_commands", desc="List of extra voice commands added by visible widgets")
-mod.list("talon_hud_audio", desc="List of all available audio groups and cues")
-mod.list("talon_hud_volume_number", desc="List of all possible volume numbers")
 mod.tag("talon_hud_available", desc="Tag that shows the availability of the Talon HUD repository for other scripts")
 mod.tag("talon_hud_visible", desc="Tag that shows that the Talon HUD is visible")
 mod.tag("talon_hud_choices_visible", desc="Tag that shows there are choices available on screen that can be chosen")
@@ -62,15 +60,13 @@ mod.setting("talon_hud_environment", type="string", desc="Which environment to s
 ctx.tags = ["user.talon_hud_available"]
 ctx.settings["user.talon_hud_environment"] = ""
 ctx.lists["user.talon_hud_widget_enabled_voice_commands"] = []
-ctx.lists["user.talon_hud_audio"] = []
-ctx.lists["user.talon_hud_volume_number"] = numerical_choice_strings
 
 # A list of Talon HUD versions that can be used to check for in other packages
 TALON_HUD_RELEASE_030 = 3 # Walk through version
 TALON_HUD_RELEASE_040 = 4 # Multi-monitor version
 TALON_HUD_RELEASE_050 = 5 # Debugging / screen overlay release
 TALON_HUD_RELEASE_060 = 6 # Persistent content release
-TALON_HUD_RELEASE_070 = 7 # Audio release
+TALON_HUD_RELEASE_070 = 7 # Keyboard control release
 CURRENT_TALON_HUD_VERSION = TALON_HUD_RELEASE_070
 
 @mod.scope
@@ -80,7 +76,6 @@ def scope():
 class HeadUpDisplay:
     enabled = False
     display_state = None
-    audio_manager = None
     preferences = None
     theme = None
     event_dispatch = None
@@ -154,7 +149,6 @@ class HeadUpDisplay:
             self.event_dispatch.register("deactivate_poller", self.deactivate_poller)
             self.event_dispatch.register("show_context_menu", self.move_context_menu)
             self.event_dispatch.register("synchronize_poller", self.synchronize_widget_poller)
-            self.event_dispatch.register("audio_state_change", self.audio_state_changed)
             self.event_dispatch.register("detect_autofocus", self.update_focus_grace_period)
 
             # Reload the preferences just in case a screen change happened in between the hidden state
@@ -219,10 +213,7 @@ class HeadUpDisplay:
             if widget.preferences.mark_changed:
                 dict = {**dict, **widget.preferences.export(widget.id)}
                 widget.preferences.mark_changed = False
-        
-        if self.audio_manager:
-            dict = {**dict, **self.audio_manager.get_persistence_dict()}
-        
+
         self.preferences.persist_preferences(dict)
         self.determine_active_setup_mouse()
         
@@ -337,10 +328,7 @@ class HeadUpDisplay:
 
             if self.widget_manager.html_generator:
                 self.widget_manager.html_generator.set_theme(self.theme)
-                    
-            if self.audio_manager:
-                self.audio_manager.set_theme(self.theme)
-                    
+
             if should_reset_watch:
                 self.watch_directories() 
             
@@ -412,22 +400,6 @@ class HeadUpDisplay:
                     self.pollers[topic].content = HudContentBuilder(self.display_state)
                     if poller_enabled:
                         self.pollers[topic].enable()
-        elif type == "HeadUpAudioManager":
-            # Reconnect the older cues and groups to the new audio manager
-            cues = None
-            groups = None
-            if self.audio_manager:
-                cues = self.audio_manager.cues
-                groups = self.audio_manager.groups
-            
-            self.audio_manager = data
-            if cues:
-                self.audio_manager.cues = cues
-            if groups:
-                self.audio_manager.groups = groups
-            self.audio_manager.start(self.preferences, self.theme, self.event_dispatch)
-            if self.audio_manager.enabled:
-                self.display_state.register("trigger_audio", self.trigger_audio)
 
     def distribute_content(self):
         """Distributes the content from the content types to the different widgets"""
@@ -463,11 +435,7 @@ class HeadUpDisplay:
                     self.pollers[topic].enable()
                     enabled = True
                     break
-            
-            # Check for audio pollers as well based on the group name
-            if not enabled and self.audio_manager and self.audio_manager.is_group_enabled(topic):
-                self.pollers[topic].enable()
-        
+
     def remove_poller(self, topic: str):
         if topic in self.pollers:
             self.pollers[topic].disable()
@@ -494,12 +462,6 @@ class HeadUpDisplay:
                 if widget.current_topics and widget.enabled:
                     attached_topics.extend(widget.current_topics)
         
-        # Check audio enabled pollers as well
-        if self.audio_manager and self.audio_manager.enabled:
-            for group_id in self.audio_manager.groups:
-                if self.audio_manager.groups[group_id].enabled:
-                    attached_topics.append(group_id)
-
         # First - Disable all pollers from making content updates to prevent race conditions with content events from occurring
         if disable_pollers:
             for topic, poller in self.pollers.items():
@@ -792,15 +754,6 @@ class HeadUpDisplay:
         ctx.lists["user.talon_hud_choices"] = choices
         ctx.lists["user.talon_hud_quick_choices"] = quick_choices
         ctx.lists["user.talon_hud_themes"] = themes
-
-        if self.audio_manager:
-            cue_list = {}        
-            for cue in self.audio_manager.cues:
-                cue_list[string_to_speakable_string(cue)] = cue
-                
-            for group in self.audio_manager.groups:
-                cue_list[string_to_speakable_string(group)] = "group:" + group
-            ctx.lists["user.talon_hud_audio"] = cue_list
         
         self.enabled_voice_commands = enabled_voice_commands
         ctx.lists["user.talon_hud_widget_enabled_voice_commands"] = enabled_voice_commands.keys()
@@ -834,14 +787,12 @@ class HeadUpDisplay:
             self.event_dispatch.unregister("deactivate_poller", self.deactivate_poller)
             self.event_dispatch.unregister("show_context_menu", self.move_context_menu)
             self.event_dispatch.unregister("synchronize_poller", self.synchronize_widget_poller)
-            self.event_dispatch.unregister("audio_state_change", self.audio_state_changed)
             self.event_dispatch = None
         ui.unregister('screen_change', self.reload_preferences)
         settings.unregister("user.talon_hud_environment", self.hud_environment_change)
         
         if self.display_state:
             self.display_state.unregister('broadcast_update', self.broadcast_update)
-            self.display_state.unregister('trigger_audio', self.trigger_audio)            
         self.display_state = None
         if self.enabled:  
             for widget in self.widget_manager.widgets:
@@ -851,7 +802,6 @@ class HeadUpDisplay:
                 widget.show_animations = show_animations
             self.widget_manager.destroy()
         self.widget_manager = None
-        self.audio_manager = None
         
     # ---------- KEYBOARD FOCUS METHODS ---------- #
     def focus(self):
@@ -884,46 +834,6 @@ class HeadUpDisplay:
         self.focus_grace_period = time.time() * 50000 if auto_focus else 0
         if persisted:
            self.preferences.persist_preferences({"auto_focus": auto_focus})
-
-    # ---------- AUDIO RELATED METHODS ---------- #
-    def trigger_audio(self, event: HudAudioEvent):
-        if self.audio_manager:
-            self.audio_manager.trigger_audio(event)
-
-    def audio_state_changed(self, audio_state):
-        # Update the content state for displaying
-        if self.display_state:
-            self.display_state.dispatch("audio_state_change", audio_state)
-    
-        self.debounce_widget_preferences()
-
-    def audio_enable(self, group_id = None, id = None, trigger_automatically = True):
-        if self.audio_manager:
-            if not group_id and not id:
-                if not self.audio_manager.enabled:
-                    self.audio_manager.enable(True)
-                    self.display_state.register("trigger_audio", self.trigger_audio)
-            else:
-                self.audio_manager.enable_audio(group_id, id, trigger_automatically)
-
-            if not id:
-                self.synchronize_pollers()
-        
-    def audio_disable(self, group_id = None, id = None):
-        if self.audio_manager:
-            if not group_id and not id:
-                if self.audio_manager.enabled:
-                    self.audio_manager.disable(True)
-                    self.display_state.unregister("trigger_audio", self.trigger_audio)
-            else:
-                self.audio_manager.disable_audio(group_id, id)
-            
-            if not id:
-                self.synchronize_pollers()            
-
-    def audio_set_volume(self, volume, group_id = None, id = None):
-        if self.audio_manager:
-            self.audio_manager.set_volume(volume, True, group_id, id)
 
 preferences = HeadUpDisplayUserPreferences("", CURRENT_TALON_HUD_VERSION) 
 hud = HeadUpDisplay(preferences)
@@ -1084,36 +994,6 @@ class Actions:
         """Stop watching for changes in the theme directories"""
         global hud
         hud.unwatch_directories()
-        
-    def hud_audio_enable(talon_hud_audio: str = None):
-        """Enable global or specific audio feedback in the Talon HUD"""
-        global hud
-        talon_hud_audio_group = None
-        if talon_hud_audio is not None and talon_hud_audio.startswith("group:"):
-            talon_hud_audio_group = talon_hud_audio[6:]
-            talon_hud_audio = None
-        hud.audio_enable(talon_hud_audio_group, talon_hud_audio)
-        
-    def hud_audio_disable(talon_hud_audio: str = None):
-        """Mute global or specific audio feedback in the Talon HUD"""
-        global hud
-        talon_hud_audio_group = None
-        if talon_hud_audio is not None and talon_hud_audio.startswith("group:"):
-            talon_hud_audio_group = talon_hud_audio[6:]
-            talon_hud_audio = None
-        hud.audio_disable(talon_hud_audio_group, talon_hud_audio)
-        
-    def hud_audio_set_volume(talon_hud_volume: str, talon_hud_audio: str = None):
-        """Set the volume level of the global or specific audio groups / cues in the Talon HUD"""
-        global hud
-        global numerical_choice_index_map
-        talon_hud_audio_group = None
-        if talon_hud_audio is not None and talon_hud_audio.startswith("group:"):
-            talon_hud_audio_group = talon_hud_audio[6:]
-            talon_hud_audio = None
-            
-        volume_number = numerical_choice_index_map[talon_hud_volume]
-        hud.audio_set_volume(volume_number, talon_hud_audio_group, talon_hud_audio)
 
     def hud_widget_focus(widget_id: str, node_id: int = -1):
         """Focus a specific widget available in the HUD"""

@@ -26,11 +26,9 @@ By default, the HUD comes in a light and a dark mode, but you can create other t
 	7. [Documentation](#documentation)
 	8. [Walkthroughs](#walkthroughs)
 	9. [Debugging](#debugging)
-	10. [Audio feedback](#audio-feedback)
 3. [Accessibility features](#accessibility-features)
 	1. [Keyboard controls](#keyboard-controls)
-	2. [Audio cues](#audio-cues)
-	3. [Screen reader usage](#screen-reader-usage)	
+	2. [Screen reader usage](#screen-reader-usage)	
 4. [Customizing the HUD](#customizing-the-hud)
 	1. [Hiding and showing widgets](#hiding-and-showing-widgets)
 	2. [Repositioning widgets](#repositioning-widgets)	
@@ -39,7 +37,7 @@ By default, the HUD comes in a light and a dark mode, but you can create other t
 	5. [Animations](#animations)
 	6. [List of available widgets](#list-of-available-widgets)
 5. [Advanced usage](#advanced-usage)
-    1. [Changing appearance and audio](APPEARANCE.md)
+    1. [Changing appearance](APPEARANCE.md)
 	2. [Preferences folder](#preferences-folder)
 	4. [Talon HUD environments](#talon-hud-environments)
 	5. [Log messages](CUSTOMIZATION.md#log-messages)
@@ -47,8 +45,7 @@ By default, the HUD comes in a light and a dark mode, but you can create other t
 	7. [Status icon creation](CUSTOMIZATION.md#status-icon-content)
 	8. [Eyetracker content](CUSTOMIZATION.md#eyetracker-content)
 	9. [Right click options](CUSTOMIZATION.md#right-click-options)
-	10. [Audio content creation](CUSTOMIZATION.md#audio-content)
-	11. [Sticky content creation](CUSTOMIZATION.md#sticky-content)
+	10. [Sticky content creation](CUSTOMIZATION.md#sticky-content)
 6. [Miscellaneous](#miscellaneous)
     1. [Roadmap](#roadmap)
 	2. [Development philosophy and guidelines](#development-philosophy-and-guidelines)
@@ -69,8 +66,6 @@ If for some reason the HUD seems broken, you can try and see if clearing out the
 `head up hide` hides the head up display.  
 `toolkit options` shows all the available content connected to the HUD toolkit, the options on the screen can be read out for navigation.  
 `head up theme dark` and `head up theme light` switch in between the default available themes.
-`head up audio enable` enables the audio cues.
-`head up mute` mutes the audio cues.
 
 All voice commands are available in the .talon files inside of the HUD, while some are also generated based on the titles of the widgets themselves.
 
@@ -144,11 +139,6 @@ When you are working with, or working on, your Talon scripts, it is often hard t
 - The speech debugging option allows you to see all recognized commands and their used time, with their used engine and microphone, so you can track down why recognition might have changed.
 - The list debugging option gives you a look inside a single list as it changes.
 
-### Audio feedback
-
-While using Talon, it is possible to have some audio feedback while doing your commands. Things like knowing when talon goes to sleep or another mode, when the microphone is disconnected can all be enabled to have an audio trigger.
-Not only that, you can enable syllable cues as well, which pronounce the syllables recognized in beeps. You can use this to distinguish between commands without looking at the screen.
-
 ## Accessibility features
 
 The HUD aims to make your voice workflows accessible. From the get-go it has a focus on offloading things you need to remember into the visual spectrum. As time went on, things like theming, resizability and clicking were added as well, keeping up with the trend of making sure as many people could use the HUD as possible. 
@@ -171,37 +161,6 @@ These are all the currently available keyboard controls:
 - **Page up and page down**: When a text widget or choice widget is focused, this moves between the available pages of the current content.
 - **Escape**: Unfocuses the current element, either by going up to the main widget element, or out of the HUD entirely.
 - **Enter**: Actives the current selection, but inside a choice widget with multiple choices, submits all the selected choices instead.
-
-### Audio cues
-
-Tunable auditory feedback has been added for a number of events, like mode changing and microphone changing, as well as focus changing, error notifications and voice command feedback.
-All of these audio cues are grouped and their volume can be tuned individually or as a group.
-To have a look at all the available audio cues and their enabled state and volume, you can say `toolkit audio`.
-
-You can enable audio by saying `head up audio enable`, and you can change the volume of the audio by saying `head up audio volume <number between 0 and 100>`. By default the volume is set at 75.
-
-You can refer to a specific group or cue by saying `head up audio <cue or group>`. You can for instance enable the interface cues with `head up audio interface enable`. And you can change its volume with `head up audio interface volume <number between 0 and 100>`
-
-By default, the following things will be announced if audio is enabled:
-- Command, dictation and sleep mode
-- Microphone disconnected or disabled
-
-Currently you can enable these audio cues as well:
-
-- Interface cues: You can enable these with `head up audio enable interface`
-    - Audio cue when focus in the HUD is changed
-	- 'Bonk' cues when the end of content is reached
-	- Error and notify cues when an error or notification is shown
-
-- Syllable cues: You can enable these with `head up audio enable syllables`.
-These turn your activated voice commands into beeps relating to the said syllables with pauses in between words. There are five pitches that are used:
-    - High: For example 'Five' and 'near'
-	- Mid high: For example 'went', 'cat', 'hair', 'space' and 'joy'
-	- Mid: For example 'rob', 'sit', 'car', 'jaw', 'robe' and 'gown'
-	- Low mid: For example 'bird', 'burn', 'fun' and the last syllable in 'open'
-	- Low: For example 'could', 'boot' and 'queue'
-
-For the syllable cues, you can also change when they become active. To learn more, check out the [Customizing syllable cues](CUSTOMIZATION.md#customizing-syllable-cues) page.
 
 ### Screen reader usage
 
@@ -269,7 +228,7 @@ Most of the Talon HUD widgets have animations turned on by default, but you migh
 ## Advanced usage
 
 You can tweak more about the HUD and use it in more advanced ways if you feel like tinkering around.
-For changing the appearance of the HUD, you can take a look at the [Changing appearance and audio](APPEARANCE.md) page.  
+For changing the appearance of the HUD, you can take a look at the [Changing appearance](APPEARANCE.md) page.
 For customizing and creating your own content, you can have a look at the [Customization](CUSTOMIZATION.md) page.
 
 ### Preferences folder

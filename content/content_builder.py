@@ -75,15 +75,7 @@ class HudContentBuilder():
     def add_log(self, type: str, message: str, timestamp = None, metadata = None):
         """Adds a log to the HUD"""
         self._content.append_to_log_messages(type, message, timestamp, metadata)
-        
-    def trigger_audio_cue(self, title: str):
-        """Trigger an audio cue"""
-        self._content.trigger_audio_cues([title])
-        
-    def trigger_audio_cues(self, titles: list[str], multipliers: list[float] = None):
-        """Trigger multiple audio cues in succession"""
-        self._content.trigger_audio_cues(titles, multipliers)
-        
+
     def publish_event(self, topic_type: str, topic:str, operation: str, data: Any = None, show: bool = False, claim: int = None):
         """Publish created content to the central HUD content object"""
         if topic_type is not None and self._content is not None:

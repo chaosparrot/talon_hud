@@ -21,9 +21,6 @@ class HeadUpEventDispatch(Dispatch):
     def synchronize_widget_poller(self, widget_id):
         self.dispatch("synchronize_poller", widget_id)
         
-    def audio_state_change(self, audio_state):
-        self.dispatch("audio_state_change", audio_state)
-
     def focus_path(self, path:str):
         self.dispatch("hud_focused", path)
         

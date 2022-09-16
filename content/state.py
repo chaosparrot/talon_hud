@@ -2,7 +2,7 @@ from talon import actions, Module, ui, app, ctrl
 from talon.types.point import Point2d
 from talon_init import TALON_USER
 from talon.scripting import Dispatch
-from .typing import HudPanelContent, HudButton, HudChoice, HudChoices, HudScreenRegion, HudAudioCue, HudDynamicVoiceCommand, HudLogMessage, HudContentEvent, HudAbilityIcon, HudStatusIcon, HudStatusOption, HudParticle, HudAudioEvent
+from .typing import HudPanelContent, HudButton, HudChoice, HudChoices, HudScreenRegion, HudDynamicVoiceCommand, HudLogMessage, HudContentEvent, HudAbilityIcon, HudStatusIcon, HudStatusOption, HudParticle
 from typing import Callable, Any, Union
 import time
 import os
@@ -25,7 +25,6 @@ class HeadUpDisplayContent(Dispatch):
     throttled_logs = None
     save_up_events = True
     saved_events = None
-    saved_audio = None
     
     topic_types = {
         "variable": {
@@ -115,11 +114,6 @@ class HeadUpDisplayContent(Dispatch):
             self.topic_types["log_messages"][topic] = []
         self.topic_types["log_messages"][topic].append(log_message)
         self.topic_types["log_messages"][topic][-max_log_length:]
-        
-        if topic in ["event", "success"]:
-            self.trigger_audio_cues(["Notice"])
-        elif topic in ["warning", "error"]:
-            self.trigger_audio_cues(["Error"])
         
         if self.queued_log_splits:
             self.revise_log(True)
@@ -217,12 +211,6 @@ class HeadUpDisplayContent(Dispatch):
             self.saved_events.append({"type": type, "event": event})
         else:
             super().dispatch(type, event)
-
-    def trigger_audio_cues(self, titles: list[str], multipliers: list[float] = None):
-        cues = []
-        for title in titles:
-            cues.append(title.lower().replace(" ", "_"))
-        self.dispatch("trigger_audio", HudAudioEvent(cues, multipliers))
 
     def destroy(self):
         pass
@@ -379,13 +367,3 @@ class Actions:
         content = HudPanelContent("choice", title, [content], [], time.time(), True, choices)
         global hud_content
         hud_content.publish("choice", content)
-
-    def hud_trigger_audio_cue(title: str):
-        """Trigger a single audio cue"""
-        global hud_content
-        hud_content.trigger_audio_cues([title])
-        
-    def hud_trigger_audio_cues(titles: list[str], multipiers: list[float] = None):
-        """Trigger multiple audio cues in succession"""
-        global hud_content
-        hud_content.trigger_audio_cues(titles, multipliers)

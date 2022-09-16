@@ -376,8 +376,6 @@ class HeadUpChoicePanel(HeadUpTextPanel):
                                 if not next_index in self.visible_indecis:
                                     next_page = self.page_index + 1 if evt.key == "down" else self.page_index - 1
                                     self.set_page_index( next_page )                                
-                            else:
-                                actions.user.hud_trigger_audio_cue("Group end")
                             return True
         
         return activated

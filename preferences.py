@@ -21,8 +21,6 @@ class HeadUpDisplayUserPreferences:
         "enabled": False,
         "auto_focus": True,        
         "theme_name": "light",
-        "audio_enabled": False,
-        "audio_volume": "75",
     }
     
     # Keep the base preferences available as well
@@ -35,7 +33,7 @@ class HeadUpDisplayUserPreferences:
         "_limit_x", "_limit_y", "_limit_width", "_limit_height",
         "_font_size", "_alignment", "_expand_direction")
     
-    boolean_keys = ["enabled", "show_animations", "audio_enabled", "auto_focus"]
+    boolean_keys = ["enabled", "show_animations", "auto_focus"]
     hud_environment = ""
     
     def __init__(self, hud_environment = "", hud_version = 5):

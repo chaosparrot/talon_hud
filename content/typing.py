@@ -160,36 +160,6 @@ class HudParticle:
     diameter: int = 10
     x: int = 0
     y: int = 0
-
-@dataclass
-class HudAudioGroup:
-    id: str
-    title: str
-    description: str
-    volume: int = 75
-    enabled: bool = False
-
-@dataclass
-class HudAudioCue:
-    id: str
-    group: str
-    title: str
-    description: str
-    file: str
-    volume: int = 75
-    enabled: bool = False
-    
-@dataclass
-class HudAudioEvent:
-    cues: list[str]
-    volumes: list[float] = None
-    
-@dataclass
-class HudAudioState:
-    enabled: bool = True
-    volume: int = 75
-    groups: list[HudAudioGroup] = None
-    cues: list[HudAudioCue] = None
     
 @dataclass
 class HudAccessibleNode:

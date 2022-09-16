@@ -23,9 +23,6 @@ def pick_toolkit_option(data):
     elif data["text"] == "Walkthroughs":
         actions.user.hud_show_walkthroughs()
         return True
-    elif data["text"] == "Audio settings":
-        actions.user.hud_show_audio_settings()
-        return False
 
 mod = Module()
 
@@ -39,7 +36,6 @@ class Actions:
             {"text": "Walkthroughs"},            
             {"text": "Debugging"},
             {"text": "Microphone selection"},
-            {"text": "Audio settings"},
             {"text": "Dismiss toolkit"}
         ], pick_toolkit_option)
         actions.user.hud_publish_choices(choices, "Toolkit options", "Pick content from the HUD Toolkit below")

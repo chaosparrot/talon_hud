@@ -52,7 +52,7 @@ class Actions:
 ```
 
 By overriding the **hud_get_status_modes** and adding more modes than just the dictation, command and sleep mode, you can add more theming possibilities as well. An example can be found in the content/mode_poller.py file.
-For instance, if you had a gaming mode, and you have **user.gaming** added to the **hud_get_status_modes** result, you can have an audio cue be played ( user.gaming_mode.wav ) and have an icon loaded in ( user.gaming_icon.png ) onto your status bar as well.
+For instance, if you had a gaming mode, and you have **user.gaming** added to the **hud_get_status_modes** result, you can have an icon loaded in ( user.gaming_icon.png ) onto your status bar as well.
 
 ### Customizing language tracking
 
@@ -292,10 +292,6 @@ There are five types of log message stylings:
 The message can contain bold and italic markers like explained in the [Creating text content](#creating-text-content) section, but no colours.
 
 ## Status icons
-
-- Status bar icons
-- Ability icons
-
 
 This is still being fleshed out, but in the mean time, you can take a look at the [previous content documentation](docs/deprecated_docs/CONTENT_README.md)
 
@@ -561,51 +557,7 @@ Saying `show example regions` in the example above will show a red topleft regio
 
 ## Right click options
 
-TODO
-
-## Audio content
-
-Adding audio cues to certain events can be handy, to keep track of things without having to look at a part of the screen. And you might think of something of your own that could use an audio cue, maybe something like a programming language being detected.
-To do that, we need to add a register a couple of things to make sure the user can tweak the audio as they see fit: an audio group and an audio cue.
-
-You can do both of these with the actions **user.hud_add_audio_group** and **user.hud_add_audio_cue**. In the below example, we will register a few audio cues with existing files that we can activate with a voice command.
-
-```talon
--
-sound the beeps: user.sound_the_beeps()
-```
-
-```python
-from talon import app, Module, actions
-import random
-
-def register_cues():
-    # Registers the audio group
-    # This is the group that the user can use to either enable beeps or change their volume all at once
-    actions.user.hud_add_audio_group("Beeps", "A series of beeps to randomly use", True)
-	
-    # These are the individual audio cues inside of the Beeps group
-    # These can be managed individually as well by the user
-    actions.user.hud_add_audio_cue("Beeps", "Beep one", "", "1", True)
-    actions.user.hud_add_audio_cue("Beeps", "Beep two", "", "2", True)
-    actions.user.hud_add_audio_cue("Beeps", "Beep three", "", "3", True)
-    actions.user.hud_add_audio_cue("Beeps", "Beep four", "", "4", True)	
-
-app.register("ready", register_cues)
-
-mod = Module()
-@mod.action_class
-class Actions:
-
-    def sound_the_beeps():
-        """Sound a series of six differently pitched beeps randomly"""
-        four_beeps = ["one", "one", "two", "three", "four", "four"]
-        random.shuffle(four_beeps)
-        for beep in four_beeps:
-            actions.user.hud_trigger_audio_cue("Beep " + beep)
-```
-
-If you want to add your own audio files, keep in mind they have to be in 16 bit signed .WAV format inside of a theme's audio folder for it to register properly. You can view the created audio groups inside the `toolkit audio` panel. You will see the given descriptions, current volumes and enabled states there as well.  
+TODO document this properly
 
 ## Sticky and changing content
 
@@ -670,11 +622,6 @@ Because pollers are registered using topics, the enabling and disabling process 
 - When new content is broadcast with 'claim' turned on, it will connect to the widget and disable other pollers connected to that topic type.
 - When a Talon HUD environment changes, all new topics are enabled and all old topics that aren't available in the new environment are disabled.
 - When the poller python file is updated, the old poller is disabled and the new poller is enabled.
-
-Pollers can also be connected using audio groups, in that case they follow the enabling and disabling flow of the audio state
-- When the audio is enabled, it enables the poller with the audio group as its name
-- When an audio group is enabled, it enables the poller with the audio group as its name
-- When the audio or group is disabled, it disables the poller with the audio group as its name
 
 On top of that, when a poller becomes active because a user has requested it's content, the assigned widget can be made active as well. This happens for instance when you open the scope debugging with 'toolkit scope'.
 

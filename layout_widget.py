@@ -230,13 +230,9 @@ class LayoutWidget(BaseWidget):
             current_page_index = self.page_index        
             if evt.key in ["pgdown", "pagedown"]:
                 self.set_page_index(self.page_index + 1)
-                if current_page_index == self.page_index:
-                    actions.user.hud_trigger_audio_cue("Group end")
                 return current_page_index != self.page_index
             elif evt.key in ["pgup", "pageup"]:
                 self.set_page_index(self.page_index - 1)
-                if current_page_index == self.page_index:
-                    actions.user.hud_trigger_audio_cue("Group end")
                 return current_page_index != self.page_index
         
         return False
