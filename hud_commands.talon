@@ -34,14 +34,6 @@ tag: user.talon_hud_available
 ^{user.talon_hud_widget_names} (back|previous): user.hud_decrease_widget_page(talon_hud_widget_names)
 ^{user.talon_hud_widget_names} options: user.hud_widget_options(talon_hud_widget_names)
 
-# Head up audio commands
-^head up audio enable$: user.hud_audio_enable()
-^head up audio (disable|mute)$: user.hud_audio_disable()
-^head up audio volume {user.talon_hud_volume_number} [percent]$: user.hud_audio_set_volume(talon_hud_volume_number)
-^head up audio enable {user.talon_hud_audio}$: user.hud_audio_enable(talon_hud_audio)
-^head up audio (disable|mute) {user.talon_hud_audio}$: user.hud_audio_disable(talon_hud_audio)
-^head up audio {user.talon_hud_audio} volume {user.talon_hud_volume_number} [percent]$: user.hud_audio_set_volume(talon_hud_volume_number, talon_hud_audio)
-
 # Head up focus commands
 ^(head up focus | focus head up):
     user.hud_focus()
