@@ -430,7 +430,7 @@ For instance, using `hud_set_dwell_toolbar_visibility(0)` in a .talon file will 
 Once you have a dwell toolbar visible, we can hover over each region and have the assigned action saved over to our cursor. Once the colour is moved over, you know that the action has been assigned. 
 When this is done, you can activate the saved dwell action using `user.hud_activate_dwell_key`. If you wish to clear the current dwell action, use `user.hud_deactivate_dwell_key`.
 
-A set of example files is shown below, where the you can type A, B, C, D and E with the dwell action. We activate the dwell toolbar by saying `dwell toolbar set`, and activate a dwell using `dwell this`. We can remove it again with `dwell toolbar remove`. We can clear the dwell action with `clear dwell`. If we want to make the dwell toolbar active, but invisible, we can say `dwell toolbar hide`, and inversely to show it again, `dwell toolbar show`.
+A set of example files is shown below, where the you can type A, B, C, D and E with the dwell action. We activate the dwell toolbar by saying `dwell toolbar set`, and activate a dwell using `dwell this`. We can remove it again with `dwell toolbar remove`. We can clear the dwell action with `dwell clear`. If we want to make the dwell toolbar active, but invisible, we can say `dwell toolbar hide`, and inversely to show it again, `dwell toolbar show`.
 
 ```talon
 -
