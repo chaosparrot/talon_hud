@@ -170,3 +170,7 @@ class Actions:
     def hud_remove_single_click_mic_toggle():
         """Remove a single click toggle from the status bar"""
         remove_statusbar_one_click_toggle()
+    
+    def hud_toggle_microphone():
+        """Toggle the HUD microphone"""
+        toggle_microphone(None)

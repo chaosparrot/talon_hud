@@ -79,7 +79,7 @@ def add_mode_toggle():
 def remove_mode_toggle():
     actions.user.hud_deactivate_poller("mode_toggle")
     actions.user.hud_remove_status_icon("mode_toggle")
-            
+
 def on_ready():
     actions.user.hud_add_poller("mode", PartialModePoller("mode", mode_poller), True) # This poller needs to be kept alive so that the sleep state is properly sent to all widgets
     actions.user.hud_add_poller("mode_toggle", PartialModePoller("mode_toggle", mode_poller))

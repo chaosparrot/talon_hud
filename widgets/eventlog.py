@@ -42,6 +42,9 @@ class HeadUpEventLog(BaseWidget):
     infinite_ttl = 1000000 # One million seconds is effectively eternal from a UX perspective, as it takes 12 days
     locked = False
     
+    # Special canvas for key handling
+    focus_canvas = None
+    
     def update_buttons(self):
         buttons = []
         buttons.append(HudButton("", "Keep alive", ui.Rect(0,0,0,0), lambda widget: widget.set_log_ttl(-1)))
@@ -56,7 +59,7 @@ class HeadUpEventLog(BaseWidget):
     def load_extra_preferences(self):
         # Set and reset TTL on theme change
         self.set_log_ttl()
-                
+
     def append_log(self, log: HudLogMessage):
         if self.soft_enabled and self.enabled and len(log.message) > 0 and not self.locked:
             visual_log = {
@@ -123,7 +126,9 @@ class HeadUpEventLog(BaseWidget):
             
             cron.cancel(self.ttl_poller)
             self.ttl_poller = None
-            
+            if self.focus_canvas:
+                self.focus_canvas = None
+
     def enable(self, persisted=False):
         if not self.enabled:
             self.soft_enabled = self.content.get_variable("mode", "command") == "command"
@@ -324,6 +329,13 @@ class HeadUpEventLog(BaseWidget):
                 
                 paint.color = background_colour + opacity_hex
                 self.draw_background(canvas, element_x, current_y, element_width, log_height, paint)
+                
+                if visual_log["type"] == "narrate":
+                    paint.color = self.theme.get_colour("focus_colour") + opacity_hex
+                    paint.style = paint.Style.STROKE
+                    paint.stroke_width = 3
+                    self.draw_background(canvas, element_x, current_y, element_width, log_height, paint)                
+                    paint.style = paint.Style.FILL                    
                 
                 # Draw text line by line
                 max_text_opacity = self.theme.get_opacity("event_log_text_opacity", 1.0)

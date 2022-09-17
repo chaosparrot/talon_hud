@@ -1,3 +1,5 @@
 .DS_Store
 .AppleDouble
 .LSOverride
+**/tests/*.py
+__pycache__

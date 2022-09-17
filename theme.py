@@ -11,16 +11,17 @@ class HeadUpDisplayTheme:
 
     name = ''
     image_dict = None
-    audio_dict = None
+    template_dict = None    
     values = None
     colours = None
     theme_dir = ''
 
     def __init__(self, theme_name, theme_dir=None):
         self.image_dict = {}
-        self.audio_dict = {}
+        self.template_dict = {}        
         self.values = {}
-        self.colours = {}    
+        self.colours = {}
+    
         self.name = theme_name
         base_theme_dir = os.path.join(os.path.join(semantic_directory, "themes"), "_base_theme")
         if theme_dir is None:
@@ -62,27 +63,16 @@ class HeadUpDisplayTheme:
                     filename_len = len(filename)
                     self.image_dict[filename[:filename_len - 4]] = skia.Image.from_file(abspath)
             
-        # Load in the audio available in the theme directory
-        audio_dir = os.path.join(theme_dir, "audio")
-        if os.path.exists(audio_dir) and os.path.isdir(audio_dir):
-            audio_files = os.listdir(audio_dir)
-            for index, filename in enumerate(audio_files):
-                abspath = os.path.join(audio_dir, filename)
-                if (filename.endswith(".wav")):
+        # Load in the templates available in the theme directory
+        template_dir = os.path.join(theme_dir, "templates")
+        if os.path.exists(template_dir) and os.path.isdir(template_dir):
+            template_files = os.listdir(template_dir)
+            for index, filename in enumerate(template_files):
+                abspath = os.path.join(template_dir, filename)
+                if (filename.endswith(".html")):
                     filename_len = len(filename)
-                    self.audio_dict[filename[:filename_len - 4]] = abspath
-                    
-                # Randomized audio cues are possible too
-                elif os.path.isdir(abspath):
-                    options = []
-                    subfiles = os.listdir(abspath)
-                    for subindex, subfilename in enumerate(subfiles):
-                        if (subfilename.endswith(".wav")):
-                            filename_len = len(filename)
-                            options.append(os.path.join(abspath, subfilename))
-                    
-                    if len(options) > 0:
-                        self.audio_dict[filename] = options
+                    with open(abspath) as template:
+                        self.template_dict[filename[:filename_len - 5]] = template.read()
 
     def get_image(self, image_name, width = None, height = None):
         full_image_name = image_name
@@ -114,15 +104,19 @@ class HeadUpDisplayTheme:
                         return self.image_dict[image_name]
             return None
 
-    def get_audio_path(self, filename, default=""):
-        if filename in self.audio_dict:
-            if isinstance(self.audio_dict[filename], list):
-                random_audio_index = random.randint(0, len(self.audio_dict[filename]) - 1)
-                return self.audio_dict[filename][random_audio_index]
-            else:
-                return self.audio_dict[filename]
+    def get_template(self, template_name):
+        if template_name in self.template_dict:
+            return self.template_dict[template_name]
+
+        # Load the template from the file system
         else:
-            return default
+            # Load in templates from other directories
+            if "/" in template_name or "\\" in template_name:
+                if os.path.isfile(template_name):
+                    with open(template_name) as file:
+                        self.template_dict[template_name] = file.read()
+                    return self.template_dict[template_name]
+            return None
 
     def resize_image(self, image, width, height):
         aspect_ratio = image.width / image.height

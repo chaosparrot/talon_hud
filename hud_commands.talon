@@ -34,6 +34,16 @@ tag: user.talon_hud_available
 ^{user.talon_hud_widget_names} (back|previous): user.hud_decrease_widget_page(talon_hud_widget_names)
 ^{user.talon_hud_widget_names} options: user.hud_widget_options(talon_hud_widget_names)
 
+# Head up focus commands
+^(head up focus | focus head up):
+    user.hud_focus()
+^head up blur:
+    user.hud_blur()
+^head up [enable] auto focus:
+    user.hud_set_auto_focus(1)
+^head up disable auto focus:
+    user.hud_set_auto_focus(0)
+
 # Head up development commands - Sets watchers on certain configurations, like themes, so development is quicker
 ^head up development start$: 
     user.hud_watch_directories()

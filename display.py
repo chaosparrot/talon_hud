@@ -18,7 +18,6 @@ from .content.typing import HudPanelContent, HudButton, HudContentEvent, HudCont
 from .content.poller import Poller
 from .utils import string_to_speakable_string
 
-
 # Taken from knausj/code/numbers to make Talon HUD standalone
 # The numbers should realistically stay very low for choices, because you don't want choice overload for the user, up to 100
 digits = "zero one two three four five six seven eight nine".split()
@@ -39,7 +38,7 @@ for index, ten in enumerate(tens):
     numerical_choice_index_map[ten] = (index + 1) * 10 + 10
     for digit_index, digit in enumerate(digits_without_zero):
        numerical_choice_strings.append(ten + " " + digit)
-       numerical_choice_index_map[ten + " " + digit] = ( index + 1 ) * 10 + digit_index + 1
+       numerical_choice_index_map[ten + " " + digit] = ( index + 2 ) * 10 + digit_index + 1
     
 numerical_choice_strings.append("one hundred")
 numerical_choice_index_map["one hundred"] = 100
@@ -67,7 +66,8 @@ TALON_HUD_RELEASE_030 = 3 # Walk through version
 TALON_HUD_RELEASE_040 = 4 # Multi-monitor version
 TALON_HUD_RELEASE_050 = 5 # Debugging / screen overlay release
 TALON_HUD_RELEASE_060 = 6 # Persistent content release
-CURRENT_TALON_HUD_VERSION = TALON_HUD_RELEASE_060
+TALON_HUD_RELEASE_070 = 7 # Keyboard control release
+CURRENT_TALON_HUD_VERSION = TALON_HUD_RELEASE_070
 
 @mod.scope
 def scope():
@@ -88,7 +88,10 @@ class HeadUpDisplay:
     allowed_content_operations = ["*"]
     allow_update_context = True
     current_flow = ""
-    
+    auto_focus = False
+
+    focus_grace_period = 0
+    start_idle_period = 0
     prev_mouse_pos = None
     mouse_poller = None
     current_talon_hud_environment = ""
@@ -96,7 +99,6 @@ class HeadUpDisplay:
     enabled_voice_commands = {}
     update_preferences_debouncer = None
     update_context_debouncer = None
-    update_cue_context_debouncer = None
     update_environment_debouncer = None
     
     watching_directories = False
@@ -120,13 +122,17 @@ class HeadUpDisplay:
 
             if actions.sound.active_microphone() == "None":
                 actions.user.hud_add_log("warning", "Microphone is set to \"None\"!\n\nNo voice commands will be registered.")
+        
         self.set_current_flow("manual")
         self.distribute_content()
+        # Make sure auto focusing can only start a second after the HUD has started up
+        # To make sure the content updating does not fling the focus for the user everywhere during booting
+        cron.after("1s", lambda self=self: self.set_auto_focus(self.preferences.prefs["auto_focus"]))
 
     def enable(self, persisted=False):
         if not self.enabled:
             self.enabled = True
-            self.display_state.register("broadcast_update", self.broadcast_update)            
+            self.display_state.register("broadcast_update", self.broadcast_update)
 
             # Only reset the talon HUD environment after a user action
             # And only set the visible tag
@@ -143,6 +149,7 @@ class HeadUpDisplay:
             self.event_dispatch.register("deactivate_poller", self.deactivate_poller)
             self.event_dispatch.register("show_context_menu", self.move_context_menu)
             self.event_dispatch.register("synchronize_poller", self.synchronize_widget_poller)
+            self.event_dispatch.register("detect_autofocus", self.update_focus_grace_period)
 
             # Reload the preferences just in case a screen change happened in between the hidden state
             if persisted or self.current_flow in ["repair", "initialize"]:
@@ -182,6 +189,7 @@ class HeadUpDisplay:
             self.event_dispatch.unregister("deactivate_poller", self.deactivate_poller)
             self.event_dispatch.unregister("show_context_menu", self.move_context_menu)
             self.event_dispatch.unregister("synchronize_poller", self.synchronize_widget_poller)
+            self.event_dispatch.unregister("detect_autofocus", self.update_focus_grace_period)            
             
             self.disable_poller_job = cron.interval("30ms", self.disable_poller_check)
             self.display_state.unregister("broadcast_update", self.broadcast_update)
@@ -205,7 +213,7 @@ class HeadUpDisplay:
             if widget.preferences.mark_changed:
                 dict = {**dict, **widget.preferences.export(widget.id)}
                 widget.preferences.mark_changed = False
-                
+
         self.preferences.persist_preferences(dict)
         self.determine_active_setup_mouse()
         
@@ -301,7 +309,7 @@ class HeadUpDisplay:
     def switch_theme(self, theme_name, disable_animation = False, forced = False):
         if self.theme.name != theme_name and not disable_animation and not forced:
             self.set_current_flow("theme_changed")
-    
+        
         if self.theme.name != theme_name or forced:
             should_reset_watch = self.watching_directories
             if should_reset_watch:
@@ -317,9 +325,12 @@ class HeadUpDisplay:
                     widget.show_animations = show_animations
                 else:
                     widget.set_theme(self.theme)
-                    
+
+            if self.widget_manager.html_generator:
+                self.widget_manager.html_generator.set_theme(self.theme)
+
             if should_reset_watch:
-                self.watch_directories()
+                self.watch_directories() 
             
             self.preferences.persist_preferences({"theme_name": theme_name})
         
@@ -417,12 +428,14 @@ class HeadUpDisplay:
             self.pollers[topic].enable()
         # Automatically enable the poller if it was active on restart        
         else:
+            enabled = False
             for widget in self.widget_manager.widgets:
                 if topic in widget.current_topics and widget.enabled and \
                     (not hasattr(self.pollers[topic], "enabled") or not self.pollers[topic].enabled):
                     self.pollers[topic].enable()
+                    enabled = True
                     break
-        
+
     def remove_poller(self, topic: str):
         if topic in self.pollers:
             self.pollers[topic].disable()
@@ -448,7 +461,7 @@ class HeadUpDisplay:
             for widget in self.widget_manager.widgets:
                 if widget.current_topics and widget.enabled:
                     attached_topics.extend(widget.current_topics)
-
+        
         # First - Disable all pollers from making content updates to prevent race conditions with content events from occurring
         if disable_pollers:
             for topic, poller in self.pollers.items():
@@ -475,7 +488,6 @@ class HeadUpDisplay:
                     self.pollers[topic].enable()
                 elif not widget.enabled and (hasattr(self.pollers[topic], "enabled") and self.pollers[topic].enabled):
                     self.pollers[topic].disable()
-                    
 
     # Check if the widgets are finished unloading, then disable the poller
     # This should only run when we have a state poller
@@ -528,6 +540,13 @@ class HeadUpDisplay:
                         widget.clear_topic(event.topic)
                 
                 updated = widget_to_claim.content_handler(event)
+                
+                # Check if we need to autofocus the content
+                if event.show and time.time() < self.focus_grace_period:
+                    if widget_to_claim.accessible_tree:
+                        self.event_dispatch.focus_path(widget_to_claim.accessible_tree.path)
+                        if not self.auto_focus:
+                            self.focus_grace_period = 0
         else:
             for widget in self.widget_manager.widgets:
                 if event.topic_type == "variable" or (event.topic_type in widget.topic_types and \
@@ -600,15 +619,29 @@ class HeadUpDisplay:
     def move_context_menu(self, widget_id: str, pos: Point2d, buttons: list[HudButton]):
         connected_widget = None
         context_menu_widget = None
+                
         for widget in self.widget_manager.widgets:
             if widget.enabled and widget.id == widget_id:
                 connected_widget = widget
             elif widget.id == "context_menu":      
                 context_menu_widget = widget
         if connected_widget and context_menu_widget:
+            # Determine position based on available space - TODO Make sure context menu does not overlap
+            if pos is None:
+                pos_x = connected_widget.x + connected_widget.width / 2
+                pos_y = connected_widget.y + connected_widget.height if connected_widget.y < 500 else connected_widget.y - 10
+                pos = Point2d(pos_x, pos_y)
+                
             context_menu_widget.connect_widget(connected_widget, pos.x, pos.y, buttons)
             self.update_context()
             
+            # Auto focus the context menu if we have auto focus enabled
+            if self.auto_focus and context_menu_widget.current_focus is None and connected_widget.accessible_tree:
+                for node in connected_widget.accessible_tree.nodes:
+                    if node.role == "context_menu" and len(node.nodes) > 0:
+                        context_menu_widget.current_focus = node
+                        self.event_dispatch.focus_path(node.path)
+                        
     # Connect the context menu using voice
     def connect_context_menu(self, widget_id):
         connected_widget = None
@@ -616,25 +649,18 @@ class HeadUpDisplay:
         for widget in self.widget_manager.widgets:
             if widget.enabled and widget.id == widget_id:
                 connected_widget = widget
-            elif widget.id == "context_menu":      
-                context_menu_widget = widget
         
         buttons = []
-        if connected_widget:
-            pos_x = connected_widget.x + connected_widget.width / 2
-            pos_y = connected_widget.y + connected_widget.height
+        if connected_widget and not isinstance(connected_widget, HeadUpContextMenu):
             buttons = connected_widget.buttons
-        
-            if context_menu_widget:
-                context_menu_widget.connect_widget(connected_widget, pos_x, pos_y, buttons)
-                self.update_context()
+            self.move_context_menu(connected_widget.id, None, buttons)
     
     # Hide the context menu
     # Generally you want to do this when you click outside of the menu itself
     def hide_context_menu(self, _ = None):
         context_menu_widget = None    
         for widget in self.widget_manager.widgets:
-            if widget.id == "context_menu" and widget.enabled:      
+            if widget.id == "context_menu" and widget.enabled:
                 context_menu_widget = widget
                 break
         
@@ -659,7 +685,7 @@ class HeadUpDisplay:
 
     # Updates the context based on the current HUD state
     # This needs to be done on user actions - Automatic flows need higher scrutiny
-    def update_context(self):        
+    def update_context(self):
         widget_names = {}
         choices = {}
         quick_choices = {}
@@ -755,26 +781,59 @@ class HeadUpDisplay:
     def destroy(self):
         cron.cancel(self.disable_poller_job)
         cron.cancel(self.update_environment_debouncer)
-        self.event_dispatch.unregister("persist_preferences", self.debounce_widget_preferences)
-        self.event_dispatch.unregister("hide_context_menu", self.hide_context_menu)
-        self.event_dispatch.unregister("deactivate_poller", self.deactivate_poller)
-        self.event_dispatch.unregister("show_context_menu", self.move_context_menu)
-        self.event_dispatch.unregister("synchronize_poller", self.synchronize_widget_poller)    
-        self.event_dispatch = None
+        if self.event_dispatch is not None:
+            self.event_dispatch.unregister("persist_preferences", self.debounce_widget_preferences)
+            self.event_dispatch.unregister("hide_context_menu", self.hide_context_menu)
+            self.event_dispatch.unregister("deactivate_poller", self.deactivate_poller)
+            self.event_dispatch.unregister("show_context_menu", self.move_context_menu)
+            self.event_dispatch.unregister("synchronize_poller", self.synchronize_widget_poller)
+            self.event_dispatch = None
         ui.unregister('screen_change', self.reload_preferences)
         settings.unregister("user.talon_hud_environment", self.hud_environment_change)
         
         if self.display_state:
-            self.display_state.unregister('broadcast_update', self.broadcast_update)        
+            self.display_state.unregister('broadcast_update', self.broadcast_update)
         self.display_state = None
-        if self.enabled:
+        if self.enabled:  
             for widget in self.widget_manager.widgets:
                 show_animations = widget.show_animations
                 widget.show_animations = False
                 widget.disable()
                 widget.show_animations = show_animations
-            self.widget_manager.widgets = []
+            self.widget_manager.destroy()
         self.widget_manager = None
+        
+    # ---------- KEYBOARD FOCUS METHODS ---------- #
+    def focus(self):
+        if self.enabled:
+            self.widget_manager.focus()
+
+    def blur(self):
+        if self.enabled:
+            self.widget_manager.blur()
+            
+    def toggle_focus(self):
+        if self.enabled:
+            if self.widget_manager.is_focused():
+                self.widget_manager.blur()
+            else:
+                self.widget_manager.focus()
+                
+    def focus_widget(self, widget_id: str, node_id: int = -1):
+        if self.enabled:
+            self.widget_manager.focus(widget_id, node_id)
+    
+    # Keep a grace period to automatically focus content that shows up in the next N seconds
+    def update_focus_grace_period(self):
+        if not self.auto_focus:
+            self.focus_grace_period = time.time() + 1
+
+    def set_auto_focus(self, auto_focus: bool, persisted = False):
+        self.auto_focus = auto_focus
+        # Set the grace period 
+        self.focus_grace_period = time.time() * 50000 if auto_focus else 0
+        if persisted:
+           self.preferences.persist_preferences({"auto_focus": auto_focus})
 
 preferences = HeadUpDisplayUserPreferences("", CURRENT_TALON_HUD_VERSION) 
 hud = HeadUpDisplay(preferences)
@@ -787,7 +846,7 @@ app.register('ready', hud_start)
 
 @mod.action_class
 class Actions:
-                
+
     def hud_enable():
         """Enables the HUD"""
         global hud
@@ -807,32 +866,32 @@ class Actions:
         """Enables a specific HUD element"""
         global hud        
         hud.enable_id(id)
-        
+
     def hud_set_widget_preference(id: str, property: str, value: Any):
         """Set a specific widget preference"""
         global hud        
         hud.set_widget_preference(id, property, value, True)        
-        
+
     def hud_widget_subscribe_topic(id: str, topic: str):
         """Subscribe to a specific type of content on a widget"""
         global hud
         hud.subscribe_content_id(id, topic)
-        
+
     def hud_widget_unsubscribe_topic(id: str, topic: str):
         """Unsubscribe from a specific type of content on a widget"""
         global hud
         hud.unsubscribe_content_id(id, topic)
-        
+
     def hud_disable_id(id: str):
         """Disables a specific HUD element"""
         global hud
         hud.disable_id(id)
-        
+
     def hud_switch_theme(theme_name: str):
         """Switches the UI theme"""
         global hud
         hud.switch_theme(theme_name)
-        
+
     def hud_set_setup_mode(id: str, setup_mode: str):
         """Starts a setup mode which can change position"""
         global hud
@@ -849,15 +908,15 @@ class Actions:
         
         for id in ids:
             hud.start_setup_id(id, setup_mode, mouse_pos)
-                
+
     def hud_show_context_menu(widget_id: str, pos_x: int, pos_y: int, buttons: list[HudButton]):
         """Show the context menu for a specific widget id"""
         hud.move_context_menu(widget_id, Point2d(pos_x, pos_y), buttons)
-        
+
     def hud_hide_context_menu():
         """Show the context menu for a specific widget id"""
         hud.hide_context_menu()
-        
+
     def hud_increase_widget_page(widget_id: str):
         """Increase the content page of the widget if it has pages available"""
         global hud
@@ -867,33 +926,33 @@ class Actions:
         """Decrease the content page of the widget if it has pages available"""
         global hud
         hud.decrease_widget_page(widget_id)
-        
+
     def hud_get_widget_pagination(widget_id: str) -> HudContentPage:
         """Get the pagination information of the widget"""
         global hud
         return hud.get_widget_pagination(widget_id)
-        
+
     def hud_widget_options(widget_id: str):
         """Connect the widget to the context menu to show the options"""
         global hud
         hud.connect_context_menu(widget_id)
-        
+
     def hud_activate_choice(choice_string: str):
         """Activate a choice available on the screen"""    
         global hud
         hud.activate_choice(choice_string)
-        
+
     def hud_activate_enabled_voice_command(enabled_voice_command: str):
         """Activate a defined voice command attached to an enabled widget"""
         global hud
         hud.activate_enabled_voice_command(enabled_voice_command)
-        
+
     def hud_activate_choices(choice_string_list: list[str]):
         """Activate multiple choices available on the screen"""    
         global hud
         for choice_string in choice_string_list:
             hud.activate_choice(choice_string)
-        
+
     def hud_add_poller(topic: str, poller: Poller, keep_alive: bool = False):
         """Add a content poller / listener to the HUD"""    
         global hud
@@ -910,31 +969,56 @@ class Actions:
         """Enables a poller and claims a widget"""
         global hud
         hud.activate_poller(topic)
-        
+
     def hud_deactivate_poller(topic: str):
         """Disables a poller"""    
         global hud
         hud.deactivate_poller(topic)
-        
+
     def hud_get_theme() -> HeadUpDisplayTheme:
         """Get the current theme object from the HUD"""
         global hud
         return hud.theme
-        
+
     def hud_register_theme(theme_name: str, theme_dir: str):
         """Add a theme directory from outside of the HUD to the possible themes"""
         global hud
         hud.add_theme(theme_name, theme_dir)
-        
+
     def hud_watch_directories():
         """Watch the theme and preferences directories for changes - This gives a performance penalty and should only be used during development"""
         global hud
         hud.watch_directories()
-        
+
     def hud_unwatch_directories():
         """Stop watching for changes in the theme directories"""
         global hud
         hud.unwatch_directories()
+
+    def hud_widget_focus(widget_id: str, node_id: int = -1):
+        """Focus a specific widget available in the HUD"""
+        global hud
+        hud.focus_widget(widget_id, node_id)
+
+    def hud_focus():
+        """Focus the HUD for keyboard interaction"""
+        global hud
+        hud.focus()
+
+    def hud_blur():
+        """Blur the keyboard focus from the HUD to the previously focused application"""
+        global hud
+        hud.blur()
+
+    def hud_toggle_focus():
+        """Toggle the focus on or off the HUD"""
+        global hud
+        hud.toggle_focus()
+
+    def hud_set_auto_focus(auto_focus: Union[bool, int]):
+        """Set the widget focusing behavior to automatically focus on content publishing or not"""
+        global hud
+        hud.set_auto_focus(auto_focus, auto_focus == True or auto_focus > 0)
 
     def hud_set_visibility(visible: Union[bool, int] = True, pause_seconds: float = 0.05):
         """Set all the widgets' visibility without disabling them - Useful for toggling the HUD on and off in screenshots"""

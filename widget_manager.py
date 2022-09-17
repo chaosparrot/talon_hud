@@ -18,6 +18,8 @@ from .widgets.screenoverlay import HeadUpScreenOverlay
 from .theme import HeadUpDisplayTheme
 from .event_dispatch import HeadUpEventDispatch
 from .configuration import hud_get_configuration
+from .focus_manager import HeadUpFocusManager
+from .html_generator import HeadUpHtmlGenerator
 
 user_preferences_file_dir = hud_get_configuration("user_preferences_folder")
 user_preferences_file_location = os.path.join(user_preferences_file_dir, "widget_settings.csv")
@@ -35,11 +37,14 @@ class HeadUpWidgetManager:
     event_dispatch: HeadUpEventDispatch
     preferences: HeadUpDisplayUserPreferences
     widgets: list[BaseWidget]
+    focus_manager: HeadUpFocusManager
     
     def __init__(self, preferences: HeadUpDisplayUserPreferences, theme: HeadUpDisplayTheme, event_dispatch: HeadUpEventDispatch):
         self.default_screen_rect = ui.Rect(0, 0, 1920, 1080)
         self.default_screen_mm_size = [527.0, 296.0]
         
+        self.focus_manager = HeadUpFocusManager(self, event_dispatch)
+        self.html_generator = HeadUpHtmlGenerator(theme, self.focus_manager)
         self.previous_talon_hud_environment = ""
         self.previous_screen_rects = []
         self.preferences = preferences
@@ -67,17 +72,34 @@ class HeadUpWidgetManager:
         # With subscribed content, topics etc for specific widgets
         # For now, we will just use the default widgets taken from the display widgets array
         self.widgets = self.get_default_widgets()
+        self.focus_manager.init_widgets()
         
         self.previous_screen_rects = []
         for screen in ui.screens():
             self.previous_screen_rects.append(ui.Rect(screen.x, screen.y, screen.width, screen.height))
+    
+    def destroy(self):
+        self.widgets = []
+        self.focus_manager.destroy()
+        self.focus_manager = None
+    
+    def is_focused(self):
+        return self.focus_manager and self.focus_manager.focused
+        
+    def focus(self, widget_id: str = None, node_id: int = -1):
+        if self.focus_manager:
+            self.focus_manager.focus_path(None)
+
+    def blur(self):
+        if self.focus_manager:
+            self.focus_manager.blur()
     
     def initial_load_preferences(self):
         user_preferences_screen_file_path = self.preferences.get_screen_preferences_filepath(ui.screens())
         if not os.path.exists(user_preferences_file_location):
             self.preferences.persist_preferences(self.preferences.default_prefs, True)
         self.preferences.load_preferences(user_preferences_screen_file_path)
-    
+
     def reload_preferences(self, force_reload=False, current_hud_environment="") -> str:        
         # Check if the screen dimensions have changed
         current_screen_rects = []

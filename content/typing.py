@@ -74,16 +74,7 @@ class HudScreenRegion:
     hover_visibility: int = HOVER_VISIBILITY_OFF
     text_colour: str = None
     vertical_centered: bool = True
-    
-@dataclass
-class HudAudioCue:
-    id: str
-    title: str
-    description: str
-    file: str
-    volume: int = 75
-    enabled: bool = False
-    
+
 # One-indexed page with result
 @dataclass
 class HudContentPage:
@@ -160,3 +151,56 @@ class HudStatusIcon:
     text: str = None
     accessible_text: str = None
     callback: Callable[[Any, Any], None] = None
+
+@dataclass
+class HudParticle:
+    type: str
+    colour: str = None
+    image: str = None
+    diameter: int = 10
+    x: int = 0
+    y: int = 0
+    
+@dataclass
+class HudAccessibleNode:
+    name: str
+    role: str
+    value: str = None
+    state: str = None
+    nodes: list = None
+    path: str = ""
+
+    def set_path(self, path: str, number: int, parent = None):
+        path = path + ":" + str(number)
+        self.path = parent.path + "." + path if parent and parent.path else path
+        
+    def append(self, node):
+        if self.nodes is None:
+            self.nodes = []
+        node.set_path(node.path, len(self.nodes), self )
+        self.nodes.append(node)
+        
+    def equals(self, path_node):
+        elements = self.path.split(".")
+
+        if len(elements) > 0:
+            if elements[-1].startswith(path_node + ":"):
+                return True
+        return False
+
+    def find(self, path: str):
+        if path == self.path:
+            return self
+        else:
+            for node in self.nodes:
+                if path.startswith(node.path):
+                    found = node.find(path)
+                    if found is not None:
+                        return found
+            return None
+        
+    def clear(self):
+        if self.nodes is not None:
+            for node in self.nodes:
+                node.clear()
+            self.nodes = []

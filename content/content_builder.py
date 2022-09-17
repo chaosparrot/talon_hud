@@ -68,10 +68,14 @@ class HudContentBuilder():
         """Create a walkthrough for the Talon HUD"""
         return HudWalkThrough(title, walkthrough_steps)
         
+    def create_particle(self, type, colour = None, image = None, diameter = 10, pos_x=0, pos_y=0):
+        """Create a particle to be shown in the screen overlay"""
+        return HudParticle(type, colour, image, diameter, pos_x, pos_y)
+        
     def add_log(self, type: str, message: str, timestamp = None, metadata = None):
         """Adds a log to the HUD"""
         self._content.append_to_log_messages(type, message, timestamp, metadata)
-        
+
     def publish_event(self, topic_type: str, topic:str, operation: str, data: Any = None, show: bool = False, claim: int = None):
         """Publish created content to the central HUD content object"""
         if topic_type is not None and self._content is not None:

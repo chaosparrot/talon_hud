@@ -6,6 +6,7 @@ from talon import skia, ui, Module, cron, actions
 import time
 import numpy
 
+# TODO FIX ISSUE WHERE ENABLING THE STATUS BAR WILL NOT RECOVER THE PROPER SUBSCRIPTIONS?
 class HeadUpStatusBar(BaseWidget):
 
     allowed_setup_options = ["position", "dimension", "font_size"]
@@ -126,6 +127,8 @@ class HeadUpStatusBar(BaseWidget):
         paint = self.draw_setup_mode(canvas)
         self.icon_positions = []
         stroke_width = 1.5
+        focus_colour = self.theme.get_colour("focus_colour")
+        focus_width = 4
         circle_margin = 4
         element_height = self.height - ( stroke_width * 2 )
         icon_diameter = self.height - ( circle_margin * 2 )
@@ -135,7 +138,8 @@ class HeadUpStatusBar(BaseWidget):
         stroke_colours = (self.theme.get_colour("top_stroke_colour"), self.theme.get_colour("down_stroke_colour"))
         paint.shader = linear_gradient(self.x, self.y, self.x, self.y + element_height * 2, stroke_colours)
         self.draw_background(canvas, self.x, self.y, element_width, element_height + (stroke_width * 2), paint)
-        
+        focus_shader = linear_gradient(self.x, self.y, self.x, self.y + element_height * 2, (focus_colour, focus_colour))
+            
         # Calculate the blinking colour
         continue_drawing = False
         if ( self.blink_state > 0 ):
@@ -159,6 +163,13 @@ class HeadUpStatusBar(BaseWidget):
         paint.shader = background_shader
         self.draw_background(canvas, self.x + stroke_width, self.y + stroke_width, element_width - stroke_width * 2, element_height, paint)
 
+        if self.focused and ( self.current_focus is None or self.current_focus.role == "widget" ):
+            paint.style = canvas.paint.Style.STROKE
+            paint.stroke_width = focus_width
+            paint.shader = linear_gradient(self.x, self.y, self.x, self.y + element_height * 2, (focus_colour, focus_colour))
+            self.draw_background(canvas, self.x + focus_width / 2, self.y + focus_width / 2, element_width - focus_width, element_height, paint)
+            paint.style = canvas.paint.Style.FILL
+
         icon_texts = []
 
         # Draw icons
@@ -170,13 +181,18 @@ class HeadUpStatusBar(BaseWidget):
                     icon_texts.append(icon.text)
                 continue
 
-            if (not icon.callback or (mode == "sleep" and self.icon_hover_index != hover_index)):
+            if self.focused and self.current_focus is not None and self.current_focus.role == "button" and self.current_focus.equals(icon.topic):
+                paint.shader = focus_shader
+                paint.style = paint.Style.STROKE
+                paint.stroke_width = focus_width                
+            elif (not icon.callback or (mode == "sleep" and self.icon_hover_index != hover_index)):
                 paint.shader = background_shader
             else:
-                button_colour = self.theme.get_colour("button_hover_colour") if self.icon_hover_index == hover_index else self.theme.get_colour("button_colour")
+                button_colour = self.theme.get_colour("button_hover_colour") if self.icon_hover_index == hover_index else self.theme.get_colour("button_colour")                
                 paint.shader = linear_gradient(self.x, self.y, self.x, self.y + element_height, (self.theme.get_colour("button_colour"), button_colour))
             
             self.draw_icon(canvas, self.x + stroke_width + circle_margin + icon_offset, self.y + circle_margin, icon_diameter, paint, icon)
+            paint.style = paint.Style.FILL
             icon_offset += icon_diameter + circle_margin
             hover_index += 1
 
@@ -200,7 +216,7 @@ class HeadUpStatusBar(BaseWidget):
             close_colour = self.theme.get_colour("close_icon_hover_colour") if self.icon_hover_index == len(self.icons) else self.theme.get_colour("close_icon_accent_colour")
             paint.shader = linear_gradient(self.x, self.y, self.x, self.y + element_height, (self.theme.get_colour("close_icon_colour"), close_colour))
             close_icon_diameter = icon_diameter / 2
-            close_status_icon = HudStatusIcon("close", None, None, "Close Head up display", lambda widget, icon: actions.user.disable_hud())
+            close_status_icon = HudStatusIcon("close", None, None, "Close Head up display", lambda widget, icon: actions.user.hud_disable())
             self.draw_icon(canvas, self.x + element_width - close_icon_diameter - close_icon_diameter / 2 - stroke_width, height_center - close_icon_diameter / 2, close_icon_diameter, paint, close_status_icon)
 
         # Reset the blink colour when the blink is finished
@@ -280,3 +296,25 @@ class HeadUpStatusBar(BaseWidget):
             self.intro_animation_end_colour[1] - self.intro_animation_start_colour[1],
             self.intro_animation_end_colour[2] - self.intro_animation_start_colour[2]
         ]
+
+    def generate_accessible_nodes(self, parent):
+        if not self.minimized:
+            for icon in self.icons:
+                parent.append( self.generate_accessible_node(icon.accessible_text, "button" if icon.callback else "image", path = icon.topic))
+        
+        parent = self.generate_accessible_context(parent)
+        return parent
+        
+    def activate(self, focus_node = None) -> bool:
+        """Implement focus activation"""
+        activated = super().activate(focus_node)
+        if activated == False:
+            if focus_node is None:
+                focus_node = self.current_focus
+
+            if focus_node is not None and focus_node.role == "button":
+                for icon in self.icons:
+                    if focus_node.equals(icon.topic):
+                        icon.callback(self, icon)
+                        activated = True
+        return activated

@@ -20,7 +20,6 @@ class HeadUpCursorTracker(BaseWidget):
     canvas_visibility = True
 
     preferences = HeadUpDisplayUserWidgetPreferences(type="cursor_tracker", x=15, y=15, width=15, height=15, enabled=True, sleep_enabled=False)
-
     
     # New content topic types
     topic_types = ["cursor_regions"]
@@ -61,6 +60,10 @@ class HeadUpCursorTracker(BaseWidget):
             cron.cancel(self.mouse_poller)
             self.mouse_poller = cron.interval("30ms", self.poll_mouse_pos)
             if self.canvas:
+                pos = ctrl.mouse_pos()
+                self.x = pos[0] + self.limit_x
+                self.y = pos[1] + self.limit_y
+                self.canvas.move(self.x, self.y)
                 self.canvas.freeze()
             
     def soft_disable(self):

@@ -14,6 +14,7 @@ You can customize three things about the mode tracking
 1. The icons connected to the modes. These are stored in the themes folder as <modename>_icon.png and can be changed there.
 2. The mode that should be displayed on the status bar.
 3. The toggle functionality of the mode tracking button.
+4. The available modes to detect, by overriding the **user.hud_get_status_modes** action.
 
 Below is an example of the last two being customized, where only the command and sleep icon are displayed, instead of having the dictation icon displayed as well.
 
@@ -49,6 +50,9 @@ class Actions:
         elif current_mode == "sleep":
              actions.speech.enable()
 ```
+
+By overriding the **hud_get_status_modes** and adding more modes than just the dictation, command and sleep mode, you can add more theming possibilities as well. An example can be found in the content/mode_poller.py file.
+For instance, if you had a gaming mode, and you have **user.gaming** added to the **hud_get_status_modes** result, you can have an icon loaded in ( user.gaming_icon.png ) onto your status bar as well.
 
 ### Customizing language tracking
 
@@ -257,9 +261,327 @@ The markdown file format is automatically detected when a file with .md is loade
 
 In walkthroughs, every new line starts a new walkthrough step.
 
-## Non-text content
+## Log messages
 
-This is still being fleshed out, but in the mean time, you can take a look at the [previous content documentation](docs/deprecated_docs/CONTENT_README.md)
+If you want to add a log message after something happens, for example copying content, you can use the action `user.hud_add_log`. 
+For example, `user.hud_add_log('warning', '<*Note:/> This is a warning message!')` will add an orange message with "**Note:** This is a warning message!" as the text.
+
+The first argument is the type of log message, and the second is the message you want to display. 
+There are five types of log message stylings:
+- command: This is the regular non-styled message
+- event: Blue background
+- warning: Orange background
+- error: Red background
+- success: Green background
+
+The message can contain bold and italic markers like explained in the [Creating text content](#creating-text-content) section, but no colours.
+
+## Status icons
+
+There are two kinds of icons that you can publish to the HUD, namely status icons and ability icons, which get published to the status bar and ability bar respectively. Status icons can have click interactions, while ability icons are purely for a visual reminder.  
+
+Status bar icons can be made using the `user.hud_create_status_icon` action. This takes the following arguments:
+topic: str, image: str, text: str = None, accessible_name: str = "Status icon", callback
+- topic: The name of the status icon
+- image: The image to display in the status bar
+- text: The text to display in case the image is left blank or cannot be found
+- accessible_name: The text used for future accessible names
+- callback: A callback function that takes two arguments that is executed when the user activates the icon.
+
+Status icons can also be created using the `self.content.create_status_icon` method inside Pollers.
+
+Once the status bar icon is made, it can be published with the `user.hud_publish_status_icon` action, which takes these arguments:
+- topic: The name of the status icon - This name is used in the removal and update process as well
+- icon: The status bar icon created using `user.hud_create_status_icon`.
+
+Ability bar icons can be added or replaced with the `user.hud_add_ability` action, which takes the following arguments:
+- id: The name of the ability icon - This name is used in the removal and update process as well
+- image: The image to display
+- colour: The colour to have in the background
+- enabled: If the icon is set to disabled, it will show up transparent, if it is enabled it will show up without any transparency.
+- activated: If the icon is disabled, but activated is turned on, the icon will be opaque for a few frames before returning back to transparency.
+- image_offset_x: If the image isn't nicely centered to your liking, you can shift its horizontal position with this.
+- image_offset_y: If the image isn't nicely centered to your liking, you can shift its vertical position with this.
+
+If you want to remove them again, you can use `user.hud_remove_ability`, this only takes the id that is used in the creation as an argument.
+
+Ability icons can also be created with the `self.content.create_ability` method inside Pollers.
+
+## Eyetracker content
+
+There are a set of widgets that are designed specifically to work well with eyetracker usage. The cursor tracker and the screen overlay. 
+The cursor tracker displays an icon next to the cursor, which translates coarsely to where you are looking when you are using an eyetracker.
+Similarly, the screen overlay widget allows you to mark specific regions with an icon, colour and text. 
+While on their own, they do not offer ready to use content like the status bar does, there are ways to create content for them which can enhance the usage of eyetrackers in combination with, for example, noises.  
+
+### Activatable virtual keys
+
+The virtual keyboard and the dwell toolbar offer a way to interact with regions on the screen without it requiring a click. The activation trigger can be a voice command, a noise or any other user input like a footswitch or a keyboard key.
+Both of these go about activating the actions connected to regions in their own unique way. The virtual keyboard requires an activation trigger to activate, whereas the dwell toolbar requires you to look at the region, and then stores the result to be used by an activation trigger later.
+
+You can make a key for both of these tools using the action `user.hud_create_virtual_key`. This action takes these arguments:
+- action: The action to activate. This can either be a function or a string, where the string will be converted to a key press
+- text: Optional, The text to display when hovered over the region
+- icon: Optional, the image to display when hovered over the region. In the case of a dwell toolbar, the icon that is kept next to your mouse cursor.
+- colour: Optional, the colour of the region. In the case of a dwell toolbar, the colour that is kept next to your mouse cursor.
+- text_colour: Optional, the text colour of the displayed title.
+- x: Optional, the X coordinate of the topleft position of the key.
+- y: Optional, the Y coordinate of the topleft position of the key.
+- width: Optional, the width of the key.
+- height: Optional, the height of the key.
+
+If no colours are given, they will be assigned according to a colour blind template.
+
+Once you have a bunch of virtual keys, you can assign them to either a virtual keyboard or a dwell toolbar.
+
+They both use layouts to spread the available triggers out across a grid layout, the available layout options are listed below. 
+- The full grid covers the entire screen.
+- The open grid goes around the center of the screen, covering all the sides but keeping the center free from regions.
+
+You can also choose an aligment which determines the order of the placement.
+
+Below is an example of each grid layout, where we have 12 virtual keys, and where the dots represent no screen regions.
+
+```
+No regions     Full grid default
+. . . .        1 2 3 4  
+. . . .        5 6 7 8  
+. . . .        9 A B C  
+
+Left aligned   Open grid
+1 4 7 A        1 2 3 4
+2 5 8 B        5 B C 7
+3 6 9 C        6 9 A 8
+```
+
+By default the virtual keyboard covers the entire screen using the full grid layout, while the dwell toolbar uses a left aligned grid. 
+They dynamically grow depending on the amount of virtual keys available, but they can be set according to your desired horizontal and vertical amount.
+
+### Virtual keyboard
+
+To register a virtual keyboard, you can use the `user.hud_register_virtual_keyboard` action, which takes the following arguments:
+- name: The name of the virtual keyboard
+- keys: A list of the virtual keys
+- layout_style: The grid layout of the keys: 'full', 'aligned' or 'open', explained above. 'full' by default
+- alignment: The alignment, either left, right, top or bottom. left by default
+- horizontal_key_amount: Amount of horizontal key regions, 3 by default
+- vertical_key_amount: Amount of vertical key regions, 3 by default
+
+You can then visualise the virtual keyboard by using the `user.hud_set_virtual_keyboard` action. Which takes the following arguments.
+- name: The name of the virtual keyboard to visualise - If the name wasn't found, the virtual keyboard will be made invisible. Default empty
+- monitor: The monitor number to show the virtual keyboard on, default 0 for primary monitor
+- visible: Whether or not the virtual keys are visible at all, True by default
+
+If you still want the dwell toolbar to be active, but want the regions to be invisible, you can use the `user.hud_set_virtual_keyboard_visibility` action. 
+For instance, using `hud_set_virtual_keyboard_visibility(0)` in a .talon file will make the current toolbar invisible.
+
+If you wish to activate a virtual key, use the `user.hud_activate_virtual_key` which activates the virtual key the mouse is currently over.
+
+An example is shown below where we have a virtual keyboard which can type 1 through 9. We activate it by saying `virtual keys set`, then saying `key this` to type the number. We can hide the keyboard by saying `virtual keys remove`. If we want the keys to be active, but invisible, we can say `virtual keys hide`, and `virtual keys show` to show them again.
+
+```talon
+-
+virtual keys set: user.hud_set_virtual_keyboard('example_keyboard')
+virtual keys remove: user.hud_set_virtual_keyboard()
+virtual keys show: user.hud_set_virtual_keyboard_visibility(1)
+virtual keys hide: user.hud_set_virtual_keyboard_visibility(0)
+key this: user.hud_activate_virtual_key()
+```
+
+```python
+from talon import actions, app
+
+def register_keyboard():
+    keys = [
+	    actions.user.hud_create_virtual_key('1', 'One'),
+	    actions.user.hud_create_virtual_key('2', 'Two'),
+	    actions.user.hud_create_virtual_key('3', 'Three'),
+	    actions.user.hud_create_virtual_key('4', 'Four'),
+	    actions.user.hud_create_virtual_key('5', 'Five'),
+	    actions.user.hud_create_virtual_key('6', 'Six'),
+	    actions.user.hud_create_virtual_key('7', 'Seven'),
+	    actions.user.hud_create_virtual_key('8', 'Eight'),
+	    actions.user.hud_create_virtual_key('9', 'Nine')
+	]
+    actions.user.hud_register_virtual_keyboard('example_keyboard', keys)
+
+app.register('ready', register_keyboard)
+```
+
+### Dwell toolbar
+
+To register a dwell toolbar, you can use the `user.hud_register_dwell_toolbar` action, which takes the following arguments:
+- name: The name of the dwell toolbar
+- keys: A list of the virtual keys
+- dwell_ms: The amount of milliseconds until a dwell key gets saved and moves around with your cursor tracker. By default this is set to 750ms.
+- layout_style: The grid layout of the keys: 'full', 'aligned' or 'open', explained above. 'aligned' by default
+- alignment: The alignment, either left, right, top or bottom. left by default
+- horizontal_key_amount: Amount of horizontal key regions, 3 by default
+- vertical_key_amount: Amount of vertical key regions, 5 by default
+
+You can then visualise the dwell toolbar by using the `user.hud_set_dwell_toolbar` action. Which takes the following arguments.
+- name: The name of the dwell toolbar to visualise - If the name wasn't found, the dwell toolbar will be made invisible and the active dwell icon will be cleared. Default empty
+- monitor: The monitor number to show the dwell toolbar on, default 0 for primary monitor
+- visible: Whether or not the virtual keys are visible at all, True by default
+
+If you still want the dwell toolbar to be active, but want the regions to be invisible, you can use the `user.hud_set_dwell_toolbar_visibility` action. 
+For instance, using `hud_set_dwell_toolbar_visibility(0)` in a .talon file will make the current toolbar invisible.
+
+Once you have a dwell toolbar visible, we can hover over each region and have the assigned action saved over to our cursor. Once the colour is moved over, you know that the action has been assigned. 
+When this is done, you can activate the saved dwell action using `user.hud_activate_dwell_key`. If you wish to clear the current dwell action, use `user.hud_deactivate_dwell_key`.
+
+A set of example files is shown below, where the you can type A, B, C, D and E with the dwell action. We activate the dwell toolbar by saying `dwell toolbar set`, and activate a dwell using `dwell this`. We can remove it again with `dwell toolbar remove`. We can clear the dwell action with `clear dwell`. If we want to make the dwell toolbar active, but invisible, we can say `dwell toolbar hide`, and inversely to show it again, `dwell toolbar show`.
+
+```talon
+-
+dwell toolbar set: user.hud_set_dwell_toolbar('example_toolbar')
+dwell toolbar remove: user.hud_set_dwell_toolbar()
+dwell toolbar show: user.hud_set_dwell_toolbar_visibility(1)
+dwell toolbar hide: user.hud_set_dwell_toolbar_visibility(0)
+dwell this: user.hud_activate_dwell_key()
+dwell clear: user.hud_deactivate_dwell_key()
+```
+
+```python
+from talon import actions, app
+
+def register_dwell_toolbar():
+    keys = [
+	    actions.user.hud_create_virtual_key('shift-a', 'A'),
+	    actions.user.hud_create_virtual_key('shift-b', 'B'),
+	    actions.user.hud_create_virtual_key('shift-c', 'C'),
+	    actions.user.hud_create_virtual_key('shift-d', 'D'),
+	    actions.user.hud_create_virtual_key('shift-e', 'E')
+	]
+    actions.user.hud_register_dwell_toolbar('example_toolbar', keys)
+
+app.register('ready', register_dwell_toolbar)
+```
+
+### Particle visualisation
+
+You can make a temporary particle appear for a brief moment to indicate that an action has occurred.  
+For this, you can use either of the following actions: `user.hud_publish_mouse_particle` or `user.hud_publish_particle`
+
+Both of these take at least four arguments:
+- type: This is the type of particle animation that should be used. Currently only 'float_up' is available
+- colour: The colour of the particle
+- image: An optional image path
+- diameter: The size of the particle in pixels
+
+The `user.hud_publish_mouse_particle` action will place the particle where the current mouse position is, whereas with `user.hud_publish_particle` you will have to add the X and Y positions as the fifth and sixth argument.
+
+For example, this .talon file example will show a red particle near your mouse cursor when you say `red particle`, and a blue particle at the top left part of the screen when you say `blue particle`.
+
+```talon
+-
+red particle: user.hud_publish_mouse_particle('float_up', 'FF0000')
+blue particle: user.hud_publish_particle('float_up', '0000FF', '', 10, 100, 100)
+```
+
+### Screen regions
+
+The basic building blocks of this eyetracker focused content is the screen region, both the cursor tracker and the screen overlay use this basic building block. 
+
+Screen regions can be created with the `user.hud_create_screen_region` action, and can be published with the `user.hud_publish_screen_regions` action.
+
+The `user.hud_create_screen_region` takes in 11 possible arguments:
+- topic: The topic of the screen region, used in for instance clearing away a specific topic
+- colour: The colour of the region visualisation
+- icon: Optional, The image of the region visualisation
+- title: Optional, The text displayed on the region visualisation (Screen overlay only)
+- hover_visibility: Optional, Determines the visibility based on hover (Screen overlay only)  
+  0 makes the region visible regardless of the cursor position
+  1 makes only makes the region visible if the cursor is inside of the region
+  -1 makes the region visible, but if the cursor is directly over the visualisation, the visualisation disappears ( for reading behind content for instance )
+- x: The X coordinate of the regions topleft position
+- y: The Y coordinate of the regions topleft position
+- width: The width in pixels of the region
+- height: The height in pixels of the region
+- relative_x: How many X pixels the regions visualisation should deviate from the normal position, default 0 (Screen overlay only)
+- relative_y: How many Y pixels the regions visualisation should deviate from the normal position, default 0 (Screen overlay only)
+
+The `user.hud_publish_screen_regions` takes three arguments:
+- type: The type of region we are publishing, either 'cursor' or 'screen'
+- regions: A list of created screen regions that should be displayed
+- clear: Optional, if set to 1 it will clear away the previous regions from the same topic, otherwise it will just add to the existing ones
+
+If you need to clear away specific screen regions, you can use the `user.hud_clear_screen_regions` action, which takes these arguments:
+- type: The type of region we are clearing, either 'cursor' or 'screen'
+- topic: Optional, if given only this topic will be cleared, otherwise all regions will be cleared of the given type
+
+Below is an example talon and python file which show various different screen region options. 
+After that, there is an explanation of the rules of each specific screen region content.
+
+Try and say the talon commands below and see what they do.
+
+```talon
+-
+yellow cursor: user.add_yellow_cursor()
+red cursor: user.add_red_cursor()
+split cursor: user.add_split_cursor_regions()
+show example regions: user.add_example_screen_regions()
+clear regions: user.clear_screen_regions()
+```
+
+```python
+from talon import Module, actions
+mod = Module()
+
+@mod.action_class
+class Actions:
+
+    def add_yellow_cursor():
+        """Add a yellow icon to the cursor tracker"""
+        yellow_cursor = [actions.user.hud_create_screen_region('cursor_example', 'FFF000')]
+        actions.user.hud_publish_screen_regions('cursor', yellow_cursor, 1)
+
+    def add_red_cursor():
+        """Add a red icon to the cursor tracker"""
+        red_cursor = [actions.user.hud_create_screen_region('cursor_example', 'FF0000')]
+        actions.user.hud_publish_screen_regions('cursor', red_cursor, 1)
+
+    def add_split_cursor_regions():
+        """Shows a red icon when looking at the top of the screen, and a yellow icon otherwise"""
+        split_cursors = [
+            actions.user.hud_create_screen_region('cursor_example', 'FF0000', '', '', 0, 0, 0, 1920, 100),
+            actions.user.hud_create_screen_region('cursor_example', 'FFF000')
+        ]
+        actions.user.hud_publish_screen_regions('cursor', split_cursors, 1)
+        
+    def clear_screen_regions():
+        """Clear all cursor and screen regions"""
+        actions.user.hud_clear_screen_regions('cursor', 'cursor_example')
+        actions.user.hud_clear_screen_regions('screen', 'screen_example')
+
+    def add_example_screen_regions():
+        """Adds an example view of screen regions"""
+        regions = [
+            actions.user.hud_create_screen_region('screen_example', 'FF0000', '', 'Always visible', 0, 0, 0, 200, 200),
+            actions.user.hud_create_screen_region('screen_example', '00FF00', '', 'Hover only', 1, 0, 200, 200, 200),
+            actions.user.hud_create_screen_region('screen_example', '0000FF', '', 'Hover off', -1, 0, 400, 200, 200)
+        ]
+        regions[0].text_colour = 'FFFFFF'
+        regions[0].vertical_centered = False        
+        regions[2].text_colour = 'FFFFFF'
+        actions.user.hud_publish_screen_regions('screen', regions, 1)
+```
+
+The simplest of the screen regions is the cursor tracker regions, which use the type 'cursor' in the `user.hud_publish_screen_regions` action.
+Cursor regions are regions of the screen, or all of the screen, where the icon next to your cursor will become visible. You could, for instance, have the cursor icon appear when it is getting close to the top left part of the screen and not show up for all other regions.
+
+The cursor tracker currently only supports one active icon at the same time, and it determines this icon based on how specific the area it is in. If there is a cursor region that envelops the screen, and a region where the area is smaller like for instance the top left part of the screen, it chooses the smallest area that it is currently in to show that specific icon. You can test this out by saying `split cursor` in the examples above and moving the mouse to the top of the screen, and then moving the mouse down.
+
+The other screen regions do not move with the cursor position but stay in a fixed position on the screen. They can, however, become more or less visible depending on what the 'hover_visibility' argument was set.  
+The visualisation of this happens in the center of the given region, but can be controlled by the user to be aligned to the left, right. You can also make the regions vertical alignment not centered, by changing the 'vertically_centered' property as shown in 'add_example_screen_regions' above.
+
+Regions can also be given a different text colour ( which by default is black with a white bezel ) like shown in the 'add_example_screen_regions' above.
+
+Saying `show example regions` in the example above will show a red topleft region which is always visible, a green left region which is only fully visible if the cursor is over it, and a blue region below that which is visible if the cursor is in the region, but hides when the cursor is hovered over the visualisaiton.
+
+## Right click options
+
+TODO document this properly for widgets
 
 ## Sticky and changing content
 

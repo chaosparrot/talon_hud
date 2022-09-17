@@ -349,6 +349,8 @@ class HeadUpWalkthroughPanel(LayoutWidget):
         paint.textsize = self.font_size
         
         paint.style = paint.Style.FILL
+        focus_width = 4
+        focus_colour = self.theme.get_colour("focus_colour")
         
         progress_bar_offset = 0
         progress_bar_height = 7
@@ -375,7 +377,16 @@ class HeadUpWalkthroughPanel(LayoutWidget):
             paint.color = button_colour
             canvas.draw_rrect( skia.RoundRect.from_rect(button_layout["rect"], x=10, y=10) )
             paint.color = self.theme.get_colour("text_colour")
-            self.draw_rich_text(canvas, paint, button_layout["text"], button_layout["rect"].x + self.button_padding, button_layout["rect"].y, self.font_size, False, current_walkthrough_step)
+            self.draw_rich_text(canvas, paint, button_layout["text"], button_layout["rect"].x + self.button_padding, button_layout["rect"].y, self.font_size, False,  current_walkthrough_step)
+            if self.focused and self.current_focus and ( \
+                ( index == 0 and ( self.current_focus.equals("previous_step") or self.current_focus.equals("previous_page") ) or \
+                ( index == 2 and ( self.current_focus.equals("next_step") or self.current_focus.equals("next_page") ) ) ) ):
+                paint.style = canvas.paint.Style.STROKE
+                paint.stroke_width = focus_width
+                paint.color = focus_colour
+                canvas.draw_rrect( skia.RoundRect.from_rect(button_layout["rect"], x=10, y=10) )
+                paint.style = canvas.paint.Style.FILL
+                paint.stroke_width = 1            
 
         # Draw the background first
         background_colour = self.theme.get_colour("text_box_background", "F5F5F5")
@@ -414,6 +425,14 @@ class HeadUpWalkthroughPanel(LayoutWidget):
             # Draw the background first
             background_rect = ui.Rect(dimensions["rect"].x, dimensions["rect"].y, dimensions["rect"].width, dimensions["rect"].height - dimensions["footer_height"])
             self.draw_background(canvas, paint, background_rect)
+            
+            if self.focused and ( self.current_focus is None or self.current_focus.role == "widget"):
+                paint.style = canvas.paint.Style.STROKE
+                paint.stroke_width = focus_width
+                paint.color = focus_colour
+                self.draw_background(canvas, paint, background_rect)                
+                paint.style = canvas.paint.Style.FILL
+                paint.stroke_width = 1
             
             # Draw the progress bar
             paint.color = self.theme.get_colour("spoken_voice_command_background_colour", "6CC653")
@@ -645,3 +664,38 @@ class HeadUpWalkthroughPanel(LayoutWidget):
                 close_colour = self.theme.get_colour("close_icon_hover_colour") if self.icon_hovered == index else self.theme.get_colour("close_icon_accent_colour")
                 paint.shader = linear_gradient(icon_position.x, dimensions.y, icon_position.x, icon_position.y + icon_radius, (self.theme.get_colour("close_icon_colour"), close_colour))
                 canvas.draw_circle(icon_position.x, icon_position.y, icon_radius, paint)
+                
+    def generate_accessible_nodes(self, parent):
+        if not self.minimized:
+            content_page = self.get_content_page()
+            if content_page.current > 0:
+                parent.append(self.generate_accessible_node("Previous visual page", "button", path="previous_page"))
+                
+            if content_page.current < content_page.total:
+                parent.append(self.generate_accessible_node("Next visual page", "button", path="next_page"))
+                
+            if self.previous_progress:
+                if self.previous_progress.current > 0:
+                    parent.append(self.generate_accessible_node("Previous step", "button", path="previous_step"))
+                    
+                if self.previous_progress.current < self.previous_progress.total: 
+                    parent.append(self.generate_accessible_node("Next step", "button", path="next_step"))
+        
+        parent = self.generate_accessible_context(parent)
+        return parent
+
+    def activate(self, focus_node = None) -> bool:
+        """Implement focus activation"""
+        activated = super().activate(focus_node)
+        if activated == False:
+            if focus_node is None:
+                focus_node = self.current_focus
+
+            if focus_node is not None and focus_node.role == "button":
+                if focus_node.equals("previous_step"):
+                    actions.user.hud_previous_walkthrough_step()
+                    activated = True
+                elif focus_node.equals("next_step"):
+                    actions.user.hud_skip_walkthrough_step()
+                    activated = True                    
+        return activated

@@ -1,4 +1,4 @@
-from talon import canvas, ui
+from talon import canvas, ui, actions
 from .base_widget import BaseWidget
 from .utils import layout_rich_text
 from .content.typing import HudContentPage, HudPanelContent
@@ -79,9 +79,11 @@ class LayoutWidget(BaseWidget):
     def set_page_index(self, page_index: int):
         self.page_index = max(0, min(page_index, len(self.layout) - 1))
         if self.canvas:
-            self.start_setup("")        
+            self.start_setup("")
             self.mark_layout_invalid = True
             self.canvas.resume()
+            
+            self.refresh_accessible_tree()
             
     def get_content_page(self) -> HudContentPage:
         current = self.page_index + 1
@@ -137,6 +139,8 @@ class LayoutWidget(BaseWidget):
             if topic_changed:
                 self.page_index = 0
 
+            self.refresh_accessible_tree(topic_changed)
+
             if not self.canvas:
                 self.generate_canvases()
             self.canvas.resume()
@@ -180,8 +184,7 @@ class LayoutWidget(BaseWidget):
         self.mouse_capture_canvas.rect = rect
         self.mouse_capture_canvas.freeze()
         self.mark_layout_invalid = False
-        
-        
+
     def draw_rich_text(self, canvas, paint, rich_text, x, y, line_padding, single_line=False):
         # Draw text line by line
         text_colour = paint.color
@@ -220,6 +223,19 @@ class LayoutWidget(BaseWidget):
             #canvas.draw_rect( ui.Rect(x + text.x, y + text.y, text.width, paint.textsize) )            
             #paint.color = paint_colour
             canvas.draw_text(text.text, x + text.x, y )
+
+    def on_key(self, evt) -> bool:
+        """Implement your custom canvas key handling here"""
+        if evt.event == "keydown":
+            current_page_index = self.page_index        
+            if evt.key in ["pgdown", "pagedown"]:
+                self.set_page_index(self.page_index + 1)
+                return current_page_index != self.page_index
+            elif evt.key in ["pgup", "pageup"]:
+                self.set_page_index(self.page_index - 1)
+                return current_page_index != self.page_index
+        
+        return False
 
     def get_random_colour(self):    
         red = randint(180, 255)

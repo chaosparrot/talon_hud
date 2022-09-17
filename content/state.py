@@ -1,12 +1,13 @@
-from talon import actions, Module, ui, app
+from talon import actions, Module, ui, app, ctrl
 from talon.types.point import Point2d
 from talon_init import TALON_USER
 from talon.scripting import Dispatch
-from .typing import HudPanelContent, HudButton, HudChoice, HudChoices, HudScreenRegion, HudAudioCue, HudDynamicVoiceCommand, HudLogMessage, HudContentEvent, HudAbilityIcon, HudStatusIcon, HudStatusOption
+from .typing import HudPanelContent, HudButton, HudChoice, HudChoices, HudScreenRegion, HudDynamicVoiceCommand, HudLogMessage, HudContentEvent, HudAbilityIcon, HudStatusIcon, HudStatusOption, HudParticle
 from typing import Callable, Any, Union
 import time
 import os
 import copy
+import random
 
 max_log_length = 50
 mod = Module()
@@ -198,18 +199,18 @@ class HeadUpDisplayContent(Dispatch):
         
         for event in self.saved_events:
             self.dispatch(event["type"], event["event"])
+        
+    # Get a full content dump to be used in refreshing widgets after a code update
+    def get_content_dump(self) -> HudContentEvent:
+        return HudContentEvent("content_dump", "", {"topic_types": copy.copy(self.topic_types)}, "dump")
 
-    def dispatch(self, type: str, event: HudContentEvent):
+    def dispatch(self, type: str, event):
         if self.save_up_events:
             if self.saved_events == None:
                 self.saved_events = []
             self.saved_events.append({"type": type, "event": event})
         else:
             super().dispatch(type, event)
-        
-    # Get a full content dump to be used in refreshing widgets after a code update
-    def get_content_dump(self) -> HudContentEvent:
-        return HudContentEvent("content_dump", "", {"topic_types": copy.copy(self.topic_types)}, "dump")
 
     def destroy(self):
         pass
@@ -245,8 +246,14 @@ class Actions:
         global hud_content
         status_icon = HudStatusIcon(id, image)
         hud_content.update_topic_type("status_icons", id, status_icon)
+
+    def hud_create_status_icon(topic: str, image: str, text: str = None, accessible_name: str = "Status icon", callback: Callable[[], None] = None) -> HudStatusIcon:
+        """Create a status bar icon to be displayed in the status bar widget in the Talon HUD"""
+        if callback == None:
+            callback = lambda widget, icon: None
+        return HudStatusIcon(topic, image, text, accessible_name, callback)
         
-    def hud_publish_status_icon(topic: str, icon: HudStatusIcon):
+    def hud_publish_status_icon(topic: str, status_icon: HudStatusIcon):
         """Publish an icon the status bar"""
         global hud_content
         hud_content.update_topic_type("status_icons", topic, status_icon)
@@ -267,13 +274,13 @@ class Actions:
         hud_content.clear_topic_type("status_options", topic)
 
     def hud_add_ability(id: str, image: str, colour: str, enabled: int, activated: int, image_offset_x: int = 0, image_offset_y: int = 0):
-        """Add a hud ability or update it"""
+        """Add a HUD ability icon or update it"""
         global hud_content        
         ability_icon = HudAbilityIcon(image, colour, enabled > 0, 5 if activated > 0 else 0, image_offset_x, image_offset_y)
         hud_content.update_topic_type("ability_icons", id, ability_icon)
         
     def hud_remove_ability(id: str):
-        """Remove an ability"""
+        """Remove a HUD ability icon"""
         global hud_content
         hud_content.clear_topic_type("ability_icons", id)
 
@@ -302,8 +309,12 @@ class Actions:
         """Create an option entry to show in the options in the status bar"""
         return HudStatusOption(icon_topic, default_option, activated_option)
         
-    def hud_create_screen_region(topic: str, colour: str = None, icon: str = None, title: str = None, hover_visibility: Union[bool, int] = False, x: int = 0, y: int = 0, width: int = 0, height: int = 0, relative_x: int = 0, relative_y: int = 0):
+    def hud_create_screen_region(topic: str, colour: str = None, icon: str = '', title: str = '', hover_visibility: Union[bool, int] = False, x: int = 0, y: int = 0, width: int = 0, height: int = 0, relative_x: int = 0, relative_y: int = 0):
         """Create a HUD screen region, where by default it is active all over the available space and it is visible only on a hover"""
+        if icon == '':
+            icon = None
+        if title == '':
+            title = None
         rect = ui.Rect(x, y, width, height) if width * height > 0 else None
         point = Point2d(x + relative_x, y + relative_y)
         return HudScreenRegion(topic, title, icon, colour, rect, point, hover_visibility)
@@ -339,6 +350,18 @@ class Actions:
             image = choice_data["image"] if "image" in choice_data else ""
             choices.append(HudChoice(image, choice_data["text"], choice_data, "selected" in choice_data and choice_data["selected"], ui.Rect(0,0,0,0)))
         return HudChoices(choices, callback, multiple)
+
+    def hud_publish_mouse_particle(type:str, colour:str = None, image:str = '', diameter:int = 10):
+        """Create a particle to be shown on the screen overlay where the current mouse cursor is"""
+        pos = ctrl.mouse_pos()
+        actions.user.hud_publish_particle(type, colour, image, diameter, pos[0], pos[1])
+
+    def hud_publish_particle(type:str, colour:str = None, image:str = '', diameter:int = 10, pos_x:int = 0, pos_y:int = 0):
+        """Publish a particle to be shown in the screen overlay"""
+        global hud_content
+        if image == '':
+            image = None        
+        hud_content.publish_event("particles", "particle", HudParticle(type, colour, image, diameter, pos_x, pos_y), "append")
         
     def hud_publish_choices(choices: HudChoices, title: str = "", content:str = ""):
         """Publish choices to a choice panel"""
