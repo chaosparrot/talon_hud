@@ -372,7 +372,7 @@ You can then visualise the virtual keyboard by using the `user.hud_set_virtual_k
 - monitor: The monitor number to show the virtual keyboard on, default 0 for primary monitor
 - visible: Whether or not the virtual keys are visible at all, True by default
 
-If you still want the dwell toolbar to be active, but want the regions to be invisible, you can use the `user.hud_set_virtual_keyboard_visibility` action. 
+If you still want the virtual keyboard to be active, but want the regions to be invisible, you can use the `user.hud_set_virtual_keyboard_visibility` action. 
 For instance, using `hud_set_virtual_keyboard_visibility(0)` in a .talon file will make the current toolbar invisible.
 
 If you wish to activate a virtual key, use the `user.hud_activate_virtual_key` which activates the virtual key the mouse is currently over.
