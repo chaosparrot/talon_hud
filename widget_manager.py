@@ -288,7 +288,7 @@ class HeadUpWidgetManager:
         
         return [
             self.load_widget("status_bar", "status_bar", ["*"], default_status_topics ),
-            self.load_widget("event_log", "event_log", ["command", "error", "warning", "event", "success", "narrate"]),
+            self.load_widget("event_log", "event_log", ["command", "error", "warning", "event", "success"]),
             self.load_widget("Text panel", "text_panel", ["*"]),
             # Extra text boxes can be defined to be assigned to different topics
             # self.load_widget("Text box two", "text_panel", ["scope"], ["scope"]),

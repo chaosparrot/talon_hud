@@ -19,7 +19,7 @@ class HeadUpEventLog(BaseWidget):
     # New content topic types
     topic_types = ["log_messages"]
     current_topics = []
-    subscriptions = ["command", "error", "warning", "event", "success", "narrate"]
+    subscriptions = ["command", "error", "warning", "event", "success"]
 
     # By default - This widget sits just above the statusbar on the right side of the screen
     # Which means more screen real estate is on the left and top which is why we want the alignment to the right and the expand direction to go up
