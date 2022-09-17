@@ -26,7 +26,7 @@ class HeadUpEventLog(BaseWidget):
     # Also assume the logs should be read chronologically from top to bottom, 
     # Which means new messages push old messages up if they haven"t disappeared yet
     preferences = HeadUpEventLogPreferences(type="event_log", x=1430, y=720, width=450, height=200, enabled=True, alignment="right", expand_direction="up", font_size=18, 
-        subscriptions=["command", "error", "warning", "event", "success", "narrate"])
+        subscriptions=["command", "error", "warning", "event", "success"])
 
     ttl_animation_max_duration = 10
     animation_max_duration = 60 # Keep it the same as the status bar for now

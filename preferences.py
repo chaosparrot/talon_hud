@@ -19,7 +19,7 @@ class HeadUpDisplayUserPreferences:
         "version": "0.6",
         "show_animations": True,
         "enabled": False,
-        "auto_focus": True,        
+        "auto_focus": False,        
         "theme_name": "light",
     }
     
