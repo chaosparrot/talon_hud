@@ -246,8 +246,14 @@ class Actions:
         global hud_content
         status_icon = HudStatusIcon(id, image)
         hud_content.update_topic_type("status_icons", id, status_icon)
+
+    def hud_create_status_icon(topic: str, image: str, text: str = None, accessible_name: str = "Status icon", callback: Callable[[], None] = None) -> HudStatusIcon:
+        """Create a status bar icon to be displayed in the status bar widget in the Talon HUD"""
+        if callback == None:
+            callback = lambda widget, icon: None
+        return HudStatusIcon(topic, image, text, accessible_name, callback)
         
-    def hud_publish_status_icon(topic: str, icon: HudStatusIcon):
+    def hud_publish_status_icon(topic: str, status_icon: HudStatusIcon):
         """Publish an icon the status bar"""
         global hud_content
         hud_content.update_topic_type("status_icons", topic, status_icon)
@@ -268,13 +274,13 @@ class Actions:
         hud_content.clear_topic_type("status_options", topic)
 
     def hud_add_ability(id: str, image: str, colour: str, enabled: int, activated: int, image_offset_x: int = 0, image_offset_y: int = 0):
-        """Add a hud ability or update it"""
+        """Add a HUD ability icon or update it"""
         global hud_content        
         ability_icon = HudAbilityIcon(image, colour, enabled > 0, 5 if activated > 0 else 0, image_offset_x, image_offset_y)
         hud_content.update_topic_type("ability_icons", id, ability_icon)
         
     def hud_remove_ability(id: str):
-        """Remove an ability"""
+        """Remove a HUD ability icon"""
         global hud_content
         hud_content.clear_topic_type("ability_icons", id)
 

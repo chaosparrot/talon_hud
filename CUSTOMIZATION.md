@@ -278,7 +278,34 @@ The message can contain bold and italic markers like explained in the [Creating 
 
 ## Status icons
 
-This is still being fleshed out, but in the mean time, you can take a look at the [previous content documentation](docs/deprecated_docs/CONTENT_README.md)
+There are two kinds of icons that you can publish to the HUD, namely status icons and ability icons, which get published to the status bar and ability bar respectively. Status icons can have click interactions, while ability icons are purely for a visual reminder.  
+
+Status bar icons can be made using the `user.hud_create_status_icon` action. This takes the following arguments:
+topic: str, image: str, text: str = None, accessible_name: str = "Status icon", callback
+- topic: The name of the status icon
+- image: The image to display in the status bar
+- text: The text to display in case the image is left blank or cannot be found
+- accessible_name: The text used for future accessible names
+- callback: A callback function that takes two arguments that is executed when the user activates the icon.
+
+Status icons can also be created using the `self.content.create_status_icon` method inside Pollers.
+
+Once the status bar icon is made, it can be published with the `user.hud_publish_status_icon` action, which takes these arguments:
+- topic: The name of the status icon - This name is used in the removal and update process as well
+- icon: The status bar icon created using `user.hud_create_status_icon`.
+
+Ability bar icons can be added or replaced with the `user.hud_add_ability` action, which takes the following arguments:
+- id: The name of the ability icon - This name is used in the removal and update process as well
+- image: The image to display
+- colour: The colour to have in the background
+- enabled: If the icon is set to disabled, it will show up transparent, if it is enabled it will show up without any transparency.
+- activated: If the icon is disabled, but activated is turned on, the icon will be opaque for a few frames before returning back to transparency.
+- image_offset_x: If the image isn't nicely centered to your liking, you can shift its horizontal position with this.
+- image_offset_y: If the image isn't nicely centered to your liking, you can shift its vertical position with this.
+
+If you want to remove them again, you can use `user.hud_remove_ability`, this only takes the id that is used in the creation as an argument.
+
+Ability icons can also be created with the `self.content.create_ability` method inside Pollers.
 
 ## Eyetracker content
 
@@ -554,7 +581,7 @@ Saying `show example regions` in the example above will show a red topleft regio
 
 ## Right click options
 
-TODO document this properly
+TODO document this properly for widgets
 
 ## Sticky and changing content
 

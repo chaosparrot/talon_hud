@@ -320,7 +320,7 @@ class Actions:
         callback = action
         if isinstance(action, str):
             callback = lambda action=action: actions.key(action)
-
+        
         return {
             "callback": callback,
             "text": text,

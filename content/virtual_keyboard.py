@@ -122,6 +122,11 @@ class VirtualKeyboardPoller:
         if keyboard_item is not None:
             keyboard_item["callback"]()
 
+    def set_visibility(self, visible: bool):
+        if self.current_keyboard is not None and self.current_keyboard in self.keyboards:
+            self.keyboards[self.current_keyboard]["visible"] = visible
+            self.update_keyboard()
+
 virtual_keyboard_poller = VirtualKeyboardPoller()
 def register_virtual_keyboard_poller():
     actions.user.hud_add_poller("virtual_keyboard", virtual_keyboard_poller)
@@ -150,3 +155,8 @@ class Actions:
         """Activate a virtual keyboard key manually"""
         global virtual_keyboard_poller
         virtual_keyboard_poller.activate_key()
+
+    def hud_set_virtual_keyboard_visibility(visible: Union[bool, int] = True):
+        """Set the visibility of the current dwell toolbar"""
+        global virtual_keyboard_poller
+        virtual_keyboard_poller.set_visibility(visible)
