@@ -245,6 +245,7 @@ class BaseWidget(metaclass=ABCMeta):
         if not continue_drawing:
             if self.canvas:
                 self.canvas.pause()
+                self.canvas.freeze()
             
             self.animation_tick = 0
             if not self.enabled:
