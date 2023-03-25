@@ -43,6 +43,11 @@ class BaseWidget(metaclass=ABCMeta):
     accessible_tree = None
     focus_canvas = None
     
+    # Draw cycle handling
+    inactivity_job = None
+    stop_drawing = True
+    animating = False
+    
     def __init__(self, id, preferences_dict, theme, event_dispatch, subscriptions = None, current_topics = None):
         self.id = id
         self.theme = theme
@@ -115,8 +120,7 @@ class BaseWidget(metaclass=ABCMeta):
         self.theme = theme
         self.load_theme_values()
         if self.enabled:
-            if self.canvas:
-                self.canvas.resume()
+            self.refresh_drawing()
             self.animation_tick = self.animation_max_duration if self.show_animations else 0
 
     def content_handler(self, event) -> bool:
@@ -143,7 +147,7 @@ class BaseWidget(metaclass=ABCMeta):
         
         updated = False
         if self.enabled and self.canvas:
-            self.canvas.resume()
+            self.refresh_drawing()
             updated = True
         return updated
 
@@ -153,10 +157,10 @@ class BaseWidget(metaclass=ABCMeta):
         
         if not self.enabled and panel_content.show:
             self.enable()
-        
+
         if self.enabled:
             self.panel_content = panel_content
-            self.canvas.resume()
+            self.refresh_drawing(True)
 
         return self.enabled and panel_content.topic
     
@@ -171,11 +175,12 @@ class BaseWidget(metaclass=ABCMeta):
                 self.focus_canvas = canvas.Canvas(self.x, self.y, 200, self.font_size * 2)
                 self.focus_canvas.blocks_mouse = True
                 self.focus_canvas.register("draw", self.draw_focus_name)
+                self.focus_canvas.freeze()
                 if not self.focused:
                     self.focus_canvas.hide()
             self.canvas.register("draw", self.draw_cycle)
             self.animation_tick = self.animation_max_duration if self.show_animations else 0
-            self.canvas.resume()
+            self.refresh_drawing(True)
             
             if persisted:
                 self.preferences.enabled = True
@@ -189,7 +194,7 @@ class BaseWidget(metaclass=ABCMeta):
                 self.canvas.unregister("mouse", self.on_mouse)
             self.enabled = False
             self.animation_tick = -self.animation_max_duration if self.show_animations else 0
-            self.canvas.resume()
+            self.refresh_drawing(True)
             
             if persisted:
                 self.preferences.enabled = False
@@ -201,7 +206,7 @@ class BaseWidget(metaclass=ABCMeta):
             if self.focus_canvas:
                 self.focus_canvas.unregister("draw", self.draw_focus_name)
                 self.focus_canvas.close()
-                self.focus_canvas = None                
+                self.focus_canvas = None
             
             self.cleared = False
             self.start_setup("cancel")
@@ -211,16 +216,42 @@ class BaseWidget(metaclass=ABCMeta):
         dict[self.id + "_" + preference] = value
         self.load(dict, False)
         if self.enabled:
-            self.canvas.resume()            
+            self.refresh_drawing()
             self.refresh_accessible_tree()
         
         if persisted:
             self.preferences.mark_changed = True
             self.event_dispatch.request_persist_preferences()
+
+    def refresh_drawing(self, animated = False):
+        if self.canvas and self.stop_drawing:
+            self.stop_drawing = False
+            if not self.animating:
+                if self.show_animations and animated:                
+                    self.animating = True
+                    cron.cancel(self.inactivity_job)                    
+                    self.canvas.resume()
+                    self.inactivity_job = cron.interval("16ms", self.freeze_drawing)
+                else:
+                    self.canvas.freeze()
+                    self.stop_drawing = True
+
+    def freeze_drawing(self):
+        if not self.canvas:
+            cron.cancel(self.inactivity_job)
+        elif self.stop_drawing:
+            self.animating = False
+            self.canvas.freeze()
+            cron.cancel(self.inactivity_job)
             
     # Clear up all the resources after a disabling
     def clear(self):
         if (self.canvas is not None):
+            self.animating = False
+            self.stop_drawing = True            
+            cron.cancel(self.inactivity_job)
+            self.inactivity_job = None
+            self.canvas.freeze()
             self.canvas.unregister("draw", self.draw_cycle)
             self.canvas.close()
             self.canvas = None
@@ -240,14 +271,14 @@ class BaseWidget(metaclass=ABCMeta):
             animation_tick = self.animation_tick if self.animation_tick >= 0 else self.animation_max_duration - abs(self.animation_tick)
             continue_drawing = self.draw_animation(canvas, animation_tick) if self.animation_tick != 0 else True
         else:
-            continue_drawing = self.draw(canvas)
-            
+            # Prevent blips in drawing when disabling widgets
+            if self.enabled:
+                continue_drawing = self.draw(canvas)
+
         if not continue_drawing:
-            if self.canvas:
-                self.canvas.pause()
-                self.canvas.freeze()
-            
+            self.stop_drawing = True
             self.animation_tick = 0
+            self.animating = False
             if not self.enabled:
                 self.clear()
     
@@ -372,8 +403,7 @@ class BaseWidget(metaclass=ABCMeta):
             self.setup_type = setup_type
             
             self.preferences.mark_changed = True
-            if self.canvas:
-                self.canvas.resume()
+            self.refresh_drawing()
             self.event_dispatch.request_persist_preferences()
         # Cancel every change
         elif setup_type == "cancel":
@@ -385,8 +415,7 @@ class BaseWidget(metaclass=ABCMeta):
                 if self.canvas and self.enabled:
                     rect = ui.Rect(self.x, self.y, self.width, self.height)                    
                     self.canvas.rect = rect
-                    self.canvas.resume()
-                
+                self.refresh_drawing()
         elif setup_type == "reload":
             self.drag_position = []
             self.setup_type = ""             
@@ -397,7 +426,7 @@ class BaseWidget(metaclass=ABCMeta):
                 if self.canvas.rect.x != self.x or self.canvas.rect.y != self.y or \
                     self.canvas.rect.width != self.width or self.canvas.rect.height != self.height:
                     self.canvas.rect = rect
-                self.canvas.resume()
+                self.refresh_drawing()
                 
         # Start the setup state
         elif self.setup_type != setup_type:
@@ -437,7 +466,7 @@ class BaseWidget(metaclass=ABCMeta):
             self.canvas.move(x, y)
             if self.focus_canvas:
                 self.focus_canvas.move(x, y)
-            self.canvas.resume()
+            self.refresh_drawing()
         elif (self.setup_type in ["dimension", "limit", "font_size"] ):
             x, y = pos
             
@@ -490,7 +519,7 @@ class BaseWidget(metaclass=ABCMeta):
                 if self.focus_canvas:
                     rect = ui.Rect(self.x, self.y, 200, self.font_size * 2)
                     self.focus_canvas.rect = rect
-            self.canvas.resume()
+            self.refresh_drawing()
  
     def click_button(self, button_index):
         if button_index > -1 and button_index < len(self.buttons): 
@@ -537,8 +566,7 @@ class BaseWidget(metaclass=ABCMeta):
                 if self.focus_canvas:
                     self.focus_canvas.freeze()
                     self.focus_canvas.show()
-            if self.canvas:
-                self.canvas.resume()
+            self.refresh_drawing()
         
         return self.current_focus
 
@@ -592,7 +620,7 @@ class BaseWidget(metaclass=ABCMeta):
             self.current_focus = None
             if self.focus_canvas:
                 self.focus_canvas.hide()                
-            self.canvas.resume()
+            self.refresh_drawing()
 
     def set_visibility(self, visible = True):
         if self.enabled:

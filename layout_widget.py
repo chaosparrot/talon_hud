@@ -44,7 +44,7 @@ class LayoutWidget(BaseWidget):
         self.canvas = self.generate_canvas(min(self.x, self.limit_x), min(self.y, self.limit_y), max(self.width, self.limit_width), max(self.height, self.limit_height))
         self.canvas.register("draw", self.draw_cycle)
         self.animation_tick = self.animation_max_duration if self.show_animations else 0
-        self.canvas.resume()
+        self.refresh_drawing()
             
     def disable(self, persisted=False):
         if self.enabled:
@@ -56,8 +56,7 @@ class LayoutWidget(BaseWidget):
             # Copied over from base widget disable to make sure blocks_mouse setting isn"t changed        
             self.enabled = False
             self.animation_tick = -self.animation_max_duration if self.show_animations else 0
-            if self.canvas:
-                self.canvas.resume()
+            self.refresh_drawing()
 
             if persisted:
                 self.preferences.enabled = False
@@ -81,7 +80,7 @@ class LayoutWidget(BaseWidget):
         if self.canvas:
             self.start_setup("")
             self.mark_layout_invalid = True
-            self.canvas.resume()
+            self.refresh_drawing()
             
             self.refresh_accessible_tree()
             
@@ -105,7 +104,7 @@ class LayoutWidget(BaseWidget):
                 self.setup_type = ""
                 if self.canvas:
                     self.canvas.rect = ui.Rect(self.limit_x, self.limit_y, self.limit_width, self.limit_height)
-                    self.canvas.resume()
+                    self.refresh_drawing()
         elif setup_type == "reload":
             self.drag_position = []  
             self.setup_type = ""
@@ -114,7 +113,7 @@ class LayoutWidget(BaseWidget):
                 if self.canvas.rect.x != self.limit_x or self.canvas.rect.y != self.limit_y or \
                     self.canvas.rect.width != self.limit_width or self.canvas.rect.height != self.limit_height:
                     self.canvas.rect = ui.Rect(self.limit_x, self.limit_y, self.limit_width, self.limit_height)
-                self.canvas.resume()
+                self.refresh_drawing()
         else:
             super().start_setup(setup_type, mouse_position)
 
@@ -143,7 +142,7 @@ class LayoutWidget(BaseWidget):
 
             if not self.canvas:
                 self.generate_canvases()
-            self.canvas.resume()
+            self.refresh_drawing()
         return self.enabled and panel_content.topic in self.current_topics
 
     def layout_content(self, canvas, paint):
@@ -226,12 +225,13 @@ class LayoutWidget(BaseWidget):
 
     def on_key(self, evt) -> bool:
         """Implement your custom canvas key handling here"""
-        if evt.event == "keydown":
+        key_string = evt.key.lower() if evt.key is not None else ""
+        if evt.down:
             current_page_index = self.page_index        
-            if evt.key in ["pgdown", "pagedown"]:
+            if key_string in ["pgdown", "pagedown"]:
                 self.set_page_index(self.page_index + 1)
                 return current_page_index != self.page_index
-            elif evt.key in ["pgup", "pageup"]:
+            elif key_string in ["pgup", "pageup"]:
                 self.set_page_index(self.page_index - 1)
                 return current_page_index != self.page_index
         

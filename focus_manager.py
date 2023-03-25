@@ -40,6 +40,7 @@ class HeadUpFocusManager:
         self.focus_canvas.blocks_mouse = True
         self.focus_canvas.register("focus", self.on_hud_focus_change)
         self.focus_canvas.register("key", self.handle_key_controls)
+        self.focus_canvas.freeze()
         self.focused_nodes = []
     
     def destroy(self):
@@ -293,10 +294,8 @@ class HeadUpFocusManager:
 
     def handle_key_controls(self, evt) -> bool:
         key_string = evt.key.lower() if evt.key is not None else ""
-        for mod in evt.mods: 
+        for mod in evt.mods:    
             key_string = mod.lower() + "-" + key_string
-        
-        print( key_string )
         
         new_focus = False
         handled = True

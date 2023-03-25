@@ -52,7 +52,7 @@ class HeadUpChoicePanel(HeadUpTextPanel):
                 self.icon_hovered = -1
                 self.footer_icon_hovered = -1
                 self.confirm_hovered = confirm_hovered
-            self.canvas.resume()
+            self.refresh_drawing()
             
         if choice_hovered == -1 and confirm_hovered == False:
             super().on_mouse(event)
@@ -69,7 +69,7 @@ class HeadUpChoicePanel(HeadUpTextPanel):
         else:    
             self.choices[choice_index].selected = not self.choices[choice_index].selected
             if self.panel_content.choices and self.panel_content.choices.multiple:
-                self.canvas.resume()
+                self.refresh_drawing()
             else:
                 for index, choice in enumerate(self.choices):
                     self.choices[index].selected = index == choice_index
@@ -347,8 +347,9 @@ class HeadUpChoicePanel(HeadUpTextPanel):
     def on_key(self, evt) -> bool:
         """Implement your custom canvas key handling here"""
         activated = super().on_key(evt)
+        key_string = evt.key.lower() if evt.key is not None else ""        
         if not activated and evt.event == "keydown":
-            if evt.key in ["return", "enter"] and self.panel_content:
+            if key_string in ["return", "enter"] and self.panel_content:
                 if self.current_focus and self.current_focus.role in ["radio", "checkbox"]:
                     choice_index = int(self.current_focus.path.split(":")[-1])
                     self.select_choice(choice_index)
@@ -358,7 +359,7 @@ class HeadUpChoicePanel(HeadUpTextPanel):
                     return True
                 
             # Focus the radio and checkbox items using the up and down arrow keys
-            elif evt.key in ["up", "down"] and len(evt.mods) == 0:
+            elif key_string in ["up", "down"] and len(evt.mods) == 0:
                 if self.current_focus is None or self.current_focus.role not in ["radio", "checkbox"]:
                     for node in self.accessible_tree.nodes:	
                         if node.role in ["combobox", "radiogroup"] and len(node.nodes) > 0:
