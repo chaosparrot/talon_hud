@@ -134,7 +134,7 @@ class HeadUpWalkthroughPanel(LayoutWidget):
         if self.enabled:
             if not self.canvas:
                 self.generate_canvases()
-            self.canvas.resume()
+            self.refresh_drawing()
 
     def on_mouse(self, event):
         icon_hovered = -1
@@ -165,7 +165,7 @@ class HeadUpWalkthroughPanel(LayoutWidget):
         if icon_hovered != self.icon_hovered or button_hovered != self.walkthrough_button_hovered:
             self.icon_hovered = icon_hovered
             self.walkthrough_button_hovered = button_hovered
-            self.canvas.resume()
+            self.refresh_drawing()
         
         # Allow dragging and dropping with the mouse
         if icon_hovered == -1 and button_hovered == -1:

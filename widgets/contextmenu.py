@@ -49,7 +49,7 @@ class HeadUpContextMenu(LayoutWidget):
 
         if button_hovered != self.button_hovered:
             self.button_hovered = button_hovered
-            self.canvas.resume()
+            self.refresh_drawing()
             
         if event.event == "mouseup" and event.button == 0 and button_hovered != -1:
             self.click_button(self.button_hovered)
@@ -75,7 +75,7 @@ class HeadUpContextMenu(LayoutWidget):
             self.canvas = self.generate_canvas(min(self.x, self.limit_x), min(self.y, self.limit_y), max(self.width, self.limit_width), max(self.height, self.limit_height))
             self.canvas.register("draw", self.draw_cycle)
             self.animation_tick = self.animation_max_duration if self.show_animations else 0
-            self.canvas.resume()
+            self.refresh_drawing()
             if persisted:
                 self.preferences.enabled = True
                 self.preferences.mark_changed = True
@@ -94,7 +94,7 @@ class HeadUpContextMenu(LayoutWidget):
         self.mark_layout_invalid = True
         if self.enabled:
             self.canvas.move(pos_x, pos_y)
-            self.canvas.resume()
+            self.refresh_drawing()
             
         self.buttons = list(self.default_buttons)
         if len(buttons) > 0:
@@ -203,8 +203,8 @@ class HeadUpContextMenu(LayoutWidget):
     
     def redraw_focus(self):
         if self.enabled and self.canvas:
-            self.canvas.resume()        
-    
+            self.refresh_drawing()
+
     def draw_content_buttons(self, canvas, paint, dimensions):
         """Draws the content buttons"""
         paint.textsize = self.font_size

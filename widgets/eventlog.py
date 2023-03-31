@@ -219,11 +219,11 @@ class HeadUpEventLog(BaseWidget):
 
         # Only start drawing when changes have been made
         if resume_canvas and self.enabled:
-            self.canvas.resume()
+            self.refresh_drawing(True)
 
         self.visual_log_length = len(self.visual_logs)
         if self.visual_log_length == 0 and self.ttl_poller is not None:
-            self.canvas.resume()
+            self.refresh_drawing(True)
             cron.cancel(self.ttl_poller)
             self.ttl_poller = None
 

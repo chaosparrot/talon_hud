@@ -52,7 +52,7 @@ class HeadUpChoicePanel(HeadUpTextPanel):
                 self.icon_hovered = -1
                 self.footer_icon_hovered = -1
                 self.confirm_hovered = confirm_hovered
-            self.canvas.resume()
+            self.refresh_drawing()
             
         if choice_hovered == -1 and confirm_hovered == False:
             super().on_mouse(event)
@@ -69,7 +69,7 @@ class HeadUpChoicePanel(HeadUpTextPanel):
         else:    
             self.choices[choice_index].selected = not self.choices[choice_index].selected
             if self.panel_content.choices and self.panel_content.choices.multiple:
-                self.canvas.resume()
+                self.refresh_drawing()
             else:
                 for index, choice in enumerate(self.choices):
                     self.choices[index].selected = index == choice_index
