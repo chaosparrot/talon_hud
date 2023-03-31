@@ -554,7 +554,7 @@ class HeadUpScreenOverlay(BaseWidget):
                 self.canvas = self.generate_canvas(self.x, self.y, self.limit_width, self.limit_height)
                 self.canvas.register("draw", self.setup_draw_cycle)
             self.canvas.move(self.x, self.y)
-            self.canvas.resume()
+            self.refresh_drawing()
             super().start_setup(setup_type, mouse_position)
                 
     def setup_move(self, pos):

@@ -53,8 +53,7 @@ class HeadUpStatusBar(BaseWidget):
             
         self.update_icons()
         self.update_buttons()
-        if self.canvas:
-            self.canvas.resume()
+        self.refresh_drawing(True)
     
     def update_buttons(self):
         buttons = []
@@ -87,7 +86,7 @@ class HeadUpStatusBar(BaseWidget):
             # Only resume for a frame if our button state has changed
             if (self.icon_hover_index != hover_index):
                 self.icon_hover_index = hover_index                
-                self.canvas.resume()
+                self.refresh_drawing()
         # Click a button instantly
         elif (event.event == "mouseup" and event.button == 0):
             self.icon_hover_index = hover_index

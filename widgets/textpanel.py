@@ -19,7 +19,7 @@ def minimize_toggle_widget(widget):
     else:
         widget.set_preference("minimized", 0)
     widget.mark_layout_invalid = True
-    widget.canvas.resume()
+    widget.refresh_drawing()
 
 class HeadUpTextPanel(LayoutWidget):
     preferences = HeadUpDisplayUserWidgetPreferences(type="text_box", x=1680, y=50, width=200, height=200, limit_x=1580, limit_y=50, limit_width=300, limit_height=400, enabled=False, alignment="left", expand_direction="down", font_size=18)
@@ -94,7 +94,7 @@ class HeadUpTextPanel(LayoutWidget):
         if icon_hovered != self.icon_hovered or footer_icon_hovered != self.footer_icon_hovered:
             self.icon_hovered = icon_hovered
             self.footer_icon_hovered = footer_icon_hovered
-            self.canvas.resume()
+            self.refresh_drawing()
         
         if event.event == "mouseup" and event.button == 0:
             clicked_icon = None
