@@ -120,8 +120,8 @@ class BaseWidget(metaclass=ABCMeta):
         self.theme = theme
         self.load_theme_values()
         if self.enabled:
-            self.refresh_drawing()
             self.animation_tick = self.animation_max_duration if self.show_animations else 0
+            self.refresh_drawing(self.show_animations)            
 
     def content_handler(self, event) -> bool:
         self.content.process_event(event)

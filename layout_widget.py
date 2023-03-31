@@ -40,11 +40,11 @@ class LayoutWidget(BaseWidget):
             self.mouse_capture_canvas.register("mouse", self.on_mouse)
             self.mouse_capture_canvas.freeze()
         
-        # Copied over from base widget enabled to make sure blocks_mouse setting isn"t changed
+        # Copied over from base widget enabled to make sure blocks_mouse setting isn't changed
         self.canvas = self.generate_canvas(min(self.x, self.limit_x), min(self.y, self.limit_y), max(self.width, self.limit_width), max(self.height, self.limit_height))
         self.canvas.register("draw", self.draw_cycle)
         self.animation_tick = self.animation_max_duration if self.show_animations else 0
-        self.refresh_drawing()
+        self.refresh_drawing(self.show_animations)
             
     def disable(self, persisted=False):
         if self.enabled:
@@ -53,16 +53,16 @@ class LayoutWidget(BaseWidget):
                 self.mouse_capture_canvas.unregister("mouse", self.on_mouse)
                 self.mouse_capture_canvas = None
         
-            # Copied over from base widget disable to make sure blocks_mouse setting isn"t changed        
+            # Copied over from base widget disable to make sure blocks_mouse setting isn't changed        
             self.enabled = False
             self.animation_tick = -self.animation_max_duration if self.show_animations else 0
-            self.refresh_drawing()
+            self.refresh_drawing(self.show_animations)
 
             if persisted:
                 self.preferences.enabled = False
                 self.preferences.mark_changed = True
                 self.event_dispatch.request_persist_preferences()
-                
+                 
             self.cleared = False
             self.start_setup("cancel")
     
