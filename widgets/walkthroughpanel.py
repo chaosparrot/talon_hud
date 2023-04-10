@@ -134,7 +134,7 @@ class HeadUpWalkthroughPanel(LayoutWidget):
         if self.enabled:
             if not self.canvas:
                 self.generate_canvases()
-            self.refresh_drawing()
+            self.refresh_drawing(True)
 
     def on_mouse(self, event):
         icon_hovered = -1
