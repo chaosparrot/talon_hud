@@ -117,6 +117,8 @@ You can add and remove programming languages icons yourself, by following the in
 When returning back to your computer after a while, it can be hard to see what window Talon has focused for voice commands. This only gets harder if you have multiple monitors. To alleviate this problem, you can add a focus indicator to your status bar by saying `status bar add focus indicator` or right clicking the status bar and selecting 'Add focus indicator'.  
 This will present an orange-red box on the top center of the currently focused window, to remind you what direction you're talking to.
 
+There are shorthands for this as well, saying `focus indicator show` will make it visible, and `focus indicator hide` will hide it.
+
 ### Documentation
 
 Inside the HUD, there is a place where you can read out available documentation for certain voice commands, like a refresher of sorts. It is available if you say `toolkit documentation` or by navigating from right click menu in the status bar with Content toolkit -> documentation, there you will find a bunch of text that is published to the HUD. Simply say one of the titles on the screen to navigate to that content.  
