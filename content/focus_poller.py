@@ -1,4 +1,4 @@
-from talon import actions, cron, scope, ui, app
+from talon import actions, cron, scope, ui, app, Module
 from .poller import Poller
 
 # Polls the current focused applications to show an indicator of where it is
@@ -62,3 +62,15 @@ def append_poller():
     actions.user.hud_publish_status_option("focus_toggle_option", status_option)
 
 app.register("ready", append_poller)
+
+mod = Module()
+@mod.action_class
+class Actions:
+
+    def hud_activate_focus_indicator(): 
+        """Activate the focus indicator"""
+        actions.user.hud_activate_poller("focus")
+        
+    def hud_deactivate_focus_indicator():
+        """Deactivate the focus indicator"""
+        actions.user.hud_deactivate_poller("focus")
