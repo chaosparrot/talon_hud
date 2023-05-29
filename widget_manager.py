@@ -134,10 +134,7 @@ class HeadUpWidgetManager:
             if not os.path.exists(screen_preferences_file):
                 self.preferences.load_preferences( screen_preferences_file )
                 
-                new_preferences = {}
-                for key in self.preferences.default_prefs.keys():
-                    new_preferences[key] = self.preferences.default_prefs[key]
-                
+                new_preferences = {}                
                 for widget in self.widgets:
                     widget_prefs = self.get_widget_preference(widget, current_screen_rects)
                     for key in widget_prefs.keys():
