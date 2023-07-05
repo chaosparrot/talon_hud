@@ -110,12 +110,15 @@ class Actions:
                 current_mode = available_mode
                 break
         
+        if "command" in active_modes and current_mode == "dictation":
+            current_mode = "mixed"
+        
         return current_mode
 
     def hud_toggle_mode():
         """Toggle the current mode to a new mode"""
         current_mode = actions.user.hud_determine_mode()
-        if current_mode in ["command", "dictation"]:
+        if current_mode in ["command", "dictation", "mixed"]:
              actions.speech.disable()
         elif current_mode == "sleep":
              actions.speech.enable()
