@@ -46,7 +46,7 @@ class BaseWidget(metaclass=ABCMeta):
     # Draw cycle handling
     inactivity_job = None
     stop_drawing = True
-    animating = False    
+    animating = False
     
     def __init__(self, id, preferences_dict, theme, event_dispatch, subscriptions = None, current_topics = None):
         self.id = id
@@ -121,7 +121,7 @@ class BaseWidget(metaclass=ABCMeta):
         self.load_theme_values()
         if self.enabled:
             self.animation_tick = self.animation_max_duration if self.show_animations else 0
-            self.refresh_drawing(self.show_animations)
+            self.refresh_drawing(self.show_animations)            
 
     def content_handler(self, event) -> bool:
         self.content.process_event(event)
@@ -157,7 +157,7 @@ class BaseWidget(metaclass=ABCMeta):
         
         if not self.enabled and panel_content.show:
             self.enable()
-        
+
         if self.enabled:
             self.panel_content = panel_content
             self.refresh_drawing(True)
@@ -175,6 +175,7 @@ class BaseWidget(metaclass=ABCMeta):
                 self.focus_canvas = canvas.Canvas(self.x, self.y, 200, self.font_size * 2)
                 self.focus_canvas.blocks_mouse = True
                 self.focus_canvas.register("draw", self.draw_focus_name)
+                self.focus_canvas.freeze()
                 if not self.focused:
                     self.focus_canvas.hide()
             self.canvas.register("draw", self.draw_cycle)
@@ -274,10 +275,7 @@ class BaseWidget(metaclass=ABCMeta):
             if self.enabled:
                 continue_drawing = self.draw(canvas)
 
-            
         if not continue_drawing:
-            if self.canvas:
-                self.canvas.pause()
             self.stop_drawing = True
             self.animation_tick = 0
             self.animating = False
@@ -417,8 +415,7 @@ class BaseWidget(metaclass=ABCMeta):
                 if self.canvas and self.enabled:
                     rect = ui.Rect(self.x, self.y, self.width, self.height)                    
                     self.canvas.rect = rect
-                    self.refresh_drawing()
-                
+                self.refresh_drawing()
         elif setup_type == "reload":
             self.drag_position = []
             self.setup_type = ""             
@@ -469,7 +466,7 @@ class BaseWidget(metaclass=ABCMeta):
             self.canvas.move(x, y)
             if self.focus_canvas:
                 self.focus_canvas.move(x, y)
-            self.canvas.resume()
+            self.refresh_drawing()
         elif (self.setup_type in ["dimension", "limit", "font_size"] ):
             x, y = pos
             

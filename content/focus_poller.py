@@ -16,7 +16,6 @@ class FocusPoller():
             ui.register("win_resize", self.update_focus)
             ui.register("win_move", self.move_focus)
             self.move_indicator_job = cron.after("100ms", self.update_focus)
-            print( "ENABLING FOCUS TRACKING!" )
     
     def unregister(self, name):
         if name in self.callbacks:
@@ -29,7 +28,6 @@ class FocusPoller():
             ui.unregister("win_resize", self.update_focus)
             ui.unregister("win_move", self.move_focus)
             cron.cancel(self.move_indicator_job)
-            print( "DISABLING FOCUS TRACKING!" )            
 
     def update_focus(self, window = None):
         if not window or window.rect.width * window.rect.height > 0:

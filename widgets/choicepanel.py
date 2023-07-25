@@ -347,8 +347,9 @@ class HeadUpChoicePanel(HeadUpTextPanel):
     def on_key(self, evt) -> bool:
         """Implement your custom canvas key handling here"""
         activated = super().on_key(evt)
-        if not activated and evt.event == "keydown":
-            if evt.key in ["return", "enter"] and self.panel_content:
+        key_string = evt.key.lower() if evt.key is not None else ""        
+        if not activated and evt.down:
+            if key_string in ["return", "enter"] and self.panel_content:
                 if self.current_focus and self.current_focus.role in ["radio", "checkbox"]:
                     choice_index = int(self.current_focus.path.split(":")[-1])
                     self.select_choice(choice_index)
@@ -358,15 +359,15 @@ class HeadUpChoicePanel(HeadUpTextPanel):
                     return True
                 
             # Focus the radio and checkbox items using the up and down arrow keys
-            elif evt.key in ["up", "down"] and len(evt.mods) == 0:
+            elif key_string in ["up", "down"] and len(evt.mods) == 0:
                 if self.current_focus is None or self.current_focus.role not in ["radio", "checkbox"]:
                     for node in self.accessible_tree.nodes:	
                         if node.role in ["combobox", "radiogroup"] and len(node.nodes) > 0:
-                            self.event_dispatch.focus_path(node.nodes[0 if evt.key == "down" else -1].path)
+                            self.event_dispatch.focus_path(node.nodes[0 if key_string == "down" else -1].path)
                             return True
                 else:
                     item_index = int(self.current_focus.path.split(":")[-1])
-                    next_index = item_index + 1 if evt.key == "down" else item_index - 1
+                    next_index = item_index + 1 if key_string == "down" else item_index - 1
                     for node in self.accessible_tree.nodes:
                         if node.role in ["combobox", "radiogroup"] and len(node.nodes) > 0:
                             if next_index >= 0 and next_index < len(node.nodes):
@@ -374,7 +375,7 @@ class HeadUpChoicePanel(HeadUpTextPanel):
                                 
                                 # Move to another page if the choice is not visible right now
                                 if not next_index in self.visible_indecis:
-                                    next_page = self.page_index + 1 if evt.key == "down" else self.page_index - 1
+                                    next_page = self.page_index + 1 if key_string == "down" else self.page_index - 1
                                     self.set_page_index( next_page )                                
                             return True
         

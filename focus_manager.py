@@ -148,7 +148,7 @@ class HeadUpFocusManager:
             else:
                 self.event_dispatch.show_context_menu(self.widget.id, None, self.widget.buttons)                        
 
-    def focus(self, widget_id: str = None, path: str = None):    
+    def focus(self, widget_id: str = None, path: str = None):
         # Focus the first widget enabled if no widget is given
         widget_id = self.focused_widget_id if widget_id is None else widget_id
         if widget_id is None:
@@ -293,23 +293,23 @@ class HeadUpFocusManager:
                 actions.key("cmd-tab")
 
     def handle_key_controls(self, evt) -> bool:
-        key_string = evt.key
-        for mod in evt.mods: 
-            key_string = mod + "-" + key_string
+        key_string = evt.key.lower() if evt.key is not None else ""
+        for mod in evt.mods:    
+            key_string = mod.lower() + "-" + key_string
         
         new_focus = False
         handled = True
-        if key_string == "esc":
-            if evt.event == "keydown":
+        if key_string == "escape":
+            if evt.down:
                 self.focus_up()
-        elif evt.key == "tab" or evt.key == "backtab":
-            if evt.event == "keydown":
-                if evt.key == "backtab" or key_string == "shift-tab":
+        elif key_string == "tab" or key_string == "shift-tab":
+            if evt.down:
+                if key_string == "shift-tab":
                     self.focus_previous()
                 else:
                     self.focus_next()
         elif key_string == "left" and ( self.focused_widget_item is None or self.focused_widget_item.role == "widget" ):
-            if evt.event == "keydown":
+            if evt.down:
                 previous_widget = None
                 for widget in self.widget_manager.widgets:
                     if widget.id != self.widget.id and widget.enabled and widget.id != "context_menu":
@@ -323,7 +323,7 @@ class HeadUpFocusManager:
                         self.focus_path(previous_widget.accessible_tree.path)
         # Focus next widget if available
         elif key_string == "right" and ( self.focused_widget_item is None or self.focused_widget_item.role == "widget" ):
-            if evt.event == "keydown":
+            if evt.down:
                 widget_seen = False
                 next_widget = None
                 for widget in self.widget_manager.widgets:
@@ -339,7 +339,7 @@ class HeadUpFocusManager:
                         self.focus_path(next_widget.accessible_tree.path)
         elif ( key_string == "space" and self.focused_widget_item is not None ) or \
             ( key_string == "return" and self.focused_widget_item is not None and self.focused_widget_item.role in ["button", "context_button"]):
-            if evt.event == "keydown":
+            if evt.down:
                 self.event_dispatch.detect_autofocus()
                 activated = self.widget.activate(self.focused_widget_item)
                 if activated == False:
@@ -359,15 +359,15 @@ class HeadUpFocusManager:
                             self.blur()
                         
         elif self.focused_widget_item is not None and self.focused_widget_item.role in ["context_button", "context_menu"] and key_string in ["up", "down"]:
-            if evt.event == "keydown":
+            if evt.down:
                 next_index = 0
                 context_menu = self.focused_widget_item
                 if self.focused_widget_item.role == "context_button":
                     item_index = int(self.focused_widget_item.path.split(":")[-1])
-                    next_index = item_index + 1 if evt.key == "down" else item_index - 1
+                    next_index = item_index + 1 if key_string == "down" else item_index - 1
                     context_menu = self.accessible_root.find(".".join(self.focused_widget_item.path.split(".")[:-1]))
                 else:
-                    next_index = 0 if evt.key == "down" else len(self.focused_widget_item.nodes ) - 1
+                    next_index = 0 if key_string == "down" else len(self.focused_widget_item.nodes ) - 1
                 
                 if context_menu:
                     if next_index >= 0 or next_index < len(context_menu.nodes):

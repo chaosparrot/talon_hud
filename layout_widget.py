@@ -40,7 +40,7 @@ class LayoutWidget(BaseWidget):
             self.mouse_capture_canvas.register("mouse", self.on_mouse)
             self.mouse_capture_canvas.freeze()
         
-        # Copied over from base widget enabled to make sure blocks_mouse setting isn"t changed
+        # Copied over from base widget enabled to make sure blocks_mouse setting isn't changed
         self.canvas = self.generate_canvas(min(self.x, self.limit_x), min(self.y, self.limit_y), max(self.width, self.limit_width), max(self.height, self.limit_height))
         self.canvas.register("draw", self.draw_cycle)
         self.animation_tick = self.animation_max_duration if self.show_animations else 0
@@ -53,16 +53,16 @@ class LayoutWidget(BaseWidget):
                 self.mouse_capture_canvas.unregister("mouse", self.on_mouse)
                 self.mouse_capture_canvas = None
         
-            # Copied over from base widget disable to make sure blocks_mouse setting isn"t changed        
+            # Copied over from base widget disable to make sure blocks_mouse setting isn't changed        
             self.enabled = False
             self.animation_tick = -self.animation_max_duration if self.show_animations else 0
-            self.refresh_drawing()
+            self.refresh_drawing(self.show_animations)
 
             if persisted:
                 self.preferences.enabled = False
                 self.preferences.mark_changed = True
                 self.event_dispatch.request_persist_preferences()
-                
+                 
             self.cleared = False
             self.start_setup("cancel")
     
@@ -225,12 +225,13 @@ class LayoutWidget(BaseWidget):
 
     def on_key(self, evt) -> bool:
         """Implement your custom canvas key handling here"""
-        if evt.event == "keydown":
+        key_string = evt.key.lower() if evt.key is not None else ""
+        if evt.down:
             current_page_index = self.page_index        
-            if evt.key in ["pgdown", "pagedown"]:
+            if key_string in ["pgdown", "pagedown"]:
                 self.set_page_index(self.page_index + 1)
                 return current_page_index != self.page_index
-            elif evt.key in ["pgup", "pageup"]:
+            elif key_string in ["pgup", "pageup"]:
                 self.set_page_index(self.page_index - 1)
                 return current_page_index != self.page_index
         
