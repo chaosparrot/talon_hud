@@ -1025,3 +1025,23 @@ class Actions:
         global hud
         hud.set_widget_visibility(visible != 0 and visible != False)
         time.sleep(pause_seconds)
+
+    def hud_set_inactive_visibility(visible: Union[bool, int] = True):
+        """Sets the visibility of the Talon HUD when it is not needed ( for example for fullscreen video )"""
+        global hud
+        widget_animation_dict = {}
+
+        # Disable animations
+        for widget in hud.widget_manager.widgets:
+            widget_animation_dict[widget.id] = widget.show_animations
+            widget.show_animations = False
+
+        if visible != 0 and visible != False:
+            hud.set_current_flow("enabled")
+            hud.enable()
+        else:
+            hud.disable()
+
+        # Reenable animations
+        for widget in hud.widget_manager.widgets:
+            widget.show_animations = widget.id in widget_animation_dict and widget_animation_dict[widget.id]
