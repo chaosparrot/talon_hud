@@ -18,6 +18,7 @@ class FullScreenPoller(Poller):
     disabled_visibility = False
     last_activity = perf_counter()
 
+    activity_count = 0
     last_content = None
 
     def enable(self):
@@ -30,7 +31,7 @@ class FullScreenPoller(Poller):
         if self.enabled:
             self.enabled = False
             cron.cancel(self.job)
-            self.job = cron.interval("1000ms", self.state_check)
+            self.job = cron.interval("500ms", self.state_check)
 
     def is_full_screen(self):
         active_window = ui.active_window()
@@ -41,7 +42,7 @@ class FullScreenPoller(Poller):
                     round(screen.width) == round(active_window.rect.width) and \
                     round(screen.height) == round(active_window.rect.height):
                     return True
-        
+
         return False
 
     def state_check(self):
@@ -52,6 +53,7 @@ class FullScreenPoller(Poller):
             inactive = ( modes is not None and "sleep" in modes ) or actions.sound.active_microphone() == "None"
 
             if inactive and self.is_full_screen():
+                self.activity_count = 0
                 if perf_counter() - self.last_activity > inactivity_threshold and self.disabled_visibility == False:
                     self.disabled_visibility = True
                     actions.user.hud_set_inactive_visibility(False)
@@ -65,16 +67,28 @@ class FullScreenPoller(Poller):
         if self.last_mouse_pos is None:
             self.last_mouse_pos = ctrl.mouse_pos()
         elif self.last_mouse_pos != ctrl.mouse_pos():
-            self.detect_last_activity()
+            self.last_mouse_pos = ctrl.mouse_pos()
+            self.detect_last_activity(True)
     
-    def detect_last_activity(self):
+    def detect_last_activity(self, activity = False):
         self.last_activity = perf_counter()
-        if self.disabled_visibility:
+
+        # Keep an activity count so that random pop ups or invisible windows that could happen during full screen would
+        # Cause the HUD appearing again for a brief moment in time
+        self.activity_count += 1
+        if self.disabled_visibility and (self.activity_count > 3 or activity):
             actions.user.hud_set_inactive_visibility(True)
             self.disabled_visibility = False
             cron.cancel(self.mouse_check_job)
             self.mouse_check_job = None
             self.last_mouse_pos = None
+    
+    def destroy(self):
+        super().destroy()
+        cron.cancel(self.job)
+        self.job = None
+        cron.cancel(self.mouse_check_job)
+        self.mouse_check_job = None
                 
 def append_poller():
     actions.user.hud_add_poller("inactivity_poller", FullScreenPoller(), True)
