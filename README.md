@@ -26,6 +26,7 @@ By default, the HUD comes in a light and a dark mode, but you can create other t
 	7. [Documentation](#documentation)
 	8. [Walkthroughs](#walkthroughs)
 	9. [Debugging](#debugging)
+	10. [Inactivity hiding](#inactivity-hiding)
 3. [Accessibility features](#accessibility-features)
 	1. [Keyboard controls](#keyboard-controls)
 	2. [Screen reader usage](#screen-reader-usage)	
@@ -140,6 +141,12 @@ When you are working with, or working on, your Talon scripts, it is often hard t
 - The scope debugging option allows you to see the current app and title, the current tags and the current modes, and updates the content as they change.
 - The speech debugging option allows you to see all recognized commands and their used time, with their used engine and microphone, so you can track down why recognition might have changed.
 - The list debugging option gives you a look inside a single list as it changes.
+
+### Inactivity hiding
+
+When viewing full screen video, the HUD will automatically disappear if no microphone is listening or talon is in sleep mode in order to preserve screen space. It does this roughly 3 seconds after the last mouse movement.
+
+If it doesn't work for your specific application, you can add additional contexts to the `hud_inactive_visibility.talon` file.
 
 ## Accessibility features
 
