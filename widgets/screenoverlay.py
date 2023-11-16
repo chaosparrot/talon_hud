@@ -195,8 +195,8 @@ class HeadUpScreenOverlay(BaseWidget):
         else:
             for chunk_key in self.particle_canvases:
                 if self.particle_canvases[chunk_key] is not None:
-                    self.particle_canvases[chunk_key].close()
                     self.particle_canvases[chunk_key].unregister('draw', self.draw_particles)
+                    self.particle_canvases[chunk_key].close()                    
                     self.particle_canvases[chunk_key] = None
             self.particle_poller = None
 
@@ -234,6 +234,8 @@ class HeadUpScreenOverlay(BaseWidget):
                 if region_found == False:
                     indices_to_clear.append(index)
                     canvas_reference["canvas"].unregister("draw", canvas_reference["callback"])
+                    canvas_reference["callback"] = None
+                    canvas_reference["canvas"].close()
                     canvas_reference["region"] = None
                     canvas_reference["canvas"] = None
                     canvas_reference = None
@@ -245,7 +247,7 @@ class HeadUpScreenOverlay(BaseWidget):
         indices_to_clear.reverse()
         for index in indices_to_clear:
             self.canvases.pop(index)
-        
+
         if len(self.regions) > 0:
             if soft_enable:
                 self.soft_enable()
@@ -275,6 +277,8 @@ class HeadUpScreenOverlay(BaseWidget):
         for canvas_reference in self.canvases:
             if canvas_reference:
                 canvas_reference["canvas"].unregister("draw", canvas_reference["callback"])
+                canvas_reference["callback"] = None
+                canvas_reference["canvas"].close()
                 canvas_reference["region"] = None
                 canvas_reference["canvas"] = None
                 canvas_reference = None
