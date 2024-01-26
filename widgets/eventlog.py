@@ -7,12 +7,13 @@ from ..utils import layout_rich_text
 from ..content.typing import HudButton, HudLogMessage
 
 class HeadUpEventLogPreferences(HeadUpDisplayUserWidgetPreferences):
-    extra_preferences = [ExtraPreference("ttl_duration_seconds", str, float)]
+        extra_preferences = [ExtraPreference("ttl_duration_seconds", str, float)]
 
 class HeadUpEventLog(BaseWidget):
 
     allowed_setup_options = ["position", "dimension", "limit", "font_size"]
     
+    visible = True
     visual_logs = []
     visual_log_length = 0
     
@@ -218,11 +219,11 @@ class HeadUpEventLog(BaseWidget):
         self.visual_logs = [visual_log for visual_log in self.visual_logs if visual_log["ttl"] > current_time ]
 
         # Only start drawing when changes have been made
-        if resume_canvas and self.enabled:
+        if resume_canvas and self.enabled and self.visible:
             self.refresh_drawing(True)
 
         self.visual_log_length = len(self.visual_logs)
-        if self.visual_log_length == 0 and self.ttl_poller is not None:
+        if self.visual_log_length == 0 and self.ttl_poller is not None and self.visible:
             self.refresh_drawing(True)
             cron.cancel(self.ttl_poller)
             self.ttl_poller = None
@@ -234,7 +235,7 @@ class HeadUpEventLog(BaseWidget):
         self.visual_logs = [visual_log for visual_log in self.visual_logs if not (visual_log["animation_tick"] < 0 and visual_log["animation_tick"] == visual_log["animation_goal"]) ]
         self.visual_log_length = len(self.visual_logs)
         
-        if (self.visual_log_length > 0):
+        if (self.visual_log_length > 0) and self.visible:
             paint.textsize = self.font_size
             continue_drawing = False
 
@@ -346,13 +347,13 @@ class HeadUpEventLog(BaseWidget):
                 line_height = total_text_height / line_count#paint.textsize# total_text_height / len(lines)b
                 self.draw_rich_text(canvas, paint, lines, text_x, current_y + vertical_text_padding * 2, line_height )
                 
-            return continue_drawing
+            return continue_drawing and self.visible
         else:
             return False
         
     def draw_animation(self, canvas, animation_tick):
         if self.enabled:
-            return len(self.visual_logs) > 0
+            return len(self.visual_logs) > 0 and self.visible
         else:
             return self.draw(canvas)
 
@@ -386,3 +387,10 @@ class HeadUpEventLog(BaseWidget):
             text_y = y
             text_height = max(text_height, text.height)
             canvas.draw_text(text.text, x + text.x, text_y )
+
+    def set_visibility(self, visible = True):
+        super().set_visibility(visible)
+
+        # Keep track of the visibility status here to make sure new event logs
+        # And currently animating event logs do not resume the canvas
+        self.visible = visible
