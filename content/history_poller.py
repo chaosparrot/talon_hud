@@ -18,7 +18,15 @@ class HistoryPoller(Poller):
         speech_system.unregister("phrase", self.on_phrase)
             
     def on_phrase(self, j):
-        command = actions.user.history_transform_phrase_text(j.get("text"))
+        try:
+            command = actions.user.history_transform_phrase_text(j.get("text"))
+        except:
+            if "text" in j and j["text"]:
+                word_list = j["text"]
+                command = " ".join(word for word in word_list)
+            else:
+                word_list = j["phrase"]
+                command = " ".join(word.split("\\")[0] for word in word_list)
 
         if command is None:
             return
