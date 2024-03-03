@@ -1,6 +1,7 @@
 from talon import actions, cron, scope, app, ctrl, ui, Module
 from .poller import Poller
 from time import perf_counter
+import platform
 
 mod = Module()
 mod.tag("talon_hud_automatic_hide", desc="A tag that, when enabled, automatically hides the HUD when it is inactive in a fullscreen application")
