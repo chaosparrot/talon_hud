@@ -2,6 +2,7 @@ from talon import actions, cron, scope, app, ctrl, ui, Module
 from .poller import Poller
 from time import perf_counter
 import platform
+import math
 
 mod = Module()
 mod.tag("talon_hud_automatic_hide", desc="A tag that, when enabled, automatically hides the HUD when it is inactive in a fullscreen application")
@@ -41,12 +42,14 @@ class FullScreenPoller(Poller):
         if platform.system() == "Darwin" and active_window is not None:
             # Notched MBP have a screen ratio of 15.4 inches
             # Courtesy of Talon slack user 'brief'
+            # TODO - Test with multiple-monitor setup
+            # And with duplicated monitor setup
             for screen in ui.screens():
                 if math.ceil((screen.width / screen.height) * 100) / 100 == 1.54:
                     full_window_height = active_window.rect.height + active_window.rect.y
                     if (
                         round(screen.x) == round(active_window.rect.x)
-                        and round(screen.y) == round(full_window_height - screen.y)
+                        and round(screen.y) <= round(active_window.rect.y)
                         and round(screen.width) == round(active_window.rect.width)
                         and round(screen.height) == round(full_window_height)
                     ):
