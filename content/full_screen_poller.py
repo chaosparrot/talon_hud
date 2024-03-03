@@ -33,15 +33,42 @@ class FullScreenPoller(Poller):
             cron.cancel(self.job)
             self.job = cron.interval("500ms", self.state_check)
 
-    def is_full_screen(self):
+    def is_full_screen_edge_cases(self):
         active_window = ui.active_window()
-        if active_window is not None:
+        # Certain MacBooks have notches in their screen which fudge the numbers
+        # Use a different check to see if the window is full screen in that case
+        if platform.system() == "Darwin" and active_window is not None:
+            # Notched MBP have a screen ratio of 15.4 inches
+            # Courtesy of Talon slack user 'brief'
             for screen in ui.screens():
-                if round(screen.x) == round(active_window.rect.x) and \
-                    round(screen.y) == round(active_window.rect.y) and \
-                    round(screen.width) == round(active_window.rect.width) and \
-                    round(screen.height) == round(active_window.rect.height):
-                    return True
+                if math.ceil((screen.width / screen.height) * 100) / 100 == 1.54:
+                    full_window_height = active_window.rect.height + active_window.rect.y
+                    if (
+                        round(screen.x) == round(active_window.rect.x)
+                        and round(screen.y) == round(full_window_height - screen.y)
+                        and round(screen.width) == round(active_window.rect.width)
+                        and round(screen.height) == round(full_window_height)
+                    ):
+                        return True
+
+        return False
+
+    def is_full_screen(self):
+        try:
+            if self.is_full_screen_edge_cases():
+                return True
+
+            active_window = ui.active_window()
+            if active_window is not None:
+                for screen in ui.screens():
+                    if round(screen.x) == round(active_window.rect.x) and \
+                        round(screen.y) == round(active_window.rect.y) and \
+                        round(screen.width) == round(active_window.rect.width) and \
+                        round(screen.height) == round(active_window.rect.height):
+                        return True
+        # In some cases, the window rect cannot be found in fullscreen mode which results in errors
+        except:
+            pass
 
         return False
 
