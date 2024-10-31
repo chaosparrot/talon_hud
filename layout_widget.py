@@ -1,4 +1,4 @@
-from talon import canvas, ui, actions
+from talon import canvas, ui, actions, settings
 from .base_widget import BaseWidget
 from .utils import layout_rich_text
 from .content.typing import HudContentPage, HudPanelContent
@@ -36,6 +36,7 @@ class LayoutWidget(BaseWidget):
         if self.mouse_enabled:
             # Keep this canvas using the default backend to make clicks happen properly
             self.mouse_capture_canvas = canvas.Canvas(min(self.x, self.limit_x), min(self.y, self.limit_y), max(self.width, self.limit_width), max(self.height, self.limit_height))
+            self.mouse_capture_canvas.allows_capture = bool(settings.get("user.talon_hud_allows_capture"))
             self.mouse_capture_canvas.blocks_mouse = True
             self.mouse_capture_canvas.register("mouse", self.on_mouse)
             self.mouse_capture_canvas.freeze()

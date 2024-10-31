@@ -1,4 +1,4 @@
-from talon import skia, ui, cron, clip, canvas
+from talon import skia, ui, cron, clip, canvas, settings
 from talon.types import Point2d as Point2d
 from ..base_widget import BaseWidget
 from ..layout_widget import LayoutWidget
@@ -67,6 +67,7 @@ class HeadUpContextMenu(LayoutWidget):
             if self.mouse_enabled:
                 # Keep this canvas using the default backend to make clicks happen properly                
                 self.mouse_capture_canvas = canvas.Canvas(min(self.x, self.limit_x), min(self.y, self.limit_y), max(self.width, self.limit_width), max(self.height, self.limit_height))            
+                self.mouse_capture_canvas.allows_capture = bool(settings.get("user.talon_hud_allows_capture"))
                 self.mouse_capture_canvas.blocks_mouse = True
                 self.mouse_capture_canvas.register("mouse", self.on_mouse)
                 self.mouse_capture_canvas.freeze()
