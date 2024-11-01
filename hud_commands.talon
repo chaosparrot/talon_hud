@@ -44,6 +44,10 @@ tag: user.talon_hud_available
 ^head up disable auto focus:
     user.hud_set_auto_focus(0)
 
+# Head up Streamdeck commands
+^head up stream deck show: user.hud_set_deck_enabled(1)
+^head up stream deck hide: user.hud_set_deck_enabled(0)
+
 # Head up development commands - Sets watchers on certain configurations, like themes, so development is quicker
 ^head up development start$: 
     user.hud_watch_directories()

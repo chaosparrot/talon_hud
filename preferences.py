@@ -19,8 +19,9 @@ class HeadUpDisplayUserPreferences:
         "version": "0.6",
         "show_animations": True,
         "enabled": False,
-        "auto_focus": False,        
+        "auto_focus": False,
         "theme_name": "light",
+        "connect_streamdeck": False,
     }
     
     # Keep the base preferences available as well
@@ -33,7 +34,7 @@ class HeadUpDisplayUserPreferences:
         "_limit_x", "_limit_y", "_limit_width", "_limit_height",
         "_font_size", "_alignment", "_expand_direction")
     
-    boolean_keys = ["enabled", "show_animations", "auto_focus"]
+    boolean_keys = ["enabled", "show_animations", "auto_focus", "connect_streamdeck"]
     hud_environment = ""
     
     def __init__(self, hud_environment = "", hud_version = 5):

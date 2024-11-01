@@ -118,3 +118,7 @@ class Actions:
     def hud_deactivate_focus_indicator():
         """Deactivate the focus indicator"""
         actions.user.hud_deactivate_poller("focus_toggle")
+
+    def hud_toggle_focus_indicator():
+        """Toggle between activating and deactivating the focus indicator"""
+        actions.user.hud_toggle_poller("focus_toggle")

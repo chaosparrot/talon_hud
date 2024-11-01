@@ -55,6 +55,7 @@ mod.list("talon_hud_widget_enabled_voice_commands", desc="List of extra voice co
 mod.tag("talon_hud_available", desc="Tag that shows the availability of the Talon HUD repository for other scripts")
 mod.tag("talon_hud_visible", desc="Tag that shows that the Talon HUD is visible")
 mod.tag("talon_hud_choices_visible", desc="Tag that shows there are choices available on screen that can be chosen")
+mod.tag("talon_hud_deck_enabled", desc="Tag that allows the Talon HUD status bar to connect to Stream deck")
 mod.setting("talon_hud_environment", type="string", desc="Which environment to set the HUD in - Useful for setting up a HUD for screen recording or other tasks")
 mod.setting("talon_hud_allows_capture", type=bool, default=True, desc="Whether or not the HUD is captured in screenshots.")
 
@@ -90,6 +91,7 @@ class HeadUpDisplay:
     allow_update_context = True
     current_flow = ""
     auto_focus = False
+    deck_enabled = False
 
     focus_grace_period = 0
     start_idle_period = 0
@@ -112,20 +114,23 @@ class HeadUpDisplay:
         self.theme = HeadUpDisplayTheme(self.preferences.prefs["theme_name"])
         self.event_dispatch = HeadUpEventDispatch()
         self.show_animations = self.preferences.prefs["show_animations"]
+        self.deck_enabled = self.preferences.prefs["connect_streamdeck"]
         self.widget_manager = HeadUpWidgetManager(self.preferences, self.theme, self.event_dispatch)
 
     def start(self, current_flow="initialize"):
         self.set_current_flow(current_flow)
+        self.set_deck_enabled(self.preferences.prefs["connect_streamdeck"])
         self.current_talon_hud_environment = settings.get("user.talon_hud_environment", "")
         if (self.preferences.prefs["enabled"]):
             self.enable()
-            ctx.tags = ["user.talon_hud_available", "user.talon_hud_visible", "user.talon_hud_choices_visible"]
+            self.update_tags()
 
             if actions.sound.active_microphone() == "None":
                 actions.user.hud_add_log("warning", "Microphone is set to \"None\"!\n\nNo voice commands will be registered.")
         
         self.set_current_flow("manual")
         self.distribute_content()
+
         # Make sure auto focusing can only start a second after the HUD has started up
         # To make sure the content updating does not fling the focus for the user everywhere during booting
         cron.after("1s", lambda self=self: self.set_auto_focus(self.preferences.prefs["auto_focus"]))
@@ -142,7 +147,7 @@ class HeadUpDisplay:
             if persisted:
                 self.set_current_flow("enabled")
                 self.current_flow = "enable"
-                ctx.tags = ["user.talon_hud_available", "user.talon_hud_visible", "user.talon_hud_choices_visible"]
+                self.update_tags(True)
 
             # Connect the events relating to non-content communication
             self.event_dispatch.register("persist_preferences", self.debounce_widget_preferences)
@@ -200,7 +205,7 @@ class HeadUpDisplay:
             
             # Only change the tags upon a user action - No automatic flow should set tags to prevent cascades
             if persisted:
-                ctx.tags = ["user.talon_hud_available"]
+                self.update_tags(False)
                 self.preferences.persist_preferences({"enabled": False})
                 
             # Make sure context isn't updated in this thread because of automatic reloads
@@ -684,6 +689,15 @@ class HeadUpDisplay:
         if voice_command in self.enabled_voice_commands:
             self.enabled_voice_commands[voice_command]()
 
+    def update_tags(self, enabled: bool = False):
+        tags = ["user.talon_hud_available"]
+        if enabled:
+            tags.append("user.talon_hud_visible")
+            tags.append("user.talon_hud_choices_visible")
+        if self.deck_enabled:
+            tags.append("user.talon_hud_deck_enabled")
+        ctx.tags = tags
+
     # Updates the context based on the current HUD state
     # This needs to be done on user actions - Automatic flows need higher scrutiny
     def update_context(self):
@@ -836,6 +850,13 @@ class HeadUpDisplay:
         if persisted:
            self.preferences.persist_preferences({"auto_focus": auto_focus})
 
+    def set_deck_enabled(self, deck_enabled: bool, persisted = False):
+        self.deck_enabled = deck_enabled
+        if persisted:
+           self.preferences.persist_preferences({"connect_streamdeck": deck_enabled})
+           self.update_tags(self.enabled)
+
+
 preferences = HeadUpDisplayUserPreferences("", CURRENT_TALON_HUD_VERSION) 
 hud = HeadUpDisplay(preferences)
 
@@ -976,6 +997,15 @@ class Actions:
         global hud
         hud.deactivate_poller(topic)
 
+    def hud_toggle_poller(topic: str):
+        """Enables or disables a poller and claims a widget"""
+        global hud
+        if topic in hud.pollers:
+            if hud.pollers[topic].enabled:
+                hud.deactivate_poller(topic)
+            else:
+                hud.activate_poller(topic)
+
     def hud_get_theme() -> HeadUpDisplayTheme:
         """Get the current theme object from the HUD"""
         global hud
@@ -1026,6 +1056,11 @@ class Actions:
         global hud
         hud.set_widget_visibility(visible != 0 and visible != False)
         time.sleep(pause_seconds)
+
+    def hud_set_deck_enabled(enabled: Union[bool, int]):
+        """Move all the icons from the status bar over to the Stream deck"""
+        global hud
+        hud.set_deck_enabled(enabled, True)
 
     def hud_set_inactive_visibility(visible: Union[bool, int] = True):
         """Sets the visibility of the Talon HUD when it is not needed ( for example for fullscreen video )"""
