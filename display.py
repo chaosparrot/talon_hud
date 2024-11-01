@@ -56,6 +56,7 @@ mod.tag("talon_hud_available", desc="Tag that shows the availability of the Talo
 mod.tag("talon_hud_visible", desc="Tag that shows that the Talon HUD is visible")
 mod.tag("talon_hud_choices_visible", desc="Tag that shows there are choices available on screen that can be chosen")
 mod.setting("talon_hud_environment", type="string", desc="Which environment to set the HUD in - Useful for setting up a HUD for screen recording or other tasks")
+mod.setting("talon_hud_allows_capture", type=bool, default=True, desc="Whether or not the HUD is captured in screenshots.")
 
 ctx.tags = ["user.talon_hud_available"]
 ctx.settings["user.talon_hud_environment"] = ""

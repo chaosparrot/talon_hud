@@ -1,5 +1,5 @@
 from typing import Dict
-from talon import ui, actions, app, canvas, cron
+from talon import ui, actions, app, canvas, cron, settings
 from .utils import string_to_speakable_string
 from .content.typing import HudAccessibleNode
 
@@ -37,6 +37,7 @@ class HeadUpFocusManager:
         self.event_dispatch = event_dispatch
         self.event_dispatch.register("hud_focused", self.focus_path)
         self.focus_canvas = canvas.Canvas(-2, -2, 1, 1)
+        self.focus_canvas.allows_capture = bool(settings.get("user.talon_hud_allows_capture"))
         self.focus_canvas.blocks_mouse = True
         self.focus_canvas.register("focus", self.on_hud_focus_change)
         self.focus_canvas.register("key", self.handle_key_controls)
@@ -53,6 +54,7 @@ class HeadUpFocusManager:
         self.widget_manager = None
         self.last_focused_app = None
         self.focus_canvas = canvas.Canvas(-2, -2, 1, 1)
+        self.focus_canvas.allows_capture = bool(settings.get("user.talon_hud_allows_capture"))
         self.focus_canvas.unregister("focus", self.on_hud_focus_change)
         self.focus_canvas.unregister("key", self.handle_key_controls)
     

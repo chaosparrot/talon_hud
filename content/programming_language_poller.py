@@ -74,7 +74,7 @@ def load_languages(languages_file):
             "bash,.sh,programming_bash",
             "c,,programming_c",
             "cplusplus,.cpp,programming_cplusplus",
-            "csharp,.cs,programming_cplusplus",
+            "csharp,.cs,programming_csharp",
             "objectivec,,programming_objectivec",
             "haskel,.hs,programming_haskel",
             "swift,,programming_swift",
