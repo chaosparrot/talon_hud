@@ -173,7 +173,6 @@ class BaseWidget(metaclass=ABCMeta):
                 self.canvas.register("mouse", self.on_mouse)
             else:
                 self.focus_canvas = canvas.Canvas(self.x, self.y, 200, self.font_size * 2)
-                self.focus_canvas.allows_capture = bool(settings.get("user.talon_hud_allows_capture"))
                 self.focus_canvas.blocks_mouse = True
                 self.focus_canvas.register("draw", self.draw_focus_name)
                 self.focus_canvas.freeze()
@@ -531,7 +530,7 @@ class BaseWidget(metaclass=ABCMeta):
         #    "backend": "software"
         }
         c = canvas.Canvas(x, y, width, height, **canvas_options)
-        c.allows_capture = bool(settings.get("user.talon_hud_allows_capture"))
+        c.allows_capture = settings.get("user.talon_hud_allows_capture")
         return c
 
     def draw_focus_name(self, canvas):
