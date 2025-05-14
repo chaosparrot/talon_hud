@@ -266,5 +266,5 @@ class HeadUpContextMenu(LayoutWidget):
         if focused:
             canvas.draw_rrect(skia.RoundRect.from_rect(ui.Rect(rect.x + 2, rect.y + 2, rect.width, rect.height), x=radius, y=radius))        
         else:
-            canvas.draw_rrect(rrect)
+            canvas.draw_rrect(skia.RoundRect.from_rect(ui.Rect(rect.x + 0.5, rect.y + 0.5, rect.width - 0.5, rect.height - 0.5), x=radius, y=radius))
         paint.style = paint.Style.FILL
