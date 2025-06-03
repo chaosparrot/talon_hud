@@ -36,7 +36,7 @@
 		"context_hint": "Please turn on command modes to continue the walkthrough"
 	},
 	{
-	    "content": "Let's explore the content a bit more bit more. Say <cmd@ toolkit options /> to open up the general hub of content available to the HUD.",
+	    "content": "Let's explore the content a bit more. Say <cmd@ toolkit options /> to open up the general hub of content available to the HUD.",
         "modes": ["command"],
 		"context_hint": "Please turn on command modes to continue the walkthrough"
 	},
