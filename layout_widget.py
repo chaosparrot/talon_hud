@@ -37,6 +37,7 @@ class LayoutWidget(BaseWidget):
             # Keep this canvas using the default backend to make clicks happen properly
             self.mouse_capture_canvas = canvas.Canvas(min(self.x, self.limit_x), min(self.y, self.limit_y), max(self.width, self.limit_width), max(self.height, self.limit_height))
             self.mouse_capture_canvas.blocks_mouse = True
+            self.mouse_capture_canvas.register("draw", self.on_draw)
             self.mouse_capture_canvas.register("mouse", self.on_mouse)
             self.mouse_capture_canvas.freeze()
         
@@ -51,6 +52,7 @@ class LayoutWidget(BaseWidget):
             if self.mouse_enabled and self.mouse_capture_canvas:
                 self.mouse_capture_canvas.blocks_mouse = False
                 self.mouse_capture_canvas.unregister("mouse", self.on_mouse)
+                self.mouse_capture_canvas.unregister("draw", self.on_draw)
                 self.mouse_capture_canvas = None
         
             # Copied over from base widget disable to make sure blocks_mouse setting isn't changed        
@@ -66,6 +68,9 @@ class LayoutWidget(BaseWidget):
             self.cleared = False
             self.start_setup("cancel")
     
+    def on_draw(self, canvas):
+        print( "MOUSE CAPTURE CANVAS DRAW!" + self.id)
+
     def refresh(self, new_content):
         self.mark_layout_invalid = True
         

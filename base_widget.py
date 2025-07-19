@@ -91,8 +91,9 @@ class BaseWidget(metaclass=ABCMeta):
         # For re-enabling or disabling widgets after a reload ( mostly for talon hud environment changes )
         if update_enabled:
             if self.enabled != self.preferences.enabled:
-                if "enabled" in dict and dict["enabled"]:            
+                if "enabled" in dict and dict["enabled"]:
                     self.show_animations = False
+                    print( "UPDATE ENABLED" )
                     self.enable() if self.preferences.enabled else self.disable()
                     self.show_animations = self.preferences.show_animations
 
@@ -115,7 +116,7 @@ class BaseWidget(metaclass=ABCMeta):
         self.preferences.current_topics = self.content.get_current_topics()
         self.preferences.mark_changed = True
         self.event_dispatch.request_persist_preferences()
-    
+
     def set_theme(self, theme):
         self.theme = theme
         self.load_theme_values()
@@ -178,6 +179,7 @@ class BaseWidget(metaclass=ABCMeta):
                 self.focus_canvas.freeze()
                 if not self.focused:
                     self.focus_canvas.hide()
+            print("ENABLE " + self.id )
             self.canvas.register("draw", self.draw_cycle)
             self.animation_tick = self.animation_max_duration if self.show_animations else 0
             self.refresh_drawing(True)
@@ -194,6 +196,7 @@ class BaseWidget(metaclass=ABCMeta):
                 self.canvas.unregister("mouse", self.on_mouse)
             self.enabled = False
             self.animation_tick = -self.animation_max_duration if self.show_animations else 0
+            print("DISABLE " + self.id, persisted)
             self.refresh_drawing(True)
             
             if persisted:
@@ -204,6 +207,7 @@ class BaseWidget(metaclass=ABCMeta):
                     self.blur()
             
             if self.focus_canvas:
+                self.focus_canvas.freeze()
                 self.focus_canvas.unregister("draw", self.draw_focus_name)
                 self.focus_canvas.close()
                 self.focus_canvas = None
@@ -224,19 +228,20 @@ class BaseWidget(metaclass=ABCMeta):
             self.event_dispatch.request_persist_preferences()
 
     def refresh_drawing(self, animated = False):
+        print( "REFRESH DRAWING! " + self.id )
         if self.canvas and self.stop_drawing:
             self.stop_drawing = False
-            if not self.animating:
-                if self.show_animations and animated:                
-                    self.animating = True
-                    cron.cancel(self.inactivity_job)                    
-                    self.canvas.resume()
-                    self.inactivity_job = cron.interval("16ms", self.freeze_drawing)
-                else:
-                    self.canvas.freeze()
-                    self.stop_drawing = True
+            if self.show_animations and animated:
+                self.animating = True
+                cron.cancel(self.inactivity_job)
+                self.canvas.resume()
+                self.inactivity_job = cron.interval("16ms", self.freeze_drawing)
+            else:
+                self.canvas.freeze()
+                self.stop_drawing = True
 
     def freeze_drawing(self):
+        print( "FREEZE DRAWING! " + self.id )
         if not self.canvas:
             cron.cancel(self.inactivity_job)
         elif self.stop_drawing:
@@ -274,6 +279,8 @@ class BaseWidget(metaclass=ABCMeta):
             # Prevent blips in drawing when disabling widgets
             if self.enabled:
                 continue_drawing = self.draw(canvas)
+
+        print( "DRAW CANVAS " + self.id, continue_drawing )
 
         if not continue_drawing:
             self.stop_drawing = True
@@ -550,6 +557,7 @@ class BaseWidget(metaclass=ABCMeta):
         canvas.paint.textsize = self.font_size
         canvas.paint.style = canvas.paint.Style.FILL
         canvas.draw_text(self.id, canvas.x + 10, canvas.y + self.font_size * 1.2 )
+        print( "DRAW FOCUS CANVAS " + self.id )
 
     def focus(self, path = None) -> HudAccessibleNode:
         """Implement focus rendering"""
@@ -566,8 +574,8 @@ class BaseWidget(metaclass=ABCMeta):
             
             if not self.mouse_enabled:
                 if self.focus_canvas:
-                    self.focus_canvas.freeze()
                     self.focus_canvas.show()
+                    self.focus_canvas.freeze()
             self.refresh_drawing()
         
         return self.current_focus
