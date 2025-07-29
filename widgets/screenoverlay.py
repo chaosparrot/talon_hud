@@ -97,7 +97,7 @@ class HeadUpScreenOverlay(BaseWidget):
 
     def enable(self, persisted=False):
         if not self.enabled:
-            self.enabled = True        
+            self.enabled = True
             self.previous_pos = ctrl.mouse_pos()
             
             # Copied over from base widget and altered to reflect the no-canvas state of this widget            
@@ -110,6 +110,7 @@ class HeadUpScreenOverlay(BaseWidget):
             self.focus_canvas = canvas.Canvas(self.x, self.y, 200, self.font_size * 2)
             self.focus_canvas.blocks_mouse = True
             self.focus_canvas.register("draw", self.draw_focus_name)
+            self.focus_canvas.freeze()
             if not self.focused:
                 self.focus_canvas.hide()
             
@@ -132,6 +133,7 @@ class HeadUpScreenOverlay(BaseWidget):
                 self.event_dispatch.request_persist_preferences()
             
             if self.focus_canvas:
+                self.focus_canvas.freeze()                
                 self.focus_canvas.unregister("draw", self.draw_focus_name)
                 self.focus_canvas.close()
                 self.focus_canvas = None
@@ -270,7 +272,7 @@ class HeadUpScreenOverlay(BaseWidget):
                 canvas_reference["region"] = region
                 canvas_reference["canvas"].register("draw", canvas_reference["callback"])
                 if not self.canvas_visibility:
-                    canvas_reference["canvas"].hide()                
+                    canvas_reference["canvas"].hide()
                 canvas_reference["canvas"].freeze()
                 self.canvases.append(canvas_reference)
 
@@ -518,7 +520,7 @@ class HeadUpScreenOverlay(BaseWidget):
 
             self.setup_type = setup_type
             self.preferences.mark_changed = True
-            self.canvas.pause()
+            self.canvas.freeze()
             self.canvas.unregister("draw", self.setup_draw_cycle)
             self.canvas = None
             
@@ -618,6 +620,7 @@ class HeadUpScreenOverlay(BaseWidget):
         """Implement focus rendering / canvas unfocusing"""
         self.focused = False
         if self.enabled and self.focus_canvas:
+            self.focus_canvas.freeze()
             self.focus_canvas.hide()
 
     def set_visibility(self, visible = True):
