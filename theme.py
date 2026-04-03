@@ -114,7 +114,7 @@ class HeadUpDisplayTheme:
             # Load in images from other directories
             if "/" in image_name or "\\" in image_name:
                 if os.path.isfile(image_name):
-                    image = Image.load(image_name)
+                    image = skia.Image.from_file(image_name)
                     self.register_image(image_name, image)
                     return self.get_image_and_scale(image_name, target_scale)
 
