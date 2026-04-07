@@ -1,6 +1,8 @@
 from talon import skia, app
+from talon import ui
 import os
 import random
+import re
 from .utils import hex_to_ints
 import logging
 
@@ -61,8 +63,8 @@ class HeadUpDisplayTheme:
                 abspath = os.path.join(images_dir, filename)
                 if (filename.endswith(".png")):
                     filename_len = len(filename)
-                    self.image_dict[filename[:filename_len - 4]] = skia.Image.from_file(abspath)
-            
+                    self.register_image(filename[:filename_len - 4], skia.Image.from_file(abspath))
+
         # Load in the templates available in the theme directory
         template_dir = os.path.join(theme_dir, "templates")
         if os.path.exists(template_dir) and os.path.isdir(template_dir):
@@ -74,35 +76,91 @@ class HeadUpDisplayTheme:
                     with open(abspath) as template:
                         self.template_dict[filename[:filename_len - 5]] = template.read()
 
-    def get_image(self, image_name, width = None, height = None):
-        full_image_name = image_name
-        if width is not None:
-            full_image_name += "w" + str(width)
-        if height is not None:
-            full_image_name += "h" + str(height)
-    
-        # Use cached full image name
-        if full_image_name in self.image_dict:
-            return self.image_dict[full_image_name]
-            
-        # Scale existing image in our cache
-        elif image_name in self.image_dict and full_image_name not in self.image_dict:
-            image = self.image_dict[image_name]
-            self.image_dict[full_image_name] = self.resize_image(image, width, height)
-            return self.image_dict[full_image_name]
-            
-        # Load the image from the file system
+    def register_image(self, filename, image):
+        image_name, image_scale = self.split_image_name_and_scale(filename)
+
+        if image_name not in self.image_dict:
+            self.image_dict[image_name] = {}
+
+        if image_scale not in self.image_dict[image_name]:
+            self.image_dict[image_name][image_scale] = image
+
+    def split_image_name_and_scale(self, filename):
+        match = re.search(r"(.+)@([1-3])x$", filename)
+        if match is None:
+            return filename, 1
+
+        image_name = match.group(1)
+        image_scale = int(match.group(2))
+        return image_name, image_scale
+
+    def _resolve_image_variant(self, image_name, target_scale=None):
+        if not image_name:
+            return None, None
+
+        variants = self.image_dict.get(image_name)
+        if variants:
+            if target_scale is None:
+                image_scale = 1
+            else:
+                try:
+                    image_scale = min(k for k in variants if k >= target_scale)
+                except ValueError:
+                    image_scale = max(variants)
+
+            return variants[image_scale], image_scale
+
         else:
             # Load in images from other directories
             if "/" in image_name or "\\" in image_name:
                 if os.path.isfile(image_name):
-                    image_name_len = len(image_name)
-                    self.image_dict[image_name] = skia.Image.from_file(image_name)
-                    if full_image_name != image_name:
-                        return self.get_image(image_name, width, height)
-                    else:
-                        return self.image_dict[image_name]
-            return None
+                    image = skia.Image.from_file(image_name)
+                    self.register_image(image_name, image)
+                    return self.get_image_and_scale(image_name, target_scale)
+
+            return None, None
+
+    def get_image(self, image_name):
+        image, _ = self._resolve_image_variant(image_name)
+        return image
+
+    def get_image_and_scale(self, image_name, target_scale):
+        image, image_scale = self._resolve_image_variant(image_name, target_scale)
+        return image, image_scale
+
+    def get_dimensions(self, image, image_scale, width=None, height=None):
+        image_width = image.width / image_scale
+        image_height = image.height / image_scale
+        aspect_ratio = image_width / image_height
+
+        # Resize only if the image width is larger than the given width
+        if width is None or image_width < width:
+            width = image_width
+
+        # Resize only if the image height is larger than the given height
+        if height is None or image_height < height:
+            height = image_height
+
+        width = max(width, 1)
+        height = max(height, 1)
+
+        # Preserve the aspect ratio of the image at all costs using the smallest dimension to work from
+        new_aspect_ratio = width / height
+        if new_aspect_ratio > aspect_ratio:
+            height = image_width * aspect_ratio
+        elif new_aspect_ratio < aspect_ratio:
+            width = image_height / aspect_ratio
+
+        return width, height
+
+    def get_scale_for_coord(self, point_x, point_y):
+        try:
+            screen = ui.screen_containing(point_x, point_y)
+        # Can't get screen if the coordinates are off screen (e.g. -10, 82)
+        except ValueError:
+            screen = ui.main_screen()
+
+        return screen.scale
 
     def get_template(self, template_name):
         if template_name in self.template_dict:
@@ -117,29 +175,6 @@ class HeadUpDisplayTheme:
                         self.template_dict[template_name] = file.read()
                     return self.template_dict[template_name]
             return None
-
-    def resize_image(self, image, width, height):
-        aspect_ratio = image.width / image.height
-        
-        # Resize only if the image width is larger than the given width
-        if width is None or image.width < width:
-            width = image.width
-            
-        # Resize only if the image height is larger than the given height
-        if height is None or image.height < height:
-            height = image.height
-            
-        width = max(width, 1)
-        height = max(height, 1)
-        
-        # Preserve the aspect ratio of the image at all costs using the smallest dimension to work from
-        new_aspect_ratio = width / height
-        if new_aspect_ratio > aspect_ratio:
-            height = image.width * aspect_ratio
-        elif new_aspect_ratio < aspect_ratio:
-            width = image.height / aspect_ratio
-        
-        return image.reshape(int(width), int(height))
 
     def get_colour(self, colour, default_colour="000000"):
         if colour in self.colours:

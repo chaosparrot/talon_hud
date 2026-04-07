@@ -124,6 +124,7 @@ class HeadUpStatusBar(BaseWidget):
     
     def draw(self, canvas) -> bool:
         paint = self.draw_setup_mode(canvas)
+        paint.antialias = True
         self.icon_positions = []
         stroke_width = 1.5
         focus_colour = self.theme.get_colour("focus_colour")
@@ -170,6 +171,7 @@ class HeadUpStatusBar(BaseWidget):
             paint.style = canvas.paint.Style.FILL
 
         icon_texts = []
+        scale = self.theme.get_scale_for_coord(self.x, self.y)
 
         # Draw icons
         icon_offset = 0
@@ -190,7 +192,7 @@ class HeadUpStatusBar(BaseWidget):
                 button_colour = self.theme.get_colour("button_hover_colour") if self.icon_hover_index == hover_index else self.theme.get_colour("button_colour")                
                 paint.shader = linear_gradient(self.x, self.y, self.x, self.y + element_height, (self.theme.get_colour("button_colour"), button_colour))
             
-            self.draw_icon(canvas, self.x + stroke_width + circle_margin + icon_offset, self.y + circle_margin, icon_diameter, paint, icon)
+            self.draw_icon(canvas, self.x + stroke_width + circle_margin + icon_offset, self.y + circle_margin, icon_diameter, paint, icon, scale)
             paint.style = paint.Style.FILL
             icon_offset += icon_diameter + circle_margin
             hover_index += 1
@@ -216,7 +218,7 @@ class HeadUpStatusBar(BaseWidget):
             paint.shader = linear_gradient(self.x, self.y, self.x, self.y + element_height, (self.theme.get_colour("close_icon_colour"), close_colour))
             close_icon_diameter = icon_diameter / 2
             close_status_icon = HudStatusIcon("close", None, None, "Close Head up display", lambda widget, icon: actions.user.hud_disable())
-            self.draw_icon(canvas, self.x + element_width - close_icon_diameter - close_icon_diameter / 2 - stroke_width, height_center - close_icon_diameter / 2, close_icon_diameter, paint, close_status_icon)
+            self.draw_icon(canvas, self.x + element_width - close_icon_diameter - close_icon_diameter / 2 - stroke_width, height_center - close_icon_diameter / 2, close_icon_diameter, paint, close_status_icon, scale)
 
         # Reset the blink colour when the blink is finished
         if not continue_drawing:
@@ -269,12 +271,17 @@ class HeadUpStatusBar(BaseWidget):
         rrect = skia.RoundRect.from_rect(rect, x=radius, y=radius)
         canvas.draw_rrect(rrect)
         
-    def draw_icon(self, canvas, origin_x, origin_y, diameter, paint, icon ):
+    def draw_icon(self, canvas, origin_x, origin_y, diameter, paint, icon, scale):
         radius = diameter / 2
         canvas.draw_circle( origin_x + radius, origin_y + radius, radius, paint)
-        if (icon.image is not None and self.theme.get_image(icon.image) is not None ):
-            image = self.theme.get_image(icon.image, diameter, diameter)
-            canvas.draw_image(image, origin_x + radius - image.width / 2, origin_y + radius - image.height / 2 )
+        image, image_scale = self.theme.get_image_and_scale(icon.image, scale)
+        if (icon.image is not None and image is not None):
+            width, height = self.theme.get_dimensions(image, image_scale, diameter, diameter)
+            canvas.draw_image_rect(
+                image,
+                ui.Rect(0, 0, image.width, image.height),
+                ui.Rect(origin_x + radius - width / 2, origin_y + radius - height / 2, width, height),
+            )
             
         self.icon_positions.append({"icon": icon, "center_x": origin_x + radius, "center_y": origin_y + radius, "radius": radius})
         
