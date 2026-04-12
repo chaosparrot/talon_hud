@@ -210,6 +210,7 @@ class HeadUpContextMenu(LayoutWidget):
         paint.textsize = self.font_size
         content_dimensions = dimensions["rect"]
         focus_colour = self.theme.get_colour("focus_colour")
+        scale = self.theme.get_scale_for_coord(self.x, self.y)
        
         base_button_x = content_dimensions.x + self.padding[3]
         icon_button_x = base_button_x + self.image_size + self.padding[3]
@@ -241,8 +242,13 @@ class HeadUpContextMenu(LayoutWidget):
             
             # Draw button icon on the left in the middle
             if button_icon:
-                image = self.theme.get_image(button_icon)
-                canvas.draw_image(image, base_button_x + self.padding[3], button_y + button_height / 2 - image.height / 2)
+                image, image_scale = self.theme.get_image_and_scale(button_icon, scale)
+                width, height = self.theme.get_dimensions(image, image_scale)
+                canvas.draw_image_rect(
+                    image,
+                    ui.Rect(0, 0, image.width, image.height),
+                    ui.Rect(base_button_x + self.padding[3], button_y + button_height / 2 - height / 2, width, height),
+                )
                 if button_layout["text_height"] < self.image_size:
                     button_text_y += ( self.image_size - button_layout["text_height"] ) / 2
             

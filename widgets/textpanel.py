@@ -366,6 +366,7 @@ class HeadUpTextPanel(LayoutWidget):
     def draw_footer_buttons(self, canvas, paint, dimensions):
         footer_height = dimensions["header_height"]
         dimensions = dimensions["rect"]
+        scale = self.theme.get_scale_for_coord(self.x, self.y)
 
         # Small divider between the content and the footer
         x = dimensions.x + self.padding[3]
@@ -380,9 +381,14 @@ class HeadUpTextPanel(LayoutWidget):
                 else self.theme.get_colour("button_background", "CCCCCC")
             paint.shader = linear_gradient(self.x, self.y, self.x, self.y + footer_height, ("AAAAAA", hover_colour))
             canvas.draw_circle(icon_position.x, icon_position.y, self.icon_radius, paint)
-            image = self.theme.get_image(icon.image)
+            image, image_scale = self.theme.get_image_and_scale(icon.image, scale)
             if image:
-                canvas.draw_image(image, icon_position.x - image.width / 2, icon_position.y - image.height / 2)
+                width, height = self.theme.get_dimensions(image, image_scale)
+                canvas.draw_image_rect(
+                    image,
+                    ui.Rect(0, 0, image.width, image.height),
+                    ui.Rect(icon_position.x - width / 2, icon_position.y - height / 2, width, height),
+                )
                 
             if self.focused and self.current_focus is not None and self.current_focus.equals(icon.id + "_page"):
                 focus_width = 3
