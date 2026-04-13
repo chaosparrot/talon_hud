@@ -41,13 +41,14 @@ class HeadUpAbilityBar(BaseWidget):
         margin = 4
         origin = self.x if self.alignment == "left" else self.x + self.width - diameter        
         offset = diameter + margin if self.alignment == "left" else -(diameter + margin)
+        scale = self.theme.get_scale_for_coord(self.x, self.y)
         
         continue_drawing = False
         for index, ability in enumerate(abilities):
-            continue_drawing = self.draw_ability(canvas, origin + ( offset * index ), self.y, diameter, paint, ability) or continue_drawing
+            continue_drawing = self.draw_ability(canvas, origin + ( offset * index ), self.y, diameter, paint, ability, scale) or continue_drawing
         return continue_drawing
 
-    def draw_ability(self, canvas, origin_x, origin_y, diameter, paint, ability ):
+    def draw_ability(self, canvas, origin_x, origin_y, diameter, paint, ability, scale):
         radius = diameter / 2
         animating = False
                 
@@ -63,13 +64,18 @@ class HeadUpAbilityBar(BaseWidget):
             paint.color = "".join(colour)
             canvas.draw_circle( origin_x + radius, origin_y + radius, radius, paint)
         
-        if (ability.image is not None and self.theme.get_image(ability.image) is not None ):
+        image, image_scale = self.theme.get_image_and_scale(ability.image, scale)
+        if (ability.image is not None and image is not None ):
             paint.color = opacity_value
-            image = self.theme.get_image(ability.image)
             
             offset_x = ability.image_offset_x
             offset_y = ability.image_offset_y
-            canvas.draw_image(image, origin_x + radius - image.width / 2 + offset_x, origin_y + radius - image.height / 2 + offset_y)
+            width, height = self.theme.get_dimensions(image, image_scale)
+            canvas.draw_image_rect(
+                image,
+                ui.Rect(0, 0, image.width, image.height),
+                ui.Rect(origin_x + radius - width / 2 + offset_x, origin_y + radius - height / 2 + offset_y, width, height),
+            )
             
         if ability.activated > 0:
             #paint.color = self.theme.get_colour("ability_activation_colour", "FFFFFFAA")
