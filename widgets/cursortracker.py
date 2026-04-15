@@ -131,14 +131,20 @@ class HeadUpCursorTracker(BaseWidget):
         return False
         
     def draw_icon(self, canvas, origin_x, origin_y, diameter, paint, icon ):
+        scale = self.theme.get_scale_for_coord(self.x, self.y)
         radius = diameter / 2
         if icon.colour is not None:
             paint.color = icon.colour
             canvas.draw_circle( origin_x + radius, origin_y + radius, radius, paint)
         
-        if (icon.icon is not None and self.theme.get_image(icon.icon) is not None ):
-            image = self.theme.get_image(icon.icon, diameter, diameter)
-            canvas.draw_image(image, origin_x + radius - image.width / 2, origin_y + radius - image.height / 2 )                
+        image, image_scale = self.theme.get_image_and_scale(icon.icon, scale)
+        if (icon.icon is not None and image is not None ):
+            width, height = self.theme.get_dimensions(image, image_scale, diameter, diameter)
+            canvas.draw_image_rect(
+                image,
+                ui.Rect(0, 0, image.width, image.height),
+                ui.Rect(origin_x + radius - width / 2, origin_y + radius - height / 2, width, height),
+            )
 
     def start_setup(self, setup_type, mouse_position = None):
         """Starts a setup mode that is used for moving, resizing and other various changes that the user might setup"""    

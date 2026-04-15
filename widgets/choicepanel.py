@@ -222,7 +222,7 @@ class HeadUpChoicePanel(HeadUpTextPanel):
         self.limit_height = current_height_limit
         return layout_pages
             
-    def draw_choices(self, canvas, paint, layout):
+    def draw_choices(self, canvas, paint, layout, scale):
         """Draws the choice buttons"""
         paint.textsize = self.font_size
         content_dimensions = layout["rect"]
@@ -259,14 +259,24 @@ class HeadUpChoicePanel(HeadUpTextPanel):
                 paint.color = selected_colour
                 canvas.draw_rrect( skia.RoundRect.from_rect(rect, x=10, y=10) )
                 paint.color = "000000"
-                image = self.theme.get_image("check_icon")
-                canvas.draw_image(image, content_dimensions.x + content_dimensions.width - self.padding[1] - image.width, choice_layout["choice_y"] + button_height / 2 - image.height / 2)
+                image, image_scale = self.theme.get_image_and_scale("check_icon", scale)
+                width, height = self.theme.get_dimensions(image, image_scale)
+                canvas.draw_image_rect(
+                    image,
+                    ui.Rect(0, 0, image.width, image.height),
+                    ui.Rect(content_dimensions.x + content_dimensions.width - self.padding[1] - width, choice_layout["choice_y"] + button_height / 2 - height / 2, width, height),
+                )
 
             # Draw choice icon on the left in the middle
             choice_icon = choice_layout["choice"].image
             if choice_icon:
-                image = self.theme.get_image(choice_icon)
-                canvas.draw_image(image, content_dimensions.x + self.padding[3], choice_layout["choice_y"] + button_height / 2 - image.height / 2)
+                image, image_scale = self.theme.get_image_and_scale(choice_icon, scale)
+                width, height = self.theme.get_dimensions(image, image_scale)
+                canvas.draw_image_rect(
+                    image,
+                    ui.Rect(0, 0, image.width, image.height),
+                    ui.Rect(content_dimensions.x + self.padding[3], choice_layout["choice_y"] + button_height / 2 - height / 2, width, height),
+                )
             
             paint.color = self.theme.get_colour("button_hover_text_colour", "000000") if self.choice_hovered == choice_layout["choice_index"] \
                 else self.theme.get_colour("button_text_colour", "000000")
@@ -279,7 +289,8 @@ class HeadUpChoicePanel(HeadUpTextPanel):
         super().draw_content_text(canvas, paint, layout)
         if self.minimized:
             return
-        self.draw_choices(canvas, paint, layout)
+        scale = self.theme.get_scale_for_coord(self.x, self.y)
+        self.draw_choices(canvas, paint, layout, scale)
 
         # Draw multiple choice confirm button
         if self.panel_content.choices and self.panel_content.choices.multiple:
@@ -300,8 +311,13 @@ class HeadUpChoicePanel(HeadUpTextPanel):
 
             confirm_icon = self.confirm_button.image
             if confirm_icon:
-                image = self.theme.get_image(confirm_icon)
-                canvas.draw_image(image, base_button_x + self.padding[3], self.confirm_button.rect.y + self.confirm_button.rect.height / 2 - image.height / 2)
+                image, image_scale = self.theme.get_image_and_scale(confirm_icon, scale)
+                width, height = self.theme.get_dimensions(image, image_scale)
+                canvas.draw_image_rect(
+                    image,
+                    ui.Rect(0, 0, image.width, image.height),
+                    ui.Rect(base_button_x + self.padding[3], self.confirm_button.rect.y + self.confirm_button.rect.height / 2 - height / 2, width, height),
+                )
             
             paint.color = self.theme.get_colour("button_hover_text_colour", "000000") if self.confirm_hovered else self.theme.get_colour("button_text_colour", "000000")
             line_height = ( self.confirm_button.rect.height - self.padding[0] - self.padding[2] ) / layout["confirm"]["line_count"]
