@@ -101,7 +101,7 @@ class HeadUpDisplayTheme:
         variants = self.image_dict.get(image_name)
         if variants:
             if target_scale is None:
-                image_scale = 1
+                image_scale = min(variants)
             else:
                 try:
                     image_scale = min(k for k in variants if k >= target_scale)
