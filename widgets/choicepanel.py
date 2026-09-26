@@ -1,4 +1,5 @@
-from talon import skia, ui, cron, clip, actions
+from skia import RoundRect
+from talon import ui, cron, clip, actions
 from ..layout_widget import LayoutWidget
 from ..widgets.textpanel import HeadUpTextPanel
 from ..widget_preferences import HeadUpDisplayUserWidgetPreferences
@@ -240,7 +241,7 @@ class HeadUpChoicePanel(HeadUpTextPanel):
             button_height = self.padding[0] / 2 + choice_layout["text_height"] + self.padding[2] / 2 
             rect = ui.Rect(base_button_x, choice_layout["choice_y"], content_dimensions.width - (self.padding[3] + self.padding[1] ) / 2, button_height)
             self.choices[choice_layout["choice_index"]].rect = rect
-            canvas.draw_rrect( skia.RoundRect.from_rect(rect, x=10, y=10) )
+            canvas.draw_rrect( RoundRect.from_rect(rect, x=10, y=10) )
             
             if self.focused and choice_layout["choice_index"] == focused_index:
                 focus_width = 3
@@ -248,7 +249,7 @@ class HeadUpChoicePanel(HeadUpTextPanel):
                 paint.style = canvas.paint.Style.STROKE
                 paint.stroke_width = focus_width
                 paint.color = focus_colour
-                canvas.draw_rrect( skia.RoundRect.from_rect(rect, x=10, y=10) )
+                canvas.draw_rrect( RoundRect.from_rect(rect, x=10, y=10) )
                 paint.style = canvas.paint.Style.FILL            
             
             # Selected style applied
@@ -257,7 +258,7 @@ class HeadUpChoicePanel(HeadUpTextPanel):
                 if len(selected_colour) == 6:
                     selected_colour = selected_colour + "33"
                 paint.color = selected_colour
-                canvas.draw_rrect( skia.RoundRect.from_rect(rect, x=10, y=10) )
+                canvas.draw_rrect( RoundRect.from_rect(rect, x=10, y=10) )
                 paint.color = "000000"
                 image, image_scale = self.theme.get_image_and_scale("check_icon", scale)
                 width, height = self.theme.get_dimensions(image, image_scale)
@@ -298,7 +299,7 @@ class HeadUpChoicePanel(HeadUpTextPanel):
             self.confirm_button.rect = ui.Rect(layout["confirm"]["rect"].x, layout["confirm"]["rect"].y, layout["confirm"]["rect"].width, layout["confirm"]["rect"].height )
             paint.color = self.theme.get_colour("button_hover_background", "AAAAAA") if self.confirm_hovered else self.theme.get_colour("button_background", "CCCCCC")
             button_rect = ui.Rect(base_button_x, self.confirm_button.rect.y, layout["rect"].width, self.confirm_button.rect.height)
-            canvas.draw_rrect( skia.RoundRect.from_rect(button_rect, x=10, y=10) )
+            canvas.draw_rrect( RoundRect.from_rect(button_rect, x=10, y=10) )
 
             if self.current_focus and self.current_focus.equals("confirm"):
                 focus_width = 3
@@ -306,7 +307,7 @@ class HeadUpChoicePanel(HeadUpTextPanel):
                 paint.style = canvas.paint.Style.STROKE
                 paint.stroke_width = focus_width
                 paint.color = focus_colour
-                canvas.draw_rrect( skia.RoundRect.from_rect(button_rect, x=10, y=10) )
+                canvas.draw_rrect( RoundRect.from_rect(button_rect, x=10, y=10) )
                 paint.style = canvas.paint.Style.FILL            
 
             confirm_icon = self.confirm_button.image

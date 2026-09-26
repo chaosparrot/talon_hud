@@ -2,7 +2,8 @@ from ..base_widget import BaseWidget
 from ..utils import layout_rich_text, hit_test_rect, is_light_colour, hex_to_ints
 from ..content.typing import HudScreenRegion, HudParticle
 from ..widget_preferences import HeadUpDisplayUserWidgetPreferences
-from talon import skia, ui, cron, ctrl, canvas, settings
+from skia import RoundRect
+from talon import ui, cron, ctrl, canvas, settings
 from talon.types.point import Point2d
 import time
 import numpy
@@ -410,7 +411,7 @@ class HeadUpScreenOverlay(BaseWidget):
                     background_rect.x += horizontal_padding
                     background_rect.width -= horizontal_padding
                     
-                rrect = skia.RoundRect.from_rect(background_rect, x=self.font_size / 2, y=self.font_size / 2)
+                rrect = RoundRect.from_rect(background_rect, x=self.font_size / 2, y=self.font_size / 2)
                 canvas.draw_rrect(rrect)
             
             # Then draw the icon size

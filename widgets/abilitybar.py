@@ -2,7 +2,7 @@ from ..base_widget import BaseWidget
 from ..content.typing import HudAbilityIcon
 from ..widget_preferences import HeadUpDisplayUserWidgetPreferences
 from ..utils import lighten_hex_colour
-from talon import skia, ui, cron
+from talon import ui, cron
 import time
 import numpy
 from copy import copy

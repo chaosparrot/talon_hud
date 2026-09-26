@@ -1,4 +1,4 @@
-from talon import skia, app
+from skia import Image
 from talon import ui
 import os
 import random
@@ -63,7 +63,7 @@ class HeadUpDisplayTheme:
                 abspath = os.path.join(images_dir, filename)
                 if (filename.endswith(".png")):
                     filename_len = len(filename)
-                    self.register_image(filename[:filename_len - 4], skia.Image.from_file(abspath))
+                    self.register_image(filename[:filename_len - 4], Image.load(abspath))
 
         # Load in the templates available in the theme directory
         template_dir = os.path.join(theme_dir, "templates")
@@ -114,7 +114,7 @@ class HeadUpDisplayTheme:
             # Load in images from other directories
             if "/" in image_name or "\\" in image_name:
                 if os.path.isfile(image_name):
-                    image = skia.Image.from_file(image_name)
+                    image = Image.load(image_name)
                     self.register_image(image_name, image)
                     return self.get_image_and_scale(image_name, target_scale)
 

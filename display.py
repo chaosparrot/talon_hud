@@ -1,4 +1,4 @@
-from talon import Context, Module, actions, app, skia, cron, ctrl, scope, canvas, registry, settings, ui, fs
+from talon import Context, Module, actions, app, cron, ctrl, scope, canvas, registry, settings, ui, fs
 from talon.types.point import Point2d
 import os
 import time

@@ -1,4 +1,5 @@
-from talon import skia, ui, cron, actions, clip
+from skia import RoundRect
+from talon import ui, cron, actions, clip
 from ..layout_widget import LayoutWidget
 from ..widget_preferences import HeadUpDisplayUserWidgetPreferences
 from ..utils import layout_rich_text, remove_tokens_from_rich_text, linear_gradient, hit_test_icon
@@ -426,7 +427,7 @@ class HeadUpTextPanel(LayoutWidget):
 
     def draw_background(self, canvas, paint, rect):
         radius = 10
-        rrect = skia.RoundRect.from_rect(rect, x=radius, y=radius)
+        rrect = RoundRect.from_rect(rect, x=radius, y=radius)
         canvas.draw_rrect(rrect)
 
     def generate_accessible_nodes(self, parent):

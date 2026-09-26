@@ -1,4 +1,5 @@
-from talon import skia, ui, cron, clip, canvas
+from skia import RoundRect
+from talon import ui, cron, clip, canvas
 from talon.types import Point2d as Point2d
 from ..base_widget import BaseWidget
 from ..layout_widget import LayoutWidget
@@ -227,7 +228,7 @@ class HeadUpContextMenu(LayoutWidget):
                 button_height = max(self.image_size + self.padding[0] + self.padding[2], button_height)
             rect = ui.Rect(base_button_x, button_y, content_dimensions.width - self.padding[3] - self.padding[1], button_height)
             self.buttons[index].rect = rect
-            canvas.draw_rrect( skia.RoundRect.from_rect(rect, x=10, y=10) )
+            canvas.draw_rrect( RoundRect.from_rect(rect, x=10, y=10) )
             
             # Draw a focus ring around the button
             if self.current_focus and ( self.current_focus.equals(button_layout["button"].text) or \
@@ -235,7 +236,7 @@ class HeadUpContextMenu(LayoutWidget):
                 paint.style = paint.Style.STROKE
                 paint.stroke_width = 4
                 paint.color = focus_colour
-                canvas.draw_rrect( skia.RoundRect.from_rect(rect, x=10, y=10) )
+                canvas.draw_rrect( RoundRect.from_rect(rect, x=10, y=10) )
                 paint.style = paint.Style.FILL
             
             button_text_y = button_y + self.padding[0] / 2
@@ -263,14 +264,14 @@ class HeadUpContextMenu(LayoutWidget):
     def draw_background(self, canvas, paint, rect):
         focused = self.current_focus is not None and self.current_focus.equals("menu")
         radius = 10					
-        rrect = skia.RoundRect.from_rect(rect, x=radius, y=radius)
+        rrect = RoundRect.from_rect(rect, x=radius, y=radius)
         canvas.draw_rrect(rrect)
         paint.style = paint.Style.STROKE
         paint.color = self.theme.get_colour("focus_colour") if focused else self.theme.get_colour("context_menu_border", "000000")
         paint.stroke_width = 4 if focused else 1
         
         if focused:
-            canvas.draw_rrect(skia.RoundRect.from_rect(ui.Rect(rect.x + 2, rect.y + 2, rect.width, rect.height), x=radius, y=radius))        
+            canvas.draw_rrect(RoundRect.from_rect(ui.Rect(rect.x + 2, rect.y + 2, rect.width, rect.height), x=radius, y=radius))        
         else:
-            canvas.draw_rrect(skia.RoundRect.from_rect(ui.Rect(rect.x + 0.5, rect.y + 0.5, rect.width - 0.5, rect.height - 0.5), x=radius, y=radius))
+            canvas.draw_rrect(RoundRect.from_rect(ui.Rect(rect.x + 0.5, rect.y + 0.5, rect.width - 0.5, rect.height - 0.5), x=radius, y=radius))
         paint.style = paint.Style.FILL

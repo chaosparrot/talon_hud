@@ -2,7 +2,8 @@ from ..base_widget import BaseWidget
 from ..utils import linear_gradient
 from ..widget_preferences import HeadUpDisplayUserWidgetPreferences
 from ..content.typing import HudButton, HudStatusOption, HudStatusIcon
-from talon import skia, ui, Module, cron, actions
+from skia import RoundRect
+from talon import ui, Module, cron, actions
 import time
 import numpy
 
@@ -268,7 +269,7 @@ class HeadUpStatusBar(BaseWidget):
     def draw_background(self, canvas, origin_x, origin_y, width, height, paint):
         radius = height / 2
         rect = ui.Rect(origin_x, origin_y, width, height)
-        rrect = skia.RoundRect.from_rect(rect, x=radius, y=radius)
+        rrect = RoundRect.from_rect(rect, x=radius, y=radius)
         canvas.draw_rrect(rrect)
         
     def draw_icon(self, canvas, origin_x, origin_y, diameter, paint, icon, scale):

@@ -2,7 +2,7 @@ from ..base_widget import BaseWidget
 from ..utils import hit_test_rect
 from ..content.typing import HudScreenRegion
 from ..widget_preferences import HeadUpDisplayUserWidgetPreferences
-from talon import skia, ui, cron, ctrl
+from talon import ui, cron, ctrl
 from talon.types.point import Point2d
 import time
 import numpy

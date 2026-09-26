@@ -1,11 +1,10 @@
-
-from talon import skia, ui, cron, actions, clip
+from skia import Paint, RoundRect
+from talon import ui, cron, actions, clip
 from ..layout_widget import LayoutWidget
 from ..widget_preferences import HeadUpDisplayUserWidgetPreferences
 from ..utils import layout_rich_text, remove_tokens_from_rich_text, linear_gradient, retrieve_available_voice_commands, hex_to_ints, string_to_speakable_string, hit_test_icon, hit_test_button
 from ..content.typing import HudRichTextLine, HudPanelContent, HudButton, HudIcon, HudContentPage
 from talon.types.point import Point2d
-from talon.skia import Paint
 import copy
 
 icon_radius = 9
@@ -375,7 +374,7 @@ class HeadUpWalkthroughPanel(LayoutWidget):
                 text_colour = self.theme.get_colour("button_hover_text_colour", "000000FF")
                 
             paint.color = button_colour
-            canvas.draw_rrect( skia.RoundRect.from_rect(button_layout["rect"], x=10, y=10) )
+            canvas.draw_rrect( RoundRect.from_rect(button_layout["rect"], x=10, y=10) )
             paint.color = self.theme.get_colour("text_colour")
             self.draw_rich_text(canvas, paint, button_layout["text"], button_layout["rect"].x + self.button_padding, button_layout["rect"].y, self.font_size, False,  current_walkthrough_step)
             if self.focused and self.current_focus and ( \
@@ -384,7 +383,7 @@ class HeadUpWalkthroughPanel(LayoutWidget):
                 paint.style = canvas.paint.Style.STROKE
                 paint.stroke_width = focus_width
                 paint.color = focus_colour
-                canvas.draw_rrect( skia.RoundRect.from_rect(button_layout["rect"], x=10, y=10) )
+                canvas.draw_rrect( RoundRect.from_rect(button_layout["rect"], x=10, y=10) )
                 paint.style = canvas.paint.Style.FILL
                 paint.stroke_width = 1            
 
@@ -524,7 +523,7 @@ class HeadUpWalkthroughPanel(LayoutWidget):
 
     def draw_background(self, canvas, paint, rect):
         radius = 10
-        rrect = skia.RoundRect.from_rect(rect, x=radius, y=radius)
+        rrect = RoundRect.from_rect(rect, x=radius, y=radius)
         canvas.draw_rrect(rrect)
         
     def draw_voice_command_backgrounds(self, canvas, paint, dimensions, animation_state, current_walkthrough_step, text_index_offset=0):
@@ -573,7 +572,7 @@ class HeadUpWalkthroughPanel(LayoutWidget):
                     colour = red_hex + green_hex + blue_hex
                     paint.color = colour
                     paint.style = Paint.Style.FILL
-                    canvas.draw_rrect(skia.RoundRect.from_rect(rect, x=5, y=5))
+                    canvas.draw_rrect(RoundRect.from_rect(rect, x=5, y=5))
                     
                     # Draw the expanding border
                     expand = ( self.font_size / 2 ) * easeOutQuint
@@ -586,7 +585,7 @@ class HeadUpWalkthroughPanel(LayoutWidget):
                     rect.y -= int(round(expand / 2))
                     rect.height += int(round(expand))
                     rect.width += int(round(expand))
-                    canvas.draw_rrect(skia.RoundRect.from_rect(rect, x=5, y=5))
+                    canvas.draw_rrect(RoundRect.from_rect(rect, x=5, y=5))
                     paint.stroke_width = 1                    
                     
                 # Not an animated set of words - Just draw the state
@@ -600,7 +599,7 @@ class HeadUpWalkthroughPanel(LayoutWidget):
                                 break
                             used_voice_commands.append(voice_command)
                     paint.style = Paint.Style.FILL
-                    canvas.draw_rrect(skia.RoundRect.from_rect(rect, x=5, y=5))
+                    canvas.draw_rrect(RoundRect.from_rect(rect, x=5, y=5))
         
         paint.color = text_colour
         paint.style = Paint.Style.FILL

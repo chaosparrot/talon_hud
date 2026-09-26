@@ -1,4 +1,5 @@
-from talon import skia, ui
+from skia import Paint, Shader
+from talon import ui
 from talon.types.point import Point2d
 from .content.typing import HudRichText, HudRichTextLine, HudButton, HudIcon
 from textwrap import wrap
@@ -54,7 +55,7 @@ def retrieve_available_voice_commands(text: str):
 
     return voice_commands
 
-def layout_rich_text(paint:skia.Paint, text:str, width:int = 1920, height:int = 1080) -> list[HudRichTextLine]:
+def layout_rich_text(paint:Paint, text:str, width:int = 1920, height:int = 1080) -> list[HudRichTextLine]:
     """Layout a string of text inside the given dimensions"""
     _, e_text_bounds = paint.measure_text("E")
     _, space_text_bounds = paint.measure_text("E E")
@@ -291,9 +292,9 @@ def determine_screen_for_pos(pos) -> ui.Screen:
 
 def linear_gradient(origin_x, origin_y, dest_x, dest_y, colours):
     try:
-        return skia.Shader.linear_gradient((origin_x, origin_y), (dest_x, dest_y), colours, None)
+        return Shader.linear_gradient((origin_x, origin_y), (dest_x, dest_y), colours, None)
     except:
-        return skia.Shader.linear_gradient(origin_x, origin_y, dest_x, dest_y, colours, None)
+        return Shader.linear_gradient(origin_x, origin_y, dest_x, dest_y, colours, None)
 
 def hit_test_button(button: HudButton, pos: Point2d):
     br = button.rect

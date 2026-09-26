@@ -1,5 +1,6 @@
 from ..base_widget import BaseWidget
-from talon import skia, ui, cron
+from skia import RoundRect
+from talon import ui, cron
 import time
 import numpy
 from ..widget_preferences import HeadUpDisplayUserWidgetPreferences, ExtraPreference
@@ -360,7 +361,7 @@ class HeadUpEventLog(BaseWidget):
     def draw_background(self, canvas, origin_x, origin_y, width, height, paint):
         radius = 5
         rect = ui.Rect(origin_x, origin_y, width, height)
-        rrect = skia.RoundRect.from_rect(rect, x=radius, y=radius)
+        rrect = RoundRect.from_rect(rect, x=radius, y=radius)
         canvas.draw_rrect(rrect)
         
     def draw_rich_text(self, canvas, paint, rich_text, x, y, line_height):

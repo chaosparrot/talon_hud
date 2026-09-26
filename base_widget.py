@@ -1,4 +1,5 @@
-from talon import skia, cron, ctrl, scope, canvas, settings, ui
+from skia import Paint, RoundRect
+from talon import cron, ctrl, scope, canvas, settings, ui
 from talon.types import Point2d
 from abc import ABCMeta
 import numpy
@@ -282,7 +283,7 @@ class BaseWidget(metaclass=ABCMeta):
             if not self.enabled:
                 self.clear()
     
-    def draw_setup_mode(self, canvas) -> skia.Paint:
+    def draw_setup_mode(self, canvas) -> Paint:
         """Implements drawing the dimension lines when resizing elements"""    
         paint = canvas.paint
         if self.setup_type in ["dimension", "limit", "position"]:
@@ -538,7 +539,7 @@ class BaseWidget(metaclass=ABCMeta):
         canvas.paint.color = self.theme.get_colour("event_log_background", "F5F5F5")
         rect = ui.Rect(canvas.x + 2, canvas.y + 2, canvas.width - 4, canvas.height - 4)
         radius = self.font_size
-        rrect = skia.RoundRect.from_rect(rect, x=radius, y=radius)
+        rrect = RoundRect.from_rect(rect, x=radius, y=radius)
         canvas.draw_rrect(rrect)
         
         focus_colour = self.theme.get_colour("focus_colour")
